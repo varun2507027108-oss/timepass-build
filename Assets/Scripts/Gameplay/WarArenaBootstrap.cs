@@ -169,6 +169,15 @@ namespace WarArena.Gameplay
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 1;
 
+            // Start fetching the Rust simulation core. Purely additive today --
+            // nothing reads from it yet, so gameplay is unchanged -- but it means
+            // the WebAssembly module is downloaded in parallel with the rest of
+            // the boot instead of costing a round trip on the first frame, and it
+            // means every single launch exercises the interop glue. A broken
+            // integration shows up as a missing "[WarCore] ready" line in the
+            // browser console rather than as a silently frozen simulation.
+            WarArena.Interop.WarSimRuntime.BeginLoad();
+
             // RenderSettings and QualitySettings are global, not per-scene, and the
             // PlayMode suite builds a full bootstrap seventeen times. Without saving
             // the previous values here, the last test to run leaves the editor

@@ -1,0 +1,14 @@
+[package]
+name = "war-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Engine-agnostic War Arena simulation core: ballistics, flight model, damage model, vehicle and aircraft catalogues."
+
+[dependencies]
+
+[lints.rust]
+# `extern "C"` surfaces hand-written pointer arithmetic; silence the lints that
+# would otherwise bury real findings.
+unsafe_op_in_unsafe_fn = "allow"

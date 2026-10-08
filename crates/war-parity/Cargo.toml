@@ -1,0 +1,16 @@
+[package]
+name = "war-parity"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Native CLI that drives war-core and dumps state traces, for diffing against the C# original."
+publish = false
+
+[[bin]]
+name = "war-parity"
+path = "src/main.rs"
+
+[dependencies]
+war-core = { path = "../war-core" }
+war-core-ffi = { path = "../war-core-ffi" }

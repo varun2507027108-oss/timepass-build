@@ -1,0 +1,15 @@
+[package]
+name = "war-core-ffi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "C ABI surface over war-core, loaded by Unity as a native plugin (Windows) or WebAssembly module (WebGL)."
+
+[lib]
+# `rlib` so `war-parity` and the tests can use the Rust API directly; `cdylib`
+# is what Unity actually loads.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+war-core = { path = "../war-core" }

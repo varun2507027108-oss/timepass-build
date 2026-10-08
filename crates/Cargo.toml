@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = [
+    "war-core",
+    "war-core-ffi",
+    "war-parity",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.98"
+license = "MIT"
+
+# The simulation ships into a WebAssembly module that is loaded next to a Unity
+# WebGL player, so size matters more than raw speed. `panic = "abort"` is not an
+# optimisation here, it is a correctness requirement: unwinding out of an
+# `extern "C"` function is undefined behaviour, and a panic in the sim must not
+# be able to tear down the host player.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -19,8 +19,17 @@
 
 # --- Rust ---
 /target/
-crates/**/target/
+crates/target/
+**/target/
 **/*.rs.bk
+
+# --- Rust <-> Unity build artefacts ---
+# These are produced by crates/tools/build-{native,wasm}.ps1 and are gitignored
+# so the binary is never the source of truth. Their .meta files ARE tracked,
+# because Unity needs them to treat the folders correctly. A fresh clone must run
+# the build scripts before Unity will find the plugin; see crates/war-core/PORT-NOTES.md.
+Assets/Plugins/x86_64/*.dll
+Assets/StreamingAssets/war_core/*.wasm
 
 # --- OS noise ---
 Thumbs.db
