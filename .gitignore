@@ -1,0 +1,27 @@
+# --- Unity: generated / editor state ---
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+/Data/Plugins/lib_burst_generated.*
+
+# --- Unity: regenerable build + test artefacts at repo root ---
+/build_*.log
+/verify_*.log
+/editmode-*.xml
+/playmode-*.xml
+/playmode-*.log
+/TestResults-*.xml
+/web-build.log
+
+# --- Rust ---
+/target/
+crates/**/target/
+**/*.rs.bk
+
+# --- OS noise ---
+Thumbs.db
+.DS_Store

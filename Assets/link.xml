@@ -1,0 +1,25 @@
+<linker>
+  <!--
+    IL2CPP managed stripping removes any UnityEngine type the game's own code
+    never names directly. The battlefield is built at runtime through
+    GameObject.CreatePrimitive and GetComponent<Collider>(), which reference
+    collider types only generically, so the concrete classes are treated as
+    unused and dropped from the WebGL player.
+
+    The result is a build that appears to work while logging, once per spawned
+    primitive: "Can't add component because class 'SphereCollider' doesn't
+    exist!". The mesh still renders, which is why the damage is easy to miss:
+    hit detection in this game is analytic and never queries a collider. Physics
+    that does depend on them, notably WheelCollider, is simply unavailable.
+  -->
+  <assembly fullname="UnityEngine.PhysicsModule">
+    <type fullname="UnityEngine.BoxCollider" preserve="all" />
+    <type fullname="UnityEngine.SphereCollider" preserve="all" />
+    <type fullname="UnityEngine.CapsuleCollider" preserve="all" />
+    <type fullname="UnityEngine.MeshCollider" preserve="all" />
+    <type fullname="UnityEngine.WheelCollider" preserve="all" />
+    <type fullname="UnityEngine.TerrainCollider" preserve="all" />
+    <type fullname="UnityEngine.CharacterController" preserve="all" />
+    <type fullname="UnityEngine.Rigidbody" preserve="all" />
+  </assembly>
+</linker>

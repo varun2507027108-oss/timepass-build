@@ -1,0 +1,20 @@
+{
+  "name": "war-arena-unity",
+  "version": "0.1.0",
+  "private": true,
+  "description": "War Arena - Unity 6 combined-arms (WW1/WW2 tanks, props, early jets). WheelCollider vehicle physics, server-authoritative ballistics, Netcode for GameObjects.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "dependencies": {
+    "com.unity.inputsystem": "1.20.1",
+    "com.unity.netcode.gameobjects": "2.13.3",
+    "com.unity.modules.animation": "1.0.0",
+    "com.unity.modules.audio": "1.0.0",
+    "com.unity.modules.physics": "1.0.0",
+    "com.unity.modules.ui": "1.0.0",
+    "com.unity.modules.uielements": "1.0.0",
+    "com.unity.modules.vehicles": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "com.unity.modules.unitywebrequestwww": "1.0.0"
+  }
+}

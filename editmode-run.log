@@ -1,0 +1,419 @@
+VBCSCompilerPreWarmer: watching VBCSCompiler (PID 41216)
+VBCSCompilerPreWarmer: pre-warm launched (dotnet PID 32708)
+VBCSCompiler prewarm took 20.92 ms
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-varun" at "2026-10-08T17:17:24.3562662Z"
+Built from '6000.6/staging' branch; Version is '6000.6.4f1 (12bfff696524) revision 1228799'; Using compiler version '194234433'; Build Type 'Release'
+OS: 'Windows 11  (10.0.26300) CoreSingleLanguage' Language: 'en' Physical Memory: 16071 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-10-08T17:17:24Z
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 23100, path: "C:/Program Files/Unity Hub/UnityLicensingClient_V1/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              6ee1c6f7252c409dae2521d31ecc9a31
+  Correlation Id:          d0aed7647c44d0655e36d36833910395
+  External correlation Id: 8477469370865013271
+  Machine Id:              +ImojN3bZun0Qoq+olhAxx7hK5o=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-varun" (connect: 0.00s, validation: 0.00s, handshake: 0.04s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-varun-notifications" at "2026-10-08T17:17:24.4004496Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 13469981201685-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Module] Licensing Background thread has ended after 0.05s
+
+COMMAND LINE ARGUMENTS:
+C:\Users\varun\Unity\6000.6.4f1\Editor\Unity.exe
+-batchmode
+-projectPath
+c:\Users\varun\Projects\browser-games\war-arena-unity
+-runTests
+-testPlatform
+EditMode
+-testResults
+c:\Users\varun\Projects\browser-games\war-arena-unity\editmode-results.xml
+-logfile
+c:\Users\varun\Projects\browser-games\war-arena-unity\editmode-run.log
+Successfully changed project path to: c:\Users\varun\Projects\browser-games\war-arena-unity
+C:/Users/varun/Projects/browser-games/war-arena-unity
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-main-allocator-mimalloc-enabled=1"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+Logging is directed to a specific file, skipping project log.
+Player connection [44276]  Target information:
+
+Player connection [44276]  * "[IP] 192.168.97.1 [Port] 55504 [Flags] 2 [Guid] 1738472473 [EditorId] 1738472473 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-IAEIG8O) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [44276]  * "[IP] 192.168.199.1 [Port] 55504 [Flags] 2 [Guid] 1738472473 [EditorId] 1738472473 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-IAEIG8O) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [44276]  * "[IP] 192.168.1.4 [Port] 55504 [Flags] 2 [Guid] 1738472473 [EditorId] 1738472473 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-IAEIG8O) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [44276] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [44276] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-8224" after 0.2 seconds.
+[Licensing::Client] Successfully resolved entitlement details
+Library Redirect Path: Library/
+Initialising UDS system complete:
+  - System type: Client
+  - Resource namespace: 6708fe3b1eb30cc7923fca59ef42c981
+  - Shared memory size: 1073741824
+  - Command buffer id: 1052576
+  - Command buffer size: 8192
+  - Hashmap size: 4194304
+  - Service connected: false
+Launching Unity Data Store - C:/Users/varun/Unity/6000.6.4f1/Editor/Data/Tools/Unity.DataStore.exe 
+Unity Data Store artifact dir = Library/DataStore, working dir = C:/Users/varun/Projects/browser-games/war-arena-unityUnity Data Store running and initialised
+[Physics::Module] Selected backend (deferred post-plugins).
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Initialize engine version: 6000.6.4f1 (12bfff696524)
+[EntityIdStore] init: VM path (explicit commit), pageSize=4096, blockCount=1048576, entitiesPerBlock=256, slots reserved=4294967296 bytes
+[Subsystems] Discovering subsystems at path C:/Users/varun/Unity/6000.6.4f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path C:/Users/varun/Projects/browser-games/war-arena-unity/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+d3d12: failed to query info queue interface (0x80004002).
+Direct3D:
+    Version:         Direct3D 12 [level 12.2]
+    Renderer:        NVIDIA GeForce RTX 3050 6GB Laptop GPU (ID=0x25ac)
+    Vendor:          NVIDIA
+    VRAM:            6001 MB
+    App VRAM Budget: 5233 MB
+    Driver:          32.0.16.1656
+Initialize mono
+Mono path[0] = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/BCLExtensions/runtime/netstandard2.1'
+Mono path[2] = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56224
+CodeReloadManager initialized
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Users/varun/Unity/6000.6.4f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+Register platform support module: C:/Users/varun/Unity/6000.6.4f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.002380 seconds.
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Package Manager log level set to [2]
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Scripting: successfully reloaded assembly
+- Finished resetting the current domain, in  0.671 seconds
+Domain Reload Profiling: 1212ms
+	BeginReloadAssembly (121ms)
+		CreateAndSetChildDomain (8ms)
+	RebuildCommonClasses (4ms)
+	RebuildNativeTypeToScriptingClass (16ms)
+	initialDomainReloadingComplete (65ms)
+	LoadAllAssembliesAndSetupDomain (334ms)
+		LoadAssemblies (111ms)
+		TypeCache.Refresh (236ms)
+			TypeCache.ScanAssembly (222ms)
+		AnalyzeDomain (1ms)
+	FinalizeReload (672ms)
+		SetupLoadedEditorAssemblies (0ms)
+			InitializePlatformSupportModulesInManaged (4ms)
+			BeforeProcessingInitializeOnLoad (103ms)
+			ProcessInitializeOnLoadAttributes (128ms)
+			ProcessInitializeOnLoadMethodAttributes (220ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 25 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.inputsystem@1.20.1 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.inputsystem@2436e68c60c4)
+    com.unity.netcode.gameobjects@2.13.3 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.netcode.gameobjects@277a288a1cea)
+    com.unity.nuget.mono-cecil@1.11.6 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+  Built-in packages:
+    com.unity.modules.animation@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.audio@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.physics@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.ui@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.vehicles@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.unitywebrequest@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.assetbundle@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.imageconversion@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.hierarchycore@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.transport@6.6.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.transport@b08a21757155)
+    com.unity.collections@6.6.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.collections@10fff0607388)
+    com.unity.burst@2.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.burst@626e66ab421b)
+    com.unity.mathematics@1.4.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.mathematics@8306a64d0cd6)
+    com.unity.test-framework@1.8.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.test-framework@80f691d4262b)
+    com.unity.test-framework.performance@6.6.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.test-framework.performance@b6023decb532)
+    com.unity.ext.nunit@2.1.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.ext.nunit@0198eae3b53e)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.02 seconds
+Starting: C:\Users\varun\Unity\6000.6.4f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/2000b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/varun/Projects/browser-games/war-arena-unity
+DisplayProgressbar: Compiling Scripts
+warn: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Assembly system.runtime.interopservices.windowsruntime has duplicate hint path. Ignoring "C:\Users\varun\Unity\6000.6.4f1\Editor\Data\UnityReferenceAssemblies\unity-4.8-api\Facades\System.Runtime.InteropServices.WindowsRuntime.dll" in favor of "C:\Users\varun\Unity\6000.6.4f1\Editor\Data\NetStandard\Extensions\2.0.0\System.Runtime.InteropServices.WindowsRuntime.dll"
+warn: Unity.ILPP.Runner.PostProcessingAssemblyLoadContext[0]
+      Assembly system.componentmodel.composition has duplicate hint path. Ignoring "C:\Users\varun\Unity\6000.6.4f1\Editor\Data\UnityReferenceAssemblies\unity-4.8-api\System.ComponentModel.Composition.dll" in favor of "C:\Users\varun\Unity\6000.6.4f1\Editor\Data\NetStandard\compat\2.1.0\shims\netfx\System.ComponentModel.Composition.dll"
+ExitCode: 0 Duration: 0s221ms
+[390/472    0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+*** Tundra build success (0.18 seconds), 1 items updated, 472 evaluated
+AssetDatabase: script compilation time: 0.633566s
+Total cache size 54083394
+Total cache size after purge 54083394, took 00:00:00.0590674
+Begin MonoManager ReloadAssembly
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Scripting: successfully reloaded assembly
+- Finished resetting the current domain, in  0.509 seconds
+Domain Reload Profiling: 1127ms
+	BeginReloadAssembly (246ms)
+		DisableScriptedObjects (27ms)
+		CreateAndSetChildDomain (59ms)
+	RebuildCommonClasses (9ms)
+	RebuildNativeTypeToScriptingClass (14ms)
+	initialDomainReloadingComplete (49ms)
+	LoadAllAssembliesAndSetupDomain (298ms)
+		LoadAssemblies (238ms)
+		TypeCache.Refresh (37ms)
+			TypeCache.ScanAssembly (29ms)
+		AnalyzeDomain (16ms)
+			BuildScriptInfoCaches (15ms)
+	FinalizeReload (511ms)
+		SetupLoadedEditorAssemblies (0ms)
+			BeforeProcessingInitializeOnLoad (98ms)
+			ProcessInitializeOnLoadAttributes (110ms)
+			ProcessInitializeOnLoadMethodAttributes (71ms)
+			AfterProcessingInitializeOnLoad (6ms)
+		AwakeInstancesAfterBackupRestoration (30ms)
+Starting new worker id: 0 with log in C:/Users/varun/Projects/browser-games/war-arena-unity/Logs/AssetImportWorkerHW0.log
+
+Asset Pipeline Refresh (id=5ffab69107278ed41b6c910f8f9d7cdc): Total: 2.117 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=751 ms
+		Asset DB Callback time: managed=22 ms, native=18 ms
+		Scripting: domain reloads=1, domain reload time=665 ms, compile time=638 ms, other=21 ms
+		Project Asset Count: scripts=363, non-scripts=316
+		Asset File Changes: new=0, changed=0, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokePackagesCallback: 20.681ms
+	ApplyChangesToAssetFolders: 0.421ms
+	Scan: 49.755ms
+	Collect global state as custom dependencies: 7.497ms
+	CategorizeScriptCompilationAssets: 7.352ms
+	ProcessAssetsWithTransientArtifactChanges: 15.560ms
+	CategorizeAssets: 6.787ms
+	CompileScripts: 637.546ms
+	ImportOutOfDateAssets: 532.599ms (512.432ms without children)
+		UnloadImportedAssets: 1.212ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.131ms
+		ImportSchedulerStart: 18.817ms
+	PostProcessAllAssets: 23.003ms
+		MonoPostProcessAllAssets: 22.874ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 8.065ms
+			SyncVS.PostprocessSyncProject 1.693ms
+			EditModeScopePostprocessor.OnPostprocessAllAssets 1.187ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 0.835ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 0.285ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.245ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.196ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.167ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.162ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.140ms
+	UnloadStreamsBegin: 1.204ms
+	GenerateScriptTypeHashes: 1.485ms
+	GenerateScriptTypeSerializationHashes: 2.986ms
+	Untracked: 774.889ms
+
+Application.AssetDatabase Initial Refresh End
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
+Scanning for USB devices : 0.949ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-war-arena-unity
+Unloading 3 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 1611 unused Assets / (0.8 MB). Loaded Objects now: 2340.
+Memory consumption went from 244.1 MB to 243.3 MB.
+Total: 6.335800 ms (FindLiveObjects: 0.280700 ms CreateObjectMapping: 0.065100 ms MarkObjects: 4.895600 ms  DeleteObjects: 0.916400 ms)
+
+[Project] Loading completed in 5.101 seconds
+	Project init time: 				4.420 seconds
+		Template init time: 		0.000 seconds
+		Package Manager init time: 		0.203 seconds
+		Asset Database init time: 		0.213 seconds
+		Global illumination init time: 	0.003 seconds
+		Assemblies load time: 			1.259 seconds
+		Unity extensions init time: 	0.009 seconds
+		Asset Database refresh time: 	2.117 seconds
+	Scene opening time: 			0.307 seconds
+##utp:{"type":"ProjectInfo","version":2,"phase":"Immediate","time":1791479849429,"processId":8224,"projectLoad":5.1010933000000005,"projectInit":4.4198995,"templateInit":0.0,"packageManagerInit":0.2029616,"assetDatabaseInit":0.21267,"globalIlluminationInit":0.0025227,"assembliesLoad":1.2594712,"unityExtensionsInit":0.0093908,"assetDatabaseRefresh":2.117076,"sceneOpening":0.3071836}
+##utp:{"type":"EditorInfo","version":2,"phase":"Immediate","time":1791479849429,"processId":8224,"editorVersion":"6000.6.4f1 (12bfff696524)","branch":"6000.6/staging","buildType":"Release","platform":"Windows"}
+[Licensing::Client] Successfully resolved entitlement details
+Running tests for ExecutionSettings with details:
+targetPlatform = 
+playerHeartbeatTimeout = 600
+filters[0] = 
+   Filter with settings:
+   testMode = EditMode
+   targetPlatform = 
+   testNames = null
+   groupNames = null
+   categoryNames = null
+   assemblyNames = null
+ignoreTests = {}
+featureFlags = null
+
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+UnityEditor.TestTools.TestRunner.CommandLineTest.Executer:InitializeAndExecuteRun (string[]) (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/CommandLineTest/Executer.cs:53)
+UnityEditor.TestTools.TestRunner.CommandLineTest.TestStarter:InitializeAndExecuteRun () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/CommandLineTest/TestStarter.cs:64)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/CommandLineTest/Executer.cs Line: 53)
+
+Start Indexing on Editor startup
+[Indexing] Starting Initial Indexing for Assets
+[UnityConnectServicesConfig] config is NOT valid, switching to default
+Created GICache directory at C:/Users/varun/AppData/LocalLow/Unity/Caches/GiCache. Took: 0.012s, timestamps: [5.106 - 5.118]
+Unloading 2 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (0 B). Loaded Objects now: 2499.
+Memory consumption went from 251.9 MB to 251.9 MB.
+Total: 6.874600 ms (FindLiveObjects: 0.400200 ms CreateObjectMapping: 0.038600 ms MarkObjects: 6.297600 ms  DeleteObjects: 0.004600 ms)
+
+Executing IPrebuildSetup for: Unity.PerformanceTesting.Editor.TestRunBuilder.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.BuildActionTaskBase`1/<ExecuteMethods>d__8<UnityEngine.TestTools.IPrebuildSetup>:MoveNext () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs:48)
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.BuildActionTaskBase`1/<Execute>d__7<UnityEngine.TestTools.IPrebuildSetup>:MoveNext () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs:34)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:194)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteCallback () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:129)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs Line: 48)
+
+Saving results to: C:/Users/varun/AppData/LocalLow/DefaultCompany/war-arena-unity\TestResults.xml
+Saving results to: c:\Users\varun\Projects\browser-games\war-arena-unity\editmode-results.xml
+Executing IPostBuildCleanup for: Unity.PerformanceTesting.Editor.TestRunBuilder.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.BuildActionTaskBase`1/<ExecuteMethods>d__8<UnityEngine.TestTools.IPostBuildCleanup>:MoveNext () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs:48)
+UnityEditor.TestTools.TestRunner.TestRun.Tasks.BuildActionTaskBase`1/<Execute>d__7<UnityEngine.TestTools.IPostBuildCleanup>:MoveNext () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs:34)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteStep () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:194)
+UnityEditor.TestTools.TestRunner.TestRun.TestJobRunner:ExecuteCallback () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/TestJobRunner.cs:129)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/TestRun/Tasks/BuildActionTaskBase.cs Line: 48)
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (Unknown). Loaded Objects now: 2499.
+Memory consumption went from 255.3 MB to 255.3 MB.
+Total: 8.959200 ms (FindLiveObjects: 0.160400 ms CreateObjectMapping: 0.033200 ms MarkObjects: 8.486300 ms  DeleteObjects: 0.034400 ms)
+
+DisplayProgressbar: Undo
+Test run completed. Exiting with code 0 (Ok). Run completed.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+UnityEditor.TestTools.TestRunner.CommandLineTest.Executer:ExitApplication (UnityEditor.TestTools.TestRunner.CommandLineTest.Executer/ReturnCodes,string) (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/CommandLineTest/Executer.cs:81)
+UnityEditor.TestTools.TestRunner.CommandLineTest.Executer:ExitIfRunIsCompleted () (at ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/CommandLineTest/Executer.cs:74)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+
+(Filename: ./Library/PackageCache/com.unity.test-framework@80f691d4262b/UnityEditor.TestRunner/CommandLineTest/Executer.cs Line: 81)
+
+MonoPathRemapper: Attempts to remap: 8280; Successful remaps: 3848
+Serialized file version minimum: 23, current 23
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input Polling Thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-varun-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-varun channel disconnected successfully.
+Unity Data Store service was successfully shut down
+UDS shutting down local client system
+Shut down UDS service system complete
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+CodeReloadManager destroyed
+abort_threads: Failed aborting id: 0000000000000478, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 000000000000ACD8, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000000478, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 000000000000ACD8, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4696
+VBCSCompilerPreWarmer: requested VBCSCompiler shutdown
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1791479850837,"processId":8224,"allocatedMemory":11229942,"memoryLabels":[{"Default":157872},{"Permanent":15516},{"NewDelete":69847},{"Thread":4205560},{"Manager":34205},{"VertexData":8},{"Geometry":816},{"Texture":24},{"Shader":839614},{"Material":132},{"GfxDevice":58008},{"Animation":952},{"Audio":696},{"FreeType":8},{"FontEngine":736},{"Physics":1970},{"Physics2D":16},{"Serialization":16768},{"Input":42840},{"JobScheduler":256},{"TextLib":280},{"Mono":310},{"ScriptingNativeRuntime":1210712},{"BaseObject":49360},{"Resource":1444},{"Renderer":2504},{"Transform":4685},{"File":4416},{"WebCam":616},{"Culling":32},{"Terrain":11442},{"Wind":24},{"STL":40},{"String":444445},{"StaticString":3808},{"Utility":2674806},{"Curl":2559},{"PoolAlloc":2264},{"AI":80},{"TypeTree":17165},{"ScriptManager":12656},{"CodeReload":448},{"RuntimeInitializeOnLoadManager":64},{"Sprites":102},{"SpriteAtlas":120},{"GI":7816},{"Director":8296},{"CloudService":288},{"WebRequest":552},{"VR":49650},{"SceneManager":608},{"Video":208},{"LazyScriptCache":32},{"Camera":729},{"Secure":2377},{"SerializationCache":9256},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":464},{"Hierarchy":1188},{"UIElements":40},{"CoreStats":14456},{"Identifiers":7152},{"Gui":128},{"EditorUtility":111620},{"VersionControl":8},{"Undo":931},{"AssetDatabase":707622},{"AssetImporter":40},{"EditorGi":328},{"UnityConnect":40465},{"Upm":1912},{"UpmDiagnostics":8},{"AssetCompliance":96},{"DrivenProperties":72},{"LocalIPC":260},{"ProfilerEditor":9746},{"CoreBusinessMetrics":3204},{"Windowing":456},{"Licensing":12572},{"AssetReference":32},{"IPCStream":32}]}

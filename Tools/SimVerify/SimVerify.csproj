@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Headless verification harness for the ballistics and damage model.
+
+    Same idea as the fighter harness: the armour maths is pure value-type logic,
+    so it can be compiled and numerically tested with the .NET SDK in seconds,
+    with no Unity install. That makes it practical to assert that, for example,
+    a 75 mm APHEBC from a T-34 does NOT defeat a Panther's 120 mm sloped
+    glacis at 1000 m but DOES defeat a Sherman at 500 m -- the exact matchup
+    relationships the whole game is balanced around.
+
+    Run:  dotnet run --project Tools/SimVerify
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>WarSimVerify</AssemblyName>
+    <RootNamespace>WarArena.Tools</RootNamespace>
+    <NoWarn>$(NoWarn);CS0660;CS0661</NoWarn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="UnityShim.cs" />
+    <Compile Include="Program.cs" />
+
+    <!-- Pure-logic sources only. TankController and the Net/* scripts depend on
+         UnityEngine.Physics and com.unity.netcode.gameobjects, which are not
+         available headless; those still need the Unity Editor to compile. -->
+    <Compile Include="../../Assets/Scripts/Ballistics/Shell.cs" />
+    <Compile Include="../../Assets/Scripts/Ballistics/Penetration.cs" />
+    <Compile Include="../../Assets/Scripts/Vehicles/DamageModule.cs" />
+    <Compile Include="../../Assets/Scripts/Vehicles/VehicleDamageModel.cs" />
+    <Compile Include="../../Assets/Scripts/Vehicles/VehicleCatalog.cs" />
+  </ItemGroup>
+
+</Project>
