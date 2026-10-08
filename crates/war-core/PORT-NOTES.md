@@ -10,16 +10,33 @@ could derive from the source belongs in a comment there, not here.
 | Phase | Scope | State |
 |---|---|---|
 | **0** | Interop feasibility spike | **complete** |
-| 1 | `math` + ballistics + catalogues + `DamageModule` | not started |
+| **1** | `math` + ballistics + catalogues + `DamageModule` | **complete** |
 | 2 | `FlightModel` + `AirCombatSim` | not started |
 | 3 | `BattleSim` | not started |
-| 4 | `VehicleDamageModel` + bug fixes | not started |
+| 4 | `VehicleDamageModel` + remaining bug fixes | not started |
 | 5 | `WarSimRuntime` wired into `WarArenaBootstrap` | not started |
 | 6 | Full WebGL verification with real simulation | not started |
 
 Phase 0 proves the *boundary* works. It deliberately contains a throwaway
 simulation (`war_core::spike`) so the ABI can be validated before 3,100 lines of
-game code depend on it. **No gameplay behaviour has changed yet** — see §7.
+game code depend on it. Phase 1 ports the actual game systems against that ABI.
+
+**No gameplay behaviour has changed yet** — see §7.
+
+Phase 1 verification:
+
+| Check | Result |
+|---|---|
+| `cargo test --workspace` | **108 passed**, 0 failed, 0 warnings |
+| 15 `NormalisationAndRicochetTests` ported | all pass |
+| wasm interop probe | all sections pass |
+| Unity EditMode | 49/49 (37 pre-existing + 12 interop) |
+| Unity PlayMode | 36/36, one known flake (§6) |
+| WebGL build + headless Chrome | `WEBGL RUST CORE VERIFIED` |
+
+The shipped `.wasm` is still the same size as in Phase 0, because LTO strips
+Phase 1's code until something in the `extern "C"` surface references it. It is
+compiled and tested; it simply is not reachable from Unity until Phase 3/5.
 
 ---
 
@@ -192,9 +209,11 @@ rediscovered later.
 
 ---
 
-## 5. Bugs found and fixed during Phase 0
+## 5. Bugs found and fixed
 
-Both were found by the new tests, not by inspection.
+Found by the ported and new tests, not by inspection.
+
+### Phase 0
 
 **Out-of-bounds heap write in the state serialiser.** `write_state` clamped the
 slice to the caller's buffer length but then wrote at fixed slot offsets that
@@ -206,6 +225,70 @@ than failing loudly. Every write is now bounds-checked against the actual slice.
 version into a `uint` and tested `abi < 0`, but the WebGL glue returns `-1` when
 not ready — as a `uint` that is `4294967295`. The guard was dead code, so a
 still-loading module would have been reported as an ABI mismatch. Now `int`.
+
+### Phase 1
+
+**`BuildDamageModel` hardcoded `isCast: false`, contradicting `IsCastHull`.**
+The Panther and Tiger are cast hulls; `BattleSim` honoured that flag on its own
+hit-resolution path while the damage-model path treated every vehicle as rolled.
+The two code paths disagreed on cast-hull physics for exactly the vehicles where
+it matters most. `VehicleCatalog::build_plates` now honours the flag, matching
+`BattleSim`.
+
+**`VehicleDefinition.ShellType` was written but never read.** All 19 vehicles
+stored `APHEBC` and `BuildShell` ignored the field, unconditionally returning an
+APHEBC round. A catalogue that records what a vehicle carries and then builds
+something else is a trap. `build_shell` now dispatches on the field. Behaviour is
+unchanged — every vehicle is still APHEBC — and `every_vehicle_still_carries_aphebc`
+is the test that guarantees it, alongside `build_shell_reproduces_the_csharp_aphebc_call`
+which pins the exact C# expression.
+
+**`CrewMember.RecoveryTimer` could run deeply negative.** The C# was
+`if (RecoveryTimer > 0f) RecoveryTimer -= dt;`, so one `tick(1000.0)` left it at
+`-994`. Nothing read the magnitude (only `<= 0` was tested), so it was harmless,
+but a timer that counts past zero is not what "6 seconds of recovery" means. Now
+clamped at zero.
+
+**`Shell.HE`'s fourth parameter meant something different from its six siblings.**
+`HE(float caliber, float mass, float v0, float filler, float drag)` took
+*filler* where every other factory took *penetration*, so calling it in the
+obvious way built a shell with the charge weight in the penetration slot. The
+port names the parameter `filler`, forces `penetration_0_mm` to 0, and
+`he_takes_filler_not_penetration` pins it.
+
+### Dead code dropped rather than translated
+
+| Removed | Was |
+|---|---|
+| `ArmourPlate.StructuralIntegrity` | documented, defaulted to 1, never read anywhere |
+| `ModuleKind.FuelTank` | never constructed or referenced |
+| `ModuleKind.MachineGun` | never constructed or referenced |
+| `Shell.penetration_at`'s `impactAngleDeg` | never read; its own docs say obliquity belongs to the plate |
+| `DamageModule::apply_damage`'s `bool` return | collapsed "ignored / damaged / destroyed" into one flag that `VehicleDamageModel` branched on — now `DamageOutcome` |
+
+Removing `FuelTank` and `MachineGun` renumbers `AmmoRack` 5→4, `Tracks` 6→5 and
+`Optic` 7→6. Nothing serialises the enum, so this is behaviour-preserving; the
+values are pinned by `discriminants_are_contiguous_after_dropping_the_dead_variants`.
+
+## 5a. Two places where the C# comments are wrong
+
+Found while porting the data; both were resolved in favour of **the data**, and
+the tests assert the data.
+
+**The Zero is not the dirgiest airframe.** The doc comment on
+`AircraftDefinition.ParasiteDragCoefficient` says "the Zero's radial engine and
+wire-covered wings make it the draggiest fighter here". Its own figures say
+otherwise: the Spitfire IX is `0.0250` against the Zero's `0.0185`. The test
+`the_spitfire_is_the_dirgiest_airframe_and_the_meteor_the_cleanest` asserts the
+figures, with the discrepancy called out in the test.
+
+**Jets are not uniformly faster than props in this roster.** The Meteor F.4 is
+`201 m/s`, slower than both the Spitfire IX (`205`) and the P-51D (`220`). Only
+the Me 262 (`244`) outruns the fastest prop. This is historically right — the
+Meteor was a 1945 interceptor built around the Derwent 8 that won by turning, not
+by running away — and it is the entire point of the 262/Meteor pairing. An
+earlier version of the port test asserted "jets are faster", which was simply
+false; it now asserts the actual, more interesting relationship.
 
 ---
 
@@ -240,9 +323,15 @@ migration and would muddy the signal. Worth a separate look.
 - `WarArenaBootstrap` gained exactly one line: `WarSimRuntime.BeginLoad()` in
   `Awake`. It only starts a download and logs. Nothing reads from Rust, so the 36
   PlayMode tests are unaffected.
-- No C# simulation file has been deleted or edited. The C# sim remains the
-  parity oracle for Phases 1–4.
-- Phases 1–4 touch no Unity files at all.
+- **No C# simulation file has been deleted or edited.** The C# sim remains the
+  parity oracle for Phases 2–4.
+- Phases 1–4 touch no Unity files at all. Phase 1's Rust is compiled and tested,
+  but is not yet reachable from the `extern "C"` surface, so the shipped `.wasm`
+  is unchanged in size.
+- Phase 1 applies the `BuildDamageModel` cast-hull fix to the **Rust** side only.
+  The C# path still has the contradiction, because the C# file is being kept as
+  the parity oracle until the Rust core replaces it. When the swap happens, the
+  behaviour change lands.
 
 ---
 
@@ -274,25 +363,21 @@ boot.
 
 ---
 
-## 9. Phase 4 bug-fix backlog (agreed, not yet applied)
+## 9. Phase 4 bug-fix backlog
 
-1. `BattleSim.ResolveHit` lateral test degenerates to `|incoming.z|`, so the plate
-   is chosen from the shell's world-Z velocity regardless of target heading, and
-   `FrontSlopeDeg` is computed into a dead local. The Panther's 55° glacis is
-   never modelled.
-2. `VehicleCatalog.BuildDamageModel` hardcodes `isCast: false`, contradicting
-   `VehicleDefinition.IsCastHull`; `BattleSim` honours the flag, this path does not.
-3. `VehicleDamageModel` uses `UnityEngine.Random.value` — non-deterministic,
-   contradicting its own server-replay claim.
-4. `BattleSim._respawnCounter` is `static`, shared across instances.
-5. `InFlightPositions` / `TracerPositions` hand out a shared mutable `List`.
-6. Dead code to drop, not translate: `FlightModel.StallSpeedBias`,
-   `CruiseAngleOfAttackDeg`, `ArmourPlate.StructuralIntegrity`,
-   `ModuleKind.FuelTank`/`MachineGun`, `VehicleDefinition.ShellType` (never read),
-   `AircraftView.WingRight`, the dead `pathCorrection` / `local` / `slope` /
-   `breech` locals.
-7. `Shell.HE(caliber, mass, v0, filler, drag)` — its 4th parameter means *filler*
-   while all six sibling factories take *penetration*. Rename on port.
+Fixed in Phase 1: the `BuildDamageModel` cast-hull contradiction, the dead
+`ShellType` field, the negative `RecoveryTimer`, and `Shell.HE`'s parameter
+tr (§5).
+
+Still outstanding, by the phase that owns the file:
+
+| # | Bug | Lands in |
+|---|---|---|
+| 1 | `BattleSim.ResolveHit` lateral test degenerates to `|incoming.z|`, so the plate is chosen from the shell's world-Z velocity regardless of target heading, and `FrontSlopeDeg` is computed into a dead local. The Panther's 55° glacis is never modelled | Phase 3 |
+| 2 | `VehicleDamageModel` uses `UnityEngine.Random.value` — non-deterministic, contradicting its own server-replay claim | Phase 4 |
+| 3 | `BattleSim._respawnCounter` is `static`, shared across instances | Phase 3 |
+| 4 | `InFlightPositions` / `TracerPositions` hand out a shared mutable `List` that is cleared and refilled on every get | Phase 3 |
+| 5 | Remaining dead locals: `FlightModel`'s `pathCorrection`, `BattleSim`'s `local`/`slope`, `VehicleDamageModel`'s `breech`, `AircraftView.WingRight` | Phases 2–3 |
 
 **Tuning that must be preserved verbatim** (changing it moves balance):
 `ShellType` declaration order, the `0.42×` muzzle-velocity shell scale, the
@@ -303,15 +388,48 @@ throughout rather than `f64`.
 
 ## 10. Open decisions
 
+### Is crew wounding meant to be permanent?
+
+**Found in Phase 1, deliberately not fixed. This needs a decision.**
+
+`CrewMember.Wound()` sets `IsAlive = false` and starts a 6-second
+`RecoveryTimer`. Nothing anywhere in the project ever sets `IsAlive` back to
+`true`. So:
+
+- `IsAvailable => IsAlive && RecoveryTimer <= 0` can never become true again for a
+  wounded crew member.
+- The recovery timer is dead: it counts down and is never read for a gameplay
+  decision. `IsAvailable` has **zero consumers** — confirmed by searching the
+  whole project.
+- Every `RecoveryTimer` consumer is either the definition itself or
+  `VehicleDamageModel.Tick`, which only decrements it.
+
+The naming (`RecoveryTimer`, `IsAvailable`, six seconds) strongly implies the
+intent was *temporary* incapacitation. The C# behaviour is reproduced exactly and
+pinned by `recovery_never_revives_a_wounded_crew_member`, because reviving is
+**not** a safe silent fix:
+
+| Option | Effect |
+|---|---|
+| **Keep permanent** (current) | An ammo-rack hit wounds all five crew → `AliveCrewCount == 0` → `IsDestroyed`. The timer and `IsAvailable` are pointless; a follow-up should delete them |
+| **Make it temporary** | A tank crewed by wounded-but-recovering men stops counting as destroyed and comes back after 6 s. This also weakens "ammo-rack hits are lethal", which `Tools/SimVerify` asserts as a core matchup |
+| **Hybrid** | Distinguish *dead* from *incapacitated*: add a second state, have `AliveCrewCount` count only the dead, and let a tank with no able crew be immobile rather than destroyed |
+
+My read is that the third is what the original author meant, but it is a balance
+change to a matchup, so it is not a call to make silently mid-migration.
+
+### Others
+
 - **HUD.** The DOM/CSS overlay was agreed, but Unity remains the renderer in this
   architecture, so the IMGUI HUD is untouched and the DOM approach is *deferred*
   to any future renderer work. Recorded so it is not lost.
 - **`VehicleDamageModel` has no runtime consumer** — `BattleSim` uses flat HP
   numbers and never calls it, and the only tests exercising it are the
   `Tools/SimVerify` checks, which have never been run on this machine and several
-  of which contradict the current NUnit suite. Port it for completeness, but treat
-  the 26 SimVerify checks as unproven rather than as a specification.
-- **Phase 6 needs a decision on the dead 33.8 MB of `.glb` files.** `panzer_iv.glb`
-  (32.9 MB) and `panzer_iv_low.glb` (0.86 MB) both have `DefaultImporter` and can
-  never load — they are 59% of the `Assets` tree and ship inside the build for
-  nothing.
+  of which contradict the current NUnit suite. It is ported in Phase 4 for
+  completeness, but treat those 26 checks as unproven rather than as a
+  specification.
+- **Phase 6 needs a decision on the dead 33.8 MB of `.glb` files.**
+  `panzer_iv.glb` (32.9 MB) and `panzer_iv_low.glb` (0.86 MB) both have
+  `DefaultImporter` and can never load — they are 59% of the `Assets` tree and
+  ship inside the build for nothing.
