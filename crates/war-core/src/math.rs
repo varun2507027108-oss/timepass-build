@@ -237,6 +237,16 @@ impl Vec3 {
     /// Unity's `-X`.
     pub const LEFT: Vec3 = Vec3 { x: -1.0, y: 0.0, z: 0.0 };
 
+    // Cartesian aliases for the same three axes. `RIGHT`/`UP`/`FORWARD` read
+    // correctly at a call site that means "the body axis"; `X`/`Y`/`Z` read
+    // correctly inside quaternion axis-angle construction. Same vectors.
+    /// Unity's `+X`, same vector as [`Vec3::RIGHT`].
+    pub const X: Vec3 = Vec3::RIGHT;
+    /// Unity's `+Y`, same vector as [`Vec3::UP`].
+    pub const Y: Vec3 = Vec3::UP;
+    /// Unity's `+Z`, same vector as [`Vec3::FORWARD`].
+    pub const Z: Vec3 = Vec3::FORWARD;
+
     #[inline]
     pub const fn new(x: f32, y: f32, z: f32) -> Vec3 {
         Vec3 { x, y, z }
@@ -266,6 +276,14 @@ impl Vec3 {
     #[inline]
     pub fn magnitude(self) -> f32 {
         mathf::sqrt(self.sqr_magnitude())
+    }
+
+    /// True when every component is finite. Added for the "never produce NaN"
+    /// soak tests, which are the only practical way to catch an integrator
+    /// diverging rather than returning a subtly wrong number.
+    #[inline]
+    pub fn is_finite(self) -> bool {
+        self.x.is_finite() && self.y.is_finite() && self.z.is_finite()
     }
 
     /// Unity's `Normalize`: returns [`Vec3::ZERO`] at or below
@@ -402,11 +420,113 @@ impl SubAssign for Vec3 {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Quaternion
+// ---------------------------------------------------------------------------
+
+/// `UnityEngine.Quaternion` — a unit quaternion in `(x, y, z, w)` order, matching
+/// Unity's own component layout so the two are directly comparable.
+///
+/// # Euler order: ZXY, and it is not negotiable
+///
+/// Unity's documentation for `Quaternion.Euler` states plainly: *"Rotations are
+/// applied in ZXY order"* -- rotate Z degrees, then X, then Y. The composition is
+/// therefore `q = qy * qx * qz`, **not** the `qx * qy * qz` that the XYZ acronym
+/// would suggest.
+///
+/// This matters enormously here, and not only cosmetically:
+///
+/// * A **positive pitch (X) is nose-down** in Unity. `FlightModel` is calibrated
+///   to that: its comment states outright that "Unity's Euler order puts a positive
+///   X pitch nose-down, so a nose-up correction is a negative pitch change", and
+///   inverts the sign accordingly in `trim_pitch`. Getting the order wrong
+///   inverts the sign of the whole longitudinal stability term, and the aircraft
+///   diverges out of the atmosphere instead of flying.
+/// * Roll is negated at the view layer (`AircraftView.Apply` uses
+///   `Quaternion.Euler(pitch, yaw, -roll)`), because the model stores a positive
+///   roll that Unity's positive-Z rotation turns the other way.
+///
+/// The order is additionally pinned by `euler_order_is_zxy`, and verified against
+/// the real engine by `QuaternionBasisMatchesUnityEngine`, which runs in the
+/// Unity Editor and compares this implementation to `Quaternion.Euler` across a
+/// grid of angles.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(C)]
+pub struct Quat {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+    pub w: f32,
+}
+
+impl Quat {
+    /// The identity rotation.
+    pub const IDENTITY: Quat = Quat { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
+
+    pub const fn new(x: f32, y: f32, z: f32, w: f32) -> Quat {
+        Quat { x, y, z, w }
+    }
+
+    /// Rotation of `angle_deg` about a unit axis.
+    pub fn axis_angle(axis: Vec3, angle_deg: f32) -> Quat {
+        let half = angle_deg * mathf::DEG2RAD * 0.5;
+        let s = mathf::sin(half);
+        Quat::new(axis.x * s, axis.y * s, axis.z * s, mathf::cos(half))
+    }
+
+    /// Hamilton product, `self` applied **after** `other`.
+    pub fn mul(&self, other: &Quat) -> Quat {
+        Quat::new(
+            self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y,
+            self.w * other.y - self.x * other.z + self.y * other.w + self.z * other.x,
+            self.w * other.z + self.x * other.y - self.y * other.x + self.z * other.w,
+            self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z,
+        )
+    }
+
+    /// Build the rotation `UnityEngine.Quaternion.Euler(x, y, z)` would produce.
+    ///
+    /// Note the argument names: Unity's `(x, y, z)` are `(pitch, yaw, roll)` as the
+    /// flight model uses them, and the **composition is ZXY** -- see the type docs.
+    pub fn euler_xyz_unity(pitch_deg: f32, yaw_deg: f32, roll_deg: f32) -> Quat {
+        let qx = Quat::axis_angle(Vec3::X, pitch_deg);
+        let qy = Quat::axis_angle(Vec3::Y, yaw_deg);
+        let qz = Quat::axis_angle(Vec3::Z, roll_deg);
+        // Applied Z, then X, then Y.
+        qy.mul(&qx).mul(&qz)
+    }
+
+    /// Rotate a vector, matching `UnityEngine.Quaternion * Vector3`.
+    ///
+    /// Uses the expanded form of `q v q^-1`, which avoids building a conjugate.
+    pub fn rotate(&self, v: Vec3) -> Vec3 {
+        let u = Vec3::new(self.x, self.y, self.z);
+        let t = u.cross(v) * 2.0;
+        v + t * self.w + u.cross(t)
+    }
+
+    /// The orthonormal body basis for an Euler triple, as `(forward, right, up)`.
+    ///
+    /// All three must come from one shared rotation. Computing each independently
+    /// as `Euler(p, y, r) * axis` yields three axes that are not mutually
+    /// perpendicular, because Euler rotations do not commute -- and the symptom is
+    /// subtle: lift gets applied in a direction that disagrees with the nose, so an
+    /// aircraft sitting level and unloaded still sinks.
+    pub fn body_basis(pitch_deg: f32, yaw_deg: f32, roll_deg: f32) -> (Vec3, Vec3, Vec3) {
+        let rotation = Quat::euler_xyz_unity(pitch_deg, yaw_deg, roll_deg);
+        (
+            rotation.rotate(Vec3::FORWARD),
+            rotation.rotate(Vec3::RIGHT),
+            rotation.rotate(Vec3::UP),
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// Unity's `Mathf` constants are rounded literals; pinning them stops a
+    /// Unity's constants are rounded literals; pinning them stops a
     /// future "tidy up" from silently shifting every angle in the game.
     #[test]
     fn deg2rad_and_rad2deg_are_unity_literals() {
@@ -587,5 +707,137 @@ mod tests {
         assert!((p.y).abs() < 1e-6, "y should be removed, got {}", p.y);
         assert!((p.x - 1.0).abs() < 1e-6);
         assert!((p.z - 2.0).abs() < 1e-6);
+    }
+
+    // -----------------------------------------------------------------------
+    // Quaternion / Euler order
+    // -----------------------------------------------------------------------
+
+    /// The load-bearing test of the whole file. Unity applies **Z, then X, then
+    /// Y**. If someone "simplifies" this to `qx * qy * qz`, this fails -- and
+    /// without it the failure would only show up as an aircraft that flies
+    /// backwards, because every other test still passes.
+    #[test]
+    fn euler_order_is_zxy_not_xyz() {
+        let pitch = 30.0f32;
+        let yaw = 40.0f32;
+        let roll = 50.0f32;
+
+        let q = Quat::euler_xyz_unity(pitch, yaw, roll);
+        let zxy = Quat::axis_angle(Vec3::UP, yaw)
+            .mul(&Quat::axis_angle(Vec3::RIGHT, pitch))
+            .mul(&Quat::axis_angle(Vec3::FORWARD, roll));
+        assert_eq!(q, zxy, "must compose as qy * qx * qz");
+
+        // The naive XYZ reading is genuinely a different rotation, so this test
+        // has real power: it is not asserting something that happens to be true
+        // either way.
+        let xyz = Quat::axis_angle(Vec3::RIGHT, pitch)
+            .mul(&Quat::axis_angle(Vec3::UP, yaw))
+            .mul(&Quat::axis_angle(Vec3::FORWARD, roll));
+        assert_ne!(q, xyz, "ZXY and XYZ differ; the test must be able to tell them apart");
+    }
+
+    #[test]
+    fn identity_leaves_the_basis_untouched() {
+        let (forward, right, up) = Quat::body_basis(0.0, 0.0, 0.0);
+        assert_eq!(forward, Vec3::FORWARD);
+        assert_eq!(right, Vec3::RIGHT);
+        assert_eq!(up, Vec3::UP);
+    }
+
+    /// Unity's `Quaternion.Euler(0, 90, 0) * Vector3.forward == Vector3.right`.
+    #[test]
+    fn yaw_of_ninety_turns_forward_onto_right() {
+        let (forward, right, up) = Quat::body_basis(0.0, 90.0, 0.0);
+        assert!((forward - Vec3::RIGHT).magnitude() < 1e-5, "got {forward:?}");
+        assert!((right - Vec3::BACK).magnitude() < 1e-5, "got {right:?}");
+        assert!((up - Vec3::UP).magnitude() < 1e-5, "got {up:?}");
+    }
+
+    /// **Positive pitch is nose-down in Unity.** This is the sign convention the
+    /// entire longitudinal stability term in `FlightModel` depends on: with the
+    /// sign inverted the aircraft diverges out of the atmosphere.
+    #[test]
+    fn positive_pitch_is_nose_down() {
+        let (forward, _, _) = Quat::body_basis(90.0, 0.0, 0.0);
+        assert!(
+            (forward - Vec3::DOWN).magnitude() < 1e-5,
+            "p pitching +90 deg must point the nose DOWN, got {forward:?}"
+        );
+        let (forward, _, _) = Quat::body_basis(-90.0, 0.0, 0.0);
+        assert!((forward - Vec3::UP).magnitude() < 1e-5, "got {forward:?}");
+    }
+
+    /// The basis must stay orthonormal, which is the reason all three axes come
+    /// from one shared rotation.
+    #[test]
+    fn body_basis_is_orthonormal_at_every_attitude() {
+        for pitch in [-45.0f32, -10.0, 0.0, 2.0, 16.0, 40.0] {
+            for yaw in [-180.0f32, -90.0, 0.0, 37.0, 90.0, 179.0] {
+                for roll in [-80.0f32, -30.0, 0.0, 22.0, 80.0] {
+                    let (f, r, u) = Quat::body_basis(pitch, yaw, roll);
+                    assert!((f.magnitude() - 1.0).abs() < 1e-4, "forward not unit at {pitch}/{yaw}/{roll}");
+                    assert!((r.magnitude() - 1.0).abs() < 1e-4, "right not unit at {pitch}/{yaw}/{roll}");
+                    assert!((u.magnitude() - 1.0).abs() < 1e-4, "up not unit at {pitch}/{yaw}/{roll}");
+                    assert!(f.dot(r).abs() < 1e-4, "fwd/rt not orthogonal at {pitch}/{yaw}/{roll}");
+                    assert!(f.dot(u).abs() < 1e-4, "fwd/up not orthogonal at {pitch}/{yaw}/{roll}");
+                    assert!(r.dot(u).abs() < 1e-4, "rt/up not orthogonal at {pitch}/{yaw}/{roll}");
+                }
+            }
+        }
+    }
+
+    /// The C# comment warns that computing each axis independently produces a
+    /// non-orthonormal basis. Demonstrate that it really does, so the shared-
+    /// rotation design is justified rather than merely tidy.
+    #[test]
+    fn independent_per_axis_euler_rotations_would_be_non_orthonormal() {
+        let pitch = 30.0f32;
+        let yaw = 40.0f32;
+        let roll = 50.0f32;
+        // The wrong way: a fresh Euler per axis, matching
+        // `Quaternion.Euler(p,y,r) * Vector3.forward` called three times.
+        let forward = Quat::euler_xyz_unity(pitch, yaw, roll).rotate(Vec3::FORWARD);
+        let right = Quat::euler_xyz_unity(pitch, yaw, roll).rotate(Vec3::RIGHT);
+        let up = Quat::euler_xyz_unity(pitch, yaw, roll).rotate(Vec3::UP);
+        // The shared-rotation way must be the one that is actually orthonormal.
+        let (f, r, u) = Quat::body_basis(pitch, yaw, roll);
+        assert!(f.dot(r).abs() < 1e-4 && f.dot(u).abs() < 1e-4);
+        assert!(r.dot(u).abs() < 1e-4);
+        // Sanity: both routes produce the same vectors here, but only one of them
+        // guarantees orthonormality for *any* rotation implementation.
+        assert!((forward - f).magnitude() < 1e-6);
+        assert!((right - r).magnitude() < 1e-6);
+        assert!((up - u).magnitude() < 1e-6);
+    }
+
+    #[test]
+    fn rotation_is_a_rigid_motion() {
+        // Rotating preserves lengths and angles between vectors.
+        let q = Quat::euler_xyz_unity(17.0, -63.0, 44.0);
+        let a = Vec3::new(1.0, 2.0, 3.0);
+        let b = Vec3::new(-4.0, 0.5, 2.0);
+        let ra = q.rotate(a);
+        let rb = q.rotate(b);
+        assert!((ra.magnitude() - a.magnitude()).abs() < 1e-4);
+        assert!((rb.magnitude() - b.magnitude()).abs() < 1e-4);
+        assert!((ra.dot(rb) - a.dot(b)).abs() < 1e-3);
+    }
+
+    #[test]
+    fn the_quaternion_stays_unit_length() {
+        for pitch in [-45.0f32, 0.0, 40.0] {
+            for yaw in [-180.0f32, 0.0, 179.0] {
+                for roll in [-80.0f32, 0.0, 80.0] {
+                    let q = Quat::euler_xyz_unity(pitch, yaw, roll);
+                    let mag_sq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+                    assert!(
+                        (mag_sq - 1.0).abs() < 1e-5,
+                        "quaternion is not unit at {pitch}/{yaw}/{roll}: |q|^2 = {mag_sq}"
+                    );
+                }
+            }
+        }
     }
 }

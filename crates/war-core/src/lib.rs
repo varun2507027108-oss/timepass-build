@@ -1,4 +1,4 @@
-//! # war-core
+﻿//! # war-core
 //!
 //! Engine-agnostic simulation core for War Arena, ported from the Unity project's
 //! C# implementation. Contains no rendering, no engine objects and no `unsafe`
@@ -17,6 +17,7 @@
 
 pub mod air;
 pub mod ballistics;
+pub mod gameplay;
 pub mod math;
 pub mod spike;
 pub mod vehicles;

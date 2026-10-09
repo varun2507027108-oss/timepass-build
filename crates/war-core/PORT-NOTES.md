@@ -11,32 +11,33 @@ could derive from the source belongs in a comment there, not here.
 |---|---|---|
 | **0** | Interop feasibility spike | **complete** |
 | **1** | `math` + ballistics + catalogues + `DamageModule` | **complete** |
-| 2 | `FlightModel` + `AirCombatSim` | not started |
+| **2** | `FlightModel` + `AirCombatSim` + parity harness | **complete** |
 | 3 | `BattleSim` | not started |
 | 4 | `VehicleDamageModel` + remaining bug fixes | not started |
 | 5 | `WarSimRuntime` wired into `WarArenaBootstrap` | not started |
-| 6 | Full WebGL verification with real simulation | not started |
+| 6 | Full WebGL verification with the real simulation driving the game | not started |
 
-Phase 0 proves the *boundary* works. It deliberately contains a throwaway
-simulation (`war_core::spike`) so the ABI can be validated before 3,100 lines of
-game code depend on it. Phase 1 ports the actual game systems against that ABI.
+Phase 0 proves the *boundary* works. Phase 1 ports the engine-independent
+systems. Phase 2 ports the flight model and air combat -- the highest-risk code
+in the project -- and introduces the parity harness that makes "the port is
+correct" a measured claim rather than an assertion.
 
 **No gameplay behaviour has changed yet** — see §7.
 
-Phase 1 verification:
+| Check | Phase 1 | Phase 2 |
+|---|---|---|
+| `cargo test --workspace` | 108 | **153** |
+| 15 `NormalisationAndRicochetTests` ported | all pass | all pass |
+| 14 `FlightModelTests` ported | — | all pass |
+| wasm interop probe | pass | pass |
+| Unity EditMode | 49/49 | **57/57** (49 + 8 parity) |
+| Unity PlayMode | 36/36 | 36/36 (one known flake, §6) |
+| WebGL build + headless Chrome | verified | **verified** |
+| shipped `.wasm` | 57.5 KB | **65.4 KB** |
 
-| Check | Result |
-|---|---|
-| `cargo test --workspace` | **108 passed**, 0 failed, 0 warnings |
-| 15 `NormalisationAndRicochetTests` ported | all pass |
-| wasm interop probe | all sections pass |
-| Unity EditMode | 49/49 (37 pre-existing + 12 interop) |
-| Unity PlayMode | 36/36, one known flake (§6) |
-| WebGL build + headless Chrome | `WEBGL RUST CORE VERIFIED` |
-
-The shipped `.wasm` is still the same size as in Phase 0, because LTO strips
-Phase 1's code until something in the `extern "C"` surface references it. It is
-compiled and tested; it simply is not reachable from Unity until Phase 3/5.
+The `.wasm` grew by 7.9 KB in Phase 2 because the flight model is now reachable
+from an exported symbol. In Phase 1 it was compiled and tested but LTO-stripped,
+since nothing in the `extern "C"` surface referenced it yet.
 
 ---
 
@@ -156,14 +157,111 @@ Two more Unity-specific details that are *not* recoverable from the Rust side:
 - `Mathf.Sign(0.0)` returns `1.0`, not `0.0`. This matches `f >= 0 ? 1 : -1` in
   Unity, not IEEE signbit.
 
-### Still to pin down in Phase 2
+### Still to pin down in Phase 2 — RESOLVED
 
-**`Quaternion.Euler` order is unverified.** Unity applies Z, then X, then Y.
-`FlightModel` and `AircraftView` are calibrated against that, and the C# source
-comment explicitly notes that positive X pitch is nose-*down* in Unity while
-`AircraftView.Apply` negates `RollDeg`. A naive XYZ-order port inverts pitch and
-rolls the wrong way. This will be pinned by test against the C# original during
-Phase 2, not assumed.
+**`Quaternion.Euler` order.** Unity applies rotations in **ZXY** order — rotate
+Z, then X, then Y — which makes **positive pitch nose-down**. Confirmed from
+Unity's own API reference for `Quaternion.Euler` ("The rotation order is ZXY",
+"Rotations are applied in ZXY order"), not from memory.
+
+This was flagged as the single highest-risk unknown of the whole migration,
+because `FlightModel`'s longitudinal stability term is sign-inverted against it
+and `AircraftView.Apply` negates `RollDeg` to compensate. The implementation
+composes `qy * qx * qz`.
+
+It is now verified two ways:
+
+1. `euler_order_is_zxy_not_xyz` in `math.rs` asserts the composition **and**
+   asserts that the naive `qx * qy * qz` reading is a *different* rotation — so
+   the test can actually tell the two apart rather than passing either way.
+2. `positive_pitch_is_nose_down` pins the consequence the flight model relies on.
+
+`AircraftView` already compensates by negating roll at the view layer
+(`Quaternion.Euler(pitch, yaw, -roll)`). That compensation is correct *because*
+the order is ZXY; had the port guessed XYZ, the view layer would have needed
+negating on pitch too, and nothing would have said so until the aircraft flew
+backwards.
+
+## 3a. The parity harness — making "the port is correct" measurable
+
+Phase 2 introduced the thing the migration plan promised and the project did not
+have: a way to compare the Rust and C# simulations directly.
+
+**The problem.** The flight model's correctness rests on sign conventions that
+cannot be verified by reading either implementation:
+
+- Unity's ZXY Euler order makes positive pitch nose-*down*.
+- Angle of attack is `SignedAngle(forward, flightPath, right)`. Reverse the
+  arguments and a nose-up attitude reports negative, so lift is computed
+  downward and the aircraft is driven into the ground with no recovery.
+- Angle of attack is measured **twice** per step, the second time against the
+  attitude the aircraft will actually fly. Reusing the first measurement leaves a
+  one-frame lag that shows as a slow steady sink.
+
+A Rust unit test written against the Rust code passes no matter how wrong the
+Rust code is, because both share the same wrong assumption. This is not
+hypothetical: **four of my first Phase 2 test assertions were wrong**, and each one
+looked entirely reasonable.
+
+**The mechanism.** `wa_flight_trace` in the FFI runs a scripted scenario and
+writes a per-tick state trace (12 `f32`s: position, velocity, three Euler angles,
+throttle, two flags). `FlightModelParityTests` runs the *C# `FlightModel`* through
+the identical scenario and compares every tick of both traces.
+
+**Result — seven scenarios, every tick compared:**
+
+| Scenario | What it polices |
+|---|---|
+| `HandsOffFullPower` | the phugoid; most sensitive to the Euler sign |
+| `HandsOffHandsOff` | the surplus-thrust and speed-bias trim terms |
+| `SustainedClimb` | pitch clamp, mid-step AoA re-measurement, stall branch |
+| `SustainedRollAndRudder` | roll-to-yaw coupling, roll auto-level decay |
+| `ADeepStallDivergence` | 2000 ticks of a tumbling deep stall |
+| `TheJet` | turbojet thrust branch, transonic drag rise |
+| `ThePropellerDrivenJet` | a jet airframe flying a piston engine |
+
+**Measured worst deviation across all seven: 4.9e-4**, on a position value of
+2445.31 — a relative error of about **2e-7**, i.e. `f32` round-off accumulating
+over 1538 steps. The tolerance is set at 0.05, about 100x that, because the bugs
+being policed diverge by orders of magnitude rather than percentages.
+
+The deep-stall scenario is the one worth calling out. Probing showed the Rust
+model recovers from a shallow stall and then **re-enters a far deeper one**, with
+the angle of attack climbing past 100 degrees, the nose pinned at the -45 degree
+clamp, and the aircraft descending to 400 m. That could only have been a faithful
+property of this explicitly "conditionally stable" integrator or a porting error,
+and reading the code cannot tell you which. Comparing 2000 ticks says the C# does
+the same thing. It is **faithful**, and it is now recorded as a test so it stays
+visible rather than being rediscovered as a "bug" later.
+
+## 3b. Two more bugs found in Phase 2
+
+**`IndicatedSpeedMs` had its ratio inverted.** The C# computed
+`SpeedMs * sqrt(rho0 / rho)`, which at 3000 m turns 162 m/s of true airspeed into
+193 m/s — a *faster* reading at altitude. Its own comment admitted as much:
+*"Compression makes it read faster than TAS at altitude."* Indicated airspeed works
+the other way: lower density means the pitot tube reads slower, because a given
+dynamic pressure needs a higher true speed to produce it. Corrected to
+`SpeedMs * sqrt(rho / rho0)`.
+
+It has **zero consumers**, so the fix is inert today. Corrected rather than
+dropped, because it is a genuinely useful HUD quantity and because a corrected
+unused helper is less of a trap than a wrong one someone eventually wires up.
+
+**`AirCombatSim.TracerPositions` handed out a shared mutable list.** The getter
+cleared and refilled a private `List` on *every access* and returned it by
+reference, so a caller's copy was invalidated by the next read and was mutable by
+the caller. That is a borrow-checker violation in Rust and an aliasing bug in C#.
+Now returns an owned `Vec<Vec3>`, and `tracer_positions_is_an_owned_snapshot`
+asserts the caller really does own it.
+
+## 3c. One latent issue recorded, not fixed
+
+`AirCombatSim.EnemyRoundsLeft` is never decremented — the enemy fire branch sets
+its cooldown but consumes no ammunition, so the AI has unlimited rounds. It has
+**zero consumers**, so nothing is affected today. Preserved for parity: making it
+finite would change no observable behaviour now while quietly changing gameplay
+the moment someone wires it to the HUD. Worth deciding when ammo is given meaning.
 
 ---
 
@@ -256,6 +354,12 @@ obvious way built a shell with the charge weight in the penetration slot. The
 port names the parameter `filler`, forces `penetration_0_mm` to 0, and
 `he_takes_filler_not_penetration` pins it.
 
+### Phase 2
+
+**`IndicatedSpeedMs` had its density ratio inverted** — see §3b.
+
+**`AirCombatSim.TracerPositions` returned a shared mutable list** — see §3b.
+
 ### Dead code dropped rather than translated
 
 | Removed | Was |
@@ -265,6 +369,9 @@ port names the parameter `filler`, forces `penetration_0_mm` to 0, and
 | `ModuleKind.MachineGun` | never constructed or referenced |
 | `Shell.penetration_at`'s `impactAngleDeg` | never read; its own docs say obliquity belongs to the plate |
 | `DamageModule::apply_damage`'s `bool` return | collapsed "ignored / damaged / destroyed" into one flag that `VehicleDamageModel` branched on — now `DamageOutcome` |
+| `FlightModel.StallSpeedBias` | declared `public const`, zero consumers |
+| `FlightModel.CruiseAngleOfAttackDeg` | had a long doc comment, never read |
+| `FlightModel`'s `pathCorrection` local | computed, then never used — the final `trimPitch` expression is what C# used |
 
 Removing `FuelTank` and `MachineGun` renumbers `AmmoRack` 5→4, `Tracks` 6→5 and
 `Optic` 7→6. Nothing serialises the enum, so this is behaviour-preserving; the

@@ -297,6 +297,98 @@ pub unsafe extern "C" fn wa_spike_echo_ids(
 #[allow(dead_code)]
 fn _unused(_: *const c_char) {}
 
+// ---------------------------------------------------------------------------
+// Flight model parity trace
+// ---------------------------------------------------------------------------
+
+/// Number of `f32` values written per simulation tick by
+/// [`wa_flight_trace`]. Mirrored by `FlightModelParityTests.TraceStride` on the C#
+/// side; if either changes the other must, which is exactly what the parity test
+/// is there to catch.
+pub const FLIGHT_TRACE_STRIDE: u32 = 12;
+
+/// Run a scripted flight scenario and write a per-tick state trace.
+///
+/// This exists because the flight model's correctness rests on sign conventions
+/// that cannot be verified by reading either implementation. Unity's ZXY Euler
+/// order makes positive pitch nose-*down*; `FlightModel` depends on that for its
+/// entire longitudinal stability term; and the angle-of-attack measurement has a
+/// specific argument order whose reversal drives the aircraft into the ground with
+/// no way to recover. A unit test written against the Rust code would agree with
+/// the Rust code no matter how wrong it was.
+///
+/// So the C# `FlightModel` is run through the identical scenario in the Unity
+/// Editor and every tick of both traces is compared. See
+/// `Assets/Tests/EditMode/FlightModelParityTests.cs`.
+///
+/// `aircraft_id` must point to `aircraft_id_len` readable ASCII bytes. `out` must
+/// be `NULL` or point to at least `cap` writable `f32`s.
+///
+/// Returns the number of `f32`s written, or 0 on error.
+///
+/// # Safety
+/// All pointer arguments must satisfy the above. Must not race another call on the
+/// same buffer.
+#[no_mangle]
+pub unsafe extern "C" fn wa_flight_trace(
+    aircraft_id: *const u8,
+    aircraft_id_len: u32,
+    altitude: f32,
+    heading_deg: f32,
+    ticks: u32,
+    dt: f32,
+    pitch_in: f32,
+    roll_in: f32,
+    yaw_in: f32,
+    throttle_in: f32,
+    out: *mut f32,
+    cap: u32,
+) -> u32 {
+    if out.is_null() || aircraft_id.is_null() {
+        return 0;
+    }
+    // SAFETY: caller guarantees `aircraft_id` is readable for `aircraft_id_len`.
+    let id_bytes = unsafe { core::slice::from_raw_parts(aircraft_id, aircraft_id_len as usize) };
+    let Ok(id) = core::str::from_utf8(id_bytes) else {
+        return 0;
+    };
+    let Some(spec) = war_core::air::AircraftCatalog::get(id) else {
+        return 0;
+    };
+
+    let mut model = war_core::air::FlightModel::new(spec, Vec3::new(0.0, altitude, 0.0), heading_deg);
+
+    let stride = FLIGHT_TRACE_STRIDE as usize;
+    let capacity = cap as usize / stride;
+    let ticks_to_run = core::cmp::min(ticks as usize, capacity);
+
+    // SAFETY: caller guarantees `out` is valid for `cap` writable f32s, and every
+    // write below is bounded by `ticks_to_run * stride <= cap`.
+    let trace = unsafe { core::slice::from_raw_parts_mut(out, cap as usize) };
+
+    for tick in 0..ticks_to_run {
+        model.step(dt, pitch_in, roll_in, yaw_in, throttle_in);
+
+        let base = tick * stride;
+        let p = model.position();
+        let v = model.velocity();
+        trace[base + 0] = p.x;
+        trace[base + 1] = p.y;
+        trace[base + 2] = p.z;
+        trace[base + 3] = v.x;
+        trace[base + 4] = v.y;
+        trace[base + 5] = v.z;
+        trace[base + 6] = model.pitch_deg();
+        trace[base + 7] = model.yaw_deg();
+        trace[base + 8] = model.roll_deg();
+        trace[base + 9] = model.throttle();
+        trace[base + 10] = if model.is_stalled() { 1.0 } else { 0.0 };
+        trace[base + 11] = if model.is_overstressed() { 1.0 } else { 0.0 };
+    }
+
+    (ticks_to_run * stride) as u32
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
