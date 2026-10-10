@@ -326,11 +326,17 @@ namespace WarArena.Gameplay
             _gunsight.GetComponent<Renderer>().sharedMaterial = sightMaterial;
             _gunsight.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-            _reticle = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            _reticle.name = "Reticle";
-            Object.Destroy(_reticle.GetComponent<Collider>());
+            // Built as real ring GEOMETRY rather than a textured quad.
+            //
+            // The material is Unlit/Color, which has no texture property at all, so a
+            // generated ring texture silently did nothing and the marker rendered as an
+            // opaque slab. An annulus needs no shader support, renders identically
+            // everywhere including WebGL, and is open in the middle by construction
+            // rather than by alpha blending.
+            _reticle = new GameObject("Reticle");
             _reticle.transform.SetParent(parent, false);
-            _reticle.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            _reticle.AddComponent<MeshFilter>().sharedMesh = BuildRingMesh(0.62f, 0.47f, 48);
+            _reticle.AddComponent<MeshRenderer>();
 
             // Penetration reticle: unlit, and drawn after the world so it is never
             // hidden behind terrain. It turns GREEN when the shot will penetrate
@@ -595,10 +601,49 @@ namespace WarArena.Gameplay
             }
         }
 
+        /// <summary>
+        /// Ground normal at a world position, falling back to straight up off the edge
+        /// of the map or on a degenerate patch.
+        /// </summary>
+        private static Vector3 TerrainNormalAt(Vector3 p)
+        {
+            const float Epsilon = 0.6f;
+            float hx = BattlefieldBuilder.GetTerrainHeight(p.x + Epsilon, p.z)
+                     - BattlefieldBuilder.GetTerrainHeight(p.x - Epsilon, p.z);
+            float hz = BattlefieldBuilder.GetTerrainHeight(p.x, p.z + Epsilon)
+                     - BattlefieldBuilder.GetTerrainHeight(p.x, p.z - Epsilon);
+
+            var normal = new Vector3(-hx, 2f * Epsilon, -hz);
+            float mag = normal.magnitude;
+            return mag > 1e-5f ? normal / mag : Vector3.up;
+        }
+
         private void UpdateReticle()
         {
-            _reticle.transform.position = _aimPoint + Vector3.up * 0.05f;
-            _reticle.transform.localScale = Vector3.one * 2.4f;
+            // Sit the reticle ON the surface it marks, not 5 cm above the aim point in
+            // world Y.
+            //
+            // It is drawn flat (Euler 90 about X), so on any slope a plain world-up
+            // offset buries one edge and lifts the other: the quad intersects the ground
+            // it exists to annotate, and on a side slope it visibly slices through the
+            // tank. Offsetting along the terrain normal keeps the whole ring clear of
+            // the surface at any orientation.
+            Vector3 normal = TerrainNormalAt(_aimPoint);
+            _reticle.transform.position = _aimPoint + normal * 0.06f;
+
+            // Align the quad's face with the surface normal, keeping its heading so the
+            // ring does not spin as the aim point moves.
+            Vector3 fwd = Vector3.ProjectOnPlane(Vector3.forward, normal).normalized;
+            if (fwd.sqrMagnitude < 1e-4f)
+            {
+                fwd = Vector3.ProjectOnPlane(Vector3.right, normal).normalized;
+            }
+            _reticle.transform.rotation = Quaternion.LookRotation(fwd, normal);
+
+            // 2.4 m was a 2.4 m SQUARE. The vehicle is 3.01 m wide, so the marker was
+            // nearly as large as the tank and read as a green carpet lying on the
+            // battlefield rather than a gunnery cue.
+            _reticle.transform.localScale = Vector3.one * 1.7f;
             _reticleMaterial.color = _battle.AimWouldPenetrate(_aimPoint)
                 ? new Color(0.2f, 1.0f, 0.25f, 0.95f)
                 : new Color(1.0f, 0.2f, 0.2f, 0.95f);
@@ -820,6 +865,52 @@ namespace WarArena.Gameplay
             GUI.Label(new Rect(rect.x - 1f, rect.y + 1f, rect.width, rect.height), text, _outlineStyle);
             GUI.Label(new Rect(rect.x + 1f, rect.y + 1f, rect.width, rect.height), text, _outlineStyle);
             GUI.Label(rect, text, _helpStyle);
+        }
+
+        /// <summary>
+        /// <summary>
+        /// An annulus in the XZ plane, facing +Y.
+        /// 
+        /// Built as geometry rather than textured, because the reticle material is
+        /// Unlit/Color -- it has no texture property, so a generated ring bitmap would
+        /// silently render nothing. A mesh also gives a genuinely open middle, so the
+        /// marker never covers the thing it is pointing at.
+        /// </summary>
+        private static Mesh BuildRingMesh(float outerRadius, float innerRadius, int segments)
+        {
+            var mesh = new Mesh { name = "ReticleRing" };
+            var verts = new Vector3[segments * 2];
+            var uvs = new Vector2[segments * 2];
+            var tris = new int[segments * 6];
+
+            for (int i = 0; i < segments; i++)
+            {
+                float t = (float)i / segments * Mathf.PI * 2f;
+                float cos = Mathf.Cos(t);
+                float sin = Mathf.Sin(t);
+
+                verts[i * 2] = new Vector3(cos * outerRadius, 0f, sin * outerRadius);
+                verts[i * 2 + 1] = new Vector3(cos * innerRadius, 0f, sin * innerRadius);
+                uvs[i * 2] = new Vector2(0f, t / (Mathf.PI * 2f));
+                uvs[i * 2 + 1] = new Vector2(1f, t / (Mathf.PI * 2f));
+
+                int next = (i + 1) % segments;
+                int a = i * 2;
+                int b = i * 2 + 1;
+                int d = next * 2;
+                int e = next * 2 + 1;
+
+                tris[i * 6 + 0] = a; tris[i * 6 + 1] = b; tris[i * 6 + 2] = d;
+                tris[i * 6 + 3] = b; tris[i * 6 + 4] = e; tris[i * 6 + 5] = d;
+            }
+
+            mesh.vertices = verts;
+            mesh.uv = uvs;
+            mesh.triangles = tris;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            mesh.hideFlags = HideFlags.HideAndDontSave;
+            return mesh;
         }
 
         private static Texture2D Solid(Color color)
