@@ -51,6 +51,9 @@ public static class WebBuildSetup
     {
         var report = new List<string>();
 
+        WarArena.Editor.EnvironmentPrefabBuilder.BuildAll();
+        ModelPrefabBuilder.Build();
+
         RegisterPlayableScene(report);
         IncludeRuntimeShaders(report);
         ReportWebGLModule(report);

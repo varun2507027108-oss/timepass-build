@@ -97,6 +97,10 @@ namespace WarArena.Gameplay
         private GUIStyle _outlineStyle;
         private Texture2D _barBack;
         private Texture2D _barFill;
+        private Texture2D _barHealthPlayer;
+        private Texture2D _barHealthEnemy;
+        private Texture2D _barReloadReady;
+        private Texture2D _barReloading;
         private Texture2D _reticleOk;
         private Texture2D _reticleBad;
 
@@ -326,9 +330,10 @@ namespace WarArena.Gameplay
             _reticle.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
 
             // Penetration reticle: unlit, and drawn after the world so it is never
-            // hidden behind terrain. It turns red when the shot would penetrate, so
-            // it has to be legible against both pale sky and dark ground.
-            _reticleMaterial = VisualMaterials.Unlit(new Color(0.95f, 0.85f, 0.4f));
+            // hidden behind terrain. It turns GREEN when the shot will penetrate
+            // (standard tank gunnery cue in War Thunder / World of Tanks) and RED when
+            // deflected by slope or thick armor.
+            _reticleMaterial = VisualMaterials.Unlit(new Color(0.2f, 1.0f, 0.25f, 0.95f));
             _reticle.GetComponent<Renderer>().sharedMaterial = _reticleMaterial;
             _reticle.GetComponent<Renderer>().shadowCastingMode =
                 UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -518,6 +523,13 @@ namespace WarArena.Gameplay
         private Vector3 GroundPointUnderMouse()
         {
             Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit, 500f))
+            {
+                return new Vector3(
+                    Mathf.Clamp(hit.point.x, -BattleSim.ArenaHalfExtent, BattleSim.ArenaHalfExtent),
+                    hit.point.y,
+                    Mathf.Clamp(hit.point.z, -BattleSim.ArenaHalfExtent, BattleSim.ArenaHalfExtent));
+            }
             if (Mathf.Abs(ray.direction.y) < 1e-4f)
             {
                 return _battle.PlayerPosition + Vector3.forward * 40f;
@@ -569,8 +581,8 @@ namespace WarArena.Gameplay
             _reticle.transform.position = _aimPoint + Vector3.up * 0.05f;
             _reticle.transform.localScale = Vector3.one * 2.4f;
             _reticleMaterial.color = _battle.AimWouldPenetrate(_aimPoint)
-                ? new Color(1f, 0.25f, 0.2f)
-                : new Color(0.95f, 0.85f, 0.4f);
+                ? new Color(0.2f, 1.0f, 0.25f, 0.95f)
+                : new Color(1.0f, 0.2f, 0.2f, 0.95f);
         }
 
         private void UpdateCamera(float dt)
@@ -631,10 +643,14 @@ namespace WarArena.Gameplay
                 // into the sky.
                 _outlineStyle = new GUIStyle(_helpStyle);
                 _outlineStyle.normal.textColor = Color.black;
-                _barBack = Solid(new Color(0.10f, 0.11f, 0.13f, 0.9f));
+                _barBack = Solid(new Color(0.08f, 0.10f, 0.12f, 0.92f));
                 _barFill = Solid(new Color(0.85f, 0.30f, 0.25f));
-                _reticleOk = Solid(new Color(0.95f, 0.85f, 0.4f));
-                _reticleBad = Solid(new Color(1f, 0.25f, 0.2f));
+                _barHealthPlayer = Solid(new Color(0.22f, 0.80f, 0.35f, 0.95f));
+                _barHealthEnemy = Solid(new Color(0.88f, 0.24f, 0.22f, 0.95f));
+                _barReloadReady = Solid(new Color(0.22f, 0.88f, 0.35f, 0.95f));
+                _barReloading = Solid(new Color(0.96f, 0.65f, 0.15f, 0.95f));
+                _reticleOk = Solid(new Color(0.2f, 1.0f, 0.25f, 0.95f));
+                _reticleBad = Solid(new Color(1.0f, 0.2f, 0.2f, 0.95f));
             }
 
             if (_battle == null || _air == null) return;
@@ -650,37 +666,55 @@ namespace WarArena.Gameplay
 
             DrawGroundHud();
             Label(new Rect(0f, Screen.height - 76f, Screen.width, 70f),
-                "W/S throttle    A/D hull    Q/E turret trim    SPACE or LMB fire    C view (chase/orbit/FPV)    TAB ground/air\n" +
-                "The reticle turns RED when your shot would actually penetrate. Sloped armour matters.");
+                "W/S throttle   A/D steer   Q/E turret trim   SPACE / LMB fire   C camera view   TAB ground/air\n" +
+                "Reticle: GREEN = Guaranteed Penetration | RED = Armor Too Thick / High Obliquity (Deflection)");
         }
 
         /// <summary>Ground-mode HUD: armour, reload, range, and the damage feed.</summary>
         private void DrawGroundHud()
         {
-            float barWidth = Mathf.Min(300f, Screen.width * 0.24f);
-            const float barHeight = 14f;
-            const float top = 20f;
+            float barWidth = Mathf.Min(320f, Screen.width * 0.26f);
+            const float barHeight = 16f;
+            const float top = 22f;
 
+            // Player health bar & numerical HP
             GUI.DrawTexture(new Rect(30f, top, barWidth, barHeight), _barBack);
-            GUI.DrawTexture(new Rect(30f, top, barWidth * (_battle.PlayerHealth / 100f), barHeight), _barFill);
+            GUI.DrawTexture(new Rect(30f, top, barWidth * Mathf.Clamp01(_battle.PlayerHealth / 100f), barHeight), _barHealthPlayer);
 
+            // Enemy health bar & numerical HP
             float enemyX = Screen.width - 30f - barWidth;
             GUI.DrawTexture(new Rect(enemyX, top, barWidth, barHeight), _barBack);
-            GUI.DrawTexture(new Rect(enemyX, top, barWidth * (_battle.EnemyHealth / 100f), barHeight), _barFill);
+            GUI.DrawTexture(new Rect(enemyX, top, barWidth * Mathf.Clamp01(_battle.EnemyHealth / 100f), barHeight), _barHealthEnemy);
 
-            Label(new Rect(30f, top - 18f, 260f, 18f),
-                _battle.PlayerSpec.DisplayName + "   K " + _battle.Kills + " / D " + _battle.Deaths);
-            Label(new Rect(enemyX - 60f, top - 18f, 300f, 18f), _battle.EnemySpec.DisplayName);
+            // Health labels with exact numerical HP
+            Label(new Rect(30f, top - 20f, barWidth, 20f),
+                $"{_battle.PlayerSpec.DisplayName}   HP {_battle.PlayerHealth:F0}/100   [K {_battle.Kills} / D {_battle.Deaths}]");
+            Label(new Rect(enemyX, top - 20f, barWidth, 20f),
+                $"{_battle.EnemySpec.DisplayName}   HP {_battle.EnemyHealth:F0}/100   [HOSTILE]");
 
+            // Reload bar & status
             float reload = _battle.ReloadComplete
                 ? 1f
                 : 1f - _battle.ReloadRemaining / _battle.PlayerSpec.ReloadSeconds;
-            GUI.DrawTexture(new Rect(30f, top + barHeight + 6f, barWidth * reload, 6f), _barFill);
+            GUI.DrawTexture(new Rect(30f, top + barHeight + 6f, barWidth, 6f), _barBack);
+            GUI.DrawTexture(new Rect(30f, top + barHeight + 6f, barWidth * Mathf.Clamp01(reload), 6f),
+                _battle.ReloadComplete ? _barReloadReady : _barReloading);
 
+            string cannonStatus = _battle.ReloadComplete
+                ? "CANNON READY [SPACE / LMB]"
+                : $"RELOADING {_battle.ReloadRemaining:F1}s";
+
+            // Vehicle dynamics & fire control telemetry
+            float spd = _battle.PlayerSpeedKph;
+            string gear = Mathf.Abs(spd) < 0.8f ? "NEUT" : (spd > 0.8f ? "FWD" : "REV");
             float range = Vector3.Distance(_battle.PlayerPosition, _battle.EnemyPosition);
-            Label(new Rect(30f, top + barHeight + 18f, 460f, 20f),
-                $"SPD {_battle.PlayerSpeedKph:F0} km/h   RANGE {range:F0} m   " +
-                $"CAM {CameraModeName(_cameraMode)}");
+            bool wouldPen = _battle.AimWouldPenetrate(_aimPoint);
+            string aimText = wouldPen ? "PENETRATION LIKELY (GREEN)" : "DEFLECT / RICOCHET (RED)";
+
+            Label(new Rect(30f, top + barHeight + 16f, 600f, 20f),
+                $"{cannonStatus}   |   GEAR [{gear}]  SPD {spd:F0} km/h   |   DIST {range:F0}m");
+            Label(new Rect(30f, top + barHeight + 36f, 600f, 20f),
+                $"AIM: {aimText}   |   CAM {CameraModeName(_cameraMode).ToUpper()}");
 
             for (int i = 0; i < _battle.Feed.Count; i++)
             {

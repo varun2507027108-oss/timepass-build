@@ -42,6 +42,14 @@ pub const ANGLE_EPSILON: f32 = 1e-15;
 /// `UnityEngine.Mathf`, restricted to the members the simulation calls.
 pub mod mathf {
     /// `UnityEngine.Mathf.PI` — a rounded `f32` literal, not `PI as f32`.
+    ///
+    /// `clippy::approx_constant` fires on precisely the literals this module exists to
+    /// reproduce. Unity's `Mathf.PI` is `3.1415927`, not the nearest `f32` to real pi,
+    /// and substituting the "correct" constant would make every angle in the game
+    /// drift by a fraction of a degree relative to the C# original, which is the one
+    /// thing this port must not do. These literals are the specification, so the lint
+    /// is silenced here rather than obeyed.
+    #[allow(clippy::approx_constant)]
     pub const PI: f32 = 3.141_592_7;
 
     /// `UnityEngine.Mathf.Deg2Rad`. Rounded literal; **not** `1 / (PI / 180)`.
@@ -524,6 +532,11 @@ impl Quat {
 
 #[cfg(test)]
 mod tests {
+    // Same reasoning as the `PI` constant above: the sample values in these tests are
+    // pinned to Unity's rounded literals on purpose, so both lints are silenced here
+    // rather than obeyed.
+    #![allow(clippy::approx_constant, clippy::excessive_precision)]
+
     use super::*;
 
     /// Unity's constants are rounded literals; pinning them stops a

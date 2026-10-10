@@ -288,9 +288,10 @@ namespace WarArena.Gameplay
             Vector3 forward = new Vector3(Mathf.Sin(PlayerHeadingRad), 0f, Mathf.Cos(PlayerHeadingRad));
             Vector3 next = PlayerPosition + forward * speed * dt;
 
-            PlayerPosition = new Vector3(
-                Mathf.Clamp(next.x, -ArenaHalfExtent, ArenaHalfExtent), 0f,
-                Mathf.Clamp(next.z, -ArenaHalfExtent, ArenaHalfExtent));
+            float clampedX = Mathf.Clamp(next.x, -ArenaHalfExtent, ArenaHalfExtent);
+            float clampedZ = Mathf.Clamp(next.z, -ArenaHalfExtent, ArenaHalfExtent);
+            float posY = BattlefieldBuilder.GetTerrainHeight(clampedX, clampedZ);
+            PlayerPosition = new Vector3(clampedX, posY, clampedZ);
             PlayerSpeedKph = Mathf.Abs(speed) * 3.6f;
         }
 
@@ -373,9 +374,10 @@ namespace WarArena.Gameplay
             Vector3 forward = new Vector3(Mathf.Sin(EnemyHeadingRad), 0f, Mathf.Cos(EnemyHeadingRad));
             Vector3 next = EnemyPosition + forward * speed * dt;
 
-            EnemyPosition = new Vector3(
-                Mathf.Clamp(next.x, -ArenaHalfExtent, ArenaHalfExtent), 0f,
-                Mathf.Clamp(next.z, -ArenaHalfExtent, ArenaHalfExtent));
+            float enemyX = Mathf.Clamp(next.x, -ArenaHalfExtent, ArenaHalfExtent);
+            float enemyZ = Mathf.Clamp(next.z, -ArenaHalfExtent, ArenaHalfExtent);
+            float enemyY = BattlefieldBuilder.GetTerrainHeight(enemyX, enemyZ);
+            EnemyPosition = new Vector3(enemyX, enemyY, enemyZ);
 
             EnemyTurretYawRad = WrapAngle(Mathf.Atan2(-toPlayer.x, -toPlayer.z) - EnemyHeadingRad);
             EnemyTurretYawRad = Mathf.Clamp(EnemyTurretYawRad, -MaxTraverse, MaxTraverse);
@@ -432,7 +434,7 @@ namespace WarArena.Gameplay
                 // Hit volume is roughly the hull footprint plus the turret.
                 bool hit = targetAlive
                     && new Vector2(s.Position.x - target.x, s.Position.z - target.z).sqrMagnitude < 3.2f * 3.2f
-                    && s.Position.y < 4.5f;
+                    && Mathf.Abs(s.Position.y - (target.y + 1.2f)) < 2.2f;
 
                 if (hit)
                 {
@@ -464,24 +466,44 @@ namespace WarArena.Gameplay
             float targetHeading = s.FromPlayer ? EnemyHeadingRad : PlayerHeadingRad;
 
             Vector3 incoming = s.Velocity.normalized;
+            Vector3 shotDir = -incoming; // Incident vector reversed, pointing toward shooter
 
-            // Impact angle between the incoming round and the target's facing.
-            Vector3 targetForward = new Vector3(Mathf.Sin(targetHeading), 0f, Mathf.Cos(targetHeading));
-            float dot = Mathf.Clamp(Vector3.Dot(-incoming, targetForward), -1f, 1f);
-            float impactAngleDeg = Mathf.Acos(dot) * Mathf.Rad2Deg;
+            Vector3 targetForward = new Vector3(Mathf.Sin(targetHeading), 0f, Mathf.Cos(targetHeading)).normalized;
+            Vector3 targetRight = new Vector3(targetForward.z, 0f, -targetForward.x);
 
-            // Which plate was struck, by where the round met the hull.
-            Vector3 local = Vector3.Scale(incoming, targetPos);
-            float lateral = Mathf.Abs(new Vector3(-targetForward.z, 0f, targetForward.x).x * incoming.x
-                                      + (-targetForward.z) * incoming.z);
-            bool front = lateral < 0.4f;
-            bool side = Mathf.Abs(impactAngleDeg - 90f) < 55f && !front;
+            float forwardDot = Vector3.Dot(shotDir, targetForward);
+            float rightDot = Vector3.Dot(shotDir, targetRight);
 
-            string plateName = front ? "front" : side ? "side" : "rear";
-            float plateMm = front ? targetDef.ArmorFrontMm
-                : side ? targetDef.ArmorSideMm
-                : targetDef.ArmorRearMm;
-            float slope = front ? targetDef.FrontSlopeDeg : 0f;
+            string plateName;
+            float plateMm;
+            Vector3 plateNormal;
+
+            if (Mathf.Abs(forwardDot) >= Mathf.Abs(rightDot))
+            {
+                if (forwardDot >= 0f)
+                {
+                    plateName = "front";
+                    plateMm = targetDef.ArmorFrontMm;
+                    plateNormal = targetDef.FrontSlopeDeg > 0f
+                        ? Quaternion.AngleAxis(-targetDef.FrontSlopeDeg, targetRight) * targetForward
+                        : targetForward;
+                }
+                else
+                {
+                    plateName = "rear";
+                    plateMm = targetDef.ArmorRearMm;
+                    plateNormal = -targetForward;
+                }
+            }
+            else
+            {
+                plateName = "side";
+                plateMm = targetDef.ArmorSideMm;
+                plateNormal = rightDot >= 0f ? targetRight : -targetRight;
+            }
+
+            // Obliquity angle measured against the plate normal (0 deg = head-on, 90 deg = grazing)
+            float impactAngleDeg = Mathf.Clamp(Vector3.Angle(shotDir, plateNormal), 0f, 89.9f);
 
             float travelled = new Vector3(s.Position.x - targetPos.x, 0f, s.Position.z - targetPos.z).magnitude;
             float penAtImpact = s.Ordnance.PenetrationAt(travelled, impactAngleDeg);
@@ -515,7 +537,9 @@ namespace WarArena.Gameplay
                     Kills++;
                     _respawnTimer = 2f;
                     Push($"DESTROYED - {targetDef.DisplayName}");
-                    EnemyPosition = new Vector3(Randomize(45f), 0f, Randomize(45f));
+                    float rx = Randomize(45f);
+                    float rz = Randomize(45f);
+                    EnemyPosition = new Vector3(rx, BattlefieldBuilder.GetTerrainHeight(rx, rz), rz);
                 }
             }
             else
@@ -571,34 +595,56 @@ namespace WarArena.Gameplay
         /// </summary>
         public bool AimWouldPenetrate(Vector3 aimPoint)
         {
-            Vector3 delta = aimPoint - EnemyPosition;
-            delta.y = 0f;
-            if (delta.sqrMagnitude < 3.2f * 3.2f) return true;
+            Vector3 toPlayer = PlayerPosition - EnemyPosition;
+            toPlayer.y = 0f;
+            if (toPlayer.sqrMagnitude < 0.01f) return true;
+            Vector3 shotDir = toPlayer.normalized; // Points from enemy back to player
 
-            Vector3 targetForward = new Vector3(Mathf.Sin(EnemyHeadingRad), 0f, Mathf.Cos(EnemyHeadingRad));
-            float dot = Mathf.Clamp(Vector3.Dot(-delta.normalized, targetForward), -1f, 1f);
-            float impactAngleDeg = Mathf.Acos(dot) * Mathf.Rad2Deg;
+            Vector3 targetForward = new Vector3(Mathf.Sin(EnemyHeadingRad), 0f, Mathf.Cos(EnemyHeadingRad)).normalized;
+            Vector3 targetRight = new Vector3(targetForward.z, 0f, -targetForward.x);
 
+            float forwardDot = Vector3.Dot(shotDir, targetForward);
+            float rightDot = Vector3.Dot(shotDir, targetRight);
+
+            string plateName;
+            float plateMm;
+            Vector3 plateNormal;
+
+            if (Mathf.Abs(forwardDot) >= Mathf.Abs(rightDot))
+            {
+                if (forwardDot >= 0f)
+                {
+                    plateName = "front";
+                    plateMm = _enemyDef.ArmorFrontMm;
+                    plateNormal = _enemyDef.FrontSlopeDeg > 0f
+                        ? Quaternion.AngleAxis(-_enemyDef.FrontSlopeDeg, targetRight) * targetForward
+                        : targetForward;
+                }
+                else
+                {
+                    plateName = "rear";
+                    plateMm = _enemyDef.ArmorRearMm;
+                    plateNormal = -targetForward;
+                }
+            }
+            else
+            {
+                plateName = "side";
+                plateMm = _enemyDef.ArmorSideMm;
+                plateNormal = rightDot >= 0f ? targetRight : -targetRight;
+            }
+
+            float impactAngleDeg = Mathf.Clamp(Vector3.Angle(shotDir, plateNormal), 0f, 89.9f);
             Shell ordnance = VehicleCatalog.BuildShell(_playerDef);
 
             // Per-shell ricochet limit, matching what ResolveHit will actually do.
-            // Using a different threshold here would show the player "green" on a
-            // shot that then ricochets, which is worse than no feedback at all.
             if (impactAngleDeg >= ordnance.CriticalRicochetDeg) return false;
 
-            // Resolve against the real plate rather than re-deriving the maths here.
-            // The previous version duplicated the effective-thickness calculation,
-            // which is exactly the kind of duplication that drifts: it ignored the
-            // cast-hull coefficient and the plate's own slope, so the reticle colour
-            // disagreed with the shot it was predicting.
-            ArmourPlate plate = new ArmourPlate("front", _enemyDef.ArmorFrontMm,
-                _enemyDef.IsCastHull);
+            ArmourPlate plate = new ArmourPlate(plateName, plateMm, _enemyDef.IsCastHull);
+            float travelled = toPlayer.magnitude;
+            float penAtImpact = ordnance.PenetrationAt(travelled, impactAngleDeg);
+            float effective = plate.EffectiveThickness(ordnance, impactAngleDeg);
 
-            // Resolved once, against the real plate and at the real range. The
-            // previous version duplicated the effective-thickness maths inline, which
-            // is exactly the kind of duplication that silently drifts: it ignored the
-            // cast-hull coefficient and range falloff, so the reticle showed green on
-            // shots that would then bounce.
             ImpactReport report = Penetration.Resolve(ordnance, plate, impactAngleDeg);
             return report.Result == ImpactResult.Penetration
                 || report.Result == ImpactResult.OverPenetration;

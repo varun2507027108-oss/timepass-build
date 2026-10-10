@@ -1,4 +1,4 @@
-# PORT-NOTES.md — migrating `war-arena-unity` from C# to Rust
+﻿# PORT-NOTES.md — migrating `war-arena-unity` from C# to Rust
 
 Every decision that is *not* recoverable by reading the code. Anything a reader
 could derive from the source belongs in a comment there, not here.
@@ -12,7 +12,7 @@ could derive from the source belongs in a comment there, not here.
 | **0** | Interop feasibility spike | **complete** |
 | **1** | `math` + ballistics + catalogues + `DamageModule` | **complete** |
 | **2** | `FlightModel` + `AirCombatSim` + parity harness | **complete** |
-| 3 | `BattleSim` | not started |
+| **3** | `BattleSim` + parity harness | **complete** |
 | 4 | `VehicleDamageModel` + remaining bug fixes | not started |
 | 5 | `WarSimRuntime` wired into `WarArenaBootstrap` | not started |
 | 6 | Full WebGL verification with the real simulation driving the game | not started |
@@ -20,24 +20,32 @@ could derive from the source belongs in a comment there, not here.
 Phase 0 proves the *boundary* works. Phase 1 ports the engine-independent
 systems. Phase 2 ports the flight model and air combat -- the highest-risk code
 in the project -- and introduces the parity harness that makes "the port is
-correct" a measured claim rather than an assertion.
+correct" a measured claim rather than an assertion. Phase 3 does the same for
+ground combat, and is where the harness was itself found to be unsound; see §3d.
 
-**No gameplay behaviour has changed yet** — see §7.
+**Gameplay behaviour has now changed, in Rust only** -- see §7. Phase 3 fixes
+four defects in the hit model, one of which made the game unwinnable.
 
-| Check | Phase 1 | Phase 2 |
-|---|---|---|
-| `cargo test --workspace` | 108 | **153** |
-| 15 `NormalisationAndRicochetTests` ported | all pass | all pass |
-| 14 `FlightModelTests` ported | — | all pass |
-| wasm interop probe | pass | pass |
-| Unity EditMode | 49/49 | **57/57** (49 + 8 parity) |
-| Unity PlayMode | 36/36 | 36/36 (one known flake, §6) |
-| WebGL build + headless Chrome | verified | **verified** |
-| shipped `.wasm` | 57.5 KB | **65.4 KB** |
+| Check | Phase 1 | Phase 2 | Phase 3 |
+|---|---|---|---|
+| `cargo test --workspace` | 108 | 153 | **177** |
+| 15 `NormalisationAndRicochetTests` ported | all pass | all pass | all pass |
+| 14 `FlightModelTests` ported | — | all pass | all pass |
+| 8 `TurretAimingTests` ported | — | — | all pass |
+| wasm interop probe | pass | pass | **pass** |
+| Unity EditMode | 49/49 | 57/57 | **76/76** (57 + 13 parity + 6 damage-model) |
+| Unity PlayMode | 36/36 | 36/36 (one known flake, §6) | **36/36 ×3** (flake now fixed, §6) |
+| WebGL build + headless Chrome | verified | verified | **verified** |
+| shipped `.wasm` | 57.5 KB | 65.4 KB | **78.4 KB** |
+| `cargo clippy --workspace --all-targets` | not run | not run | 0 errors, 2 pre-existing warnings |
 
-The `.wasm` grew by 7.9 KB in Phase 2 because the flight model is now reachable
-from an exported symbol. In Phase 1 it was compiled and tested but LTO-stripped,
-since nothing in the `extern "C"` surface referenced it yet.
+Phase 3 added 24 Rust tests (13 `turret_aiming` for the fixes, 3 `wa_battle_trace`
+ABI, the 8 original `TurretAimingTests`) and 13 C# parity tests. The worst measured
+deviation from the C# original across all eight parity scenarios is **1.7e-5 rad**,
+on the hard-turn case over 600 ticks.
+
+The `.wasm` grew 13 KB because `BattleSim` is now reachable from an exported
+symbol for the first time.
 
 ---
 
@@ -263,6 +271,54 @@ its cooldown but consumes no ammunition, so the AI has unlimited rounds. It has
 finite would change no observable behaviour now while quietly changing gameplay
 the moment someone wires it to the HUD. Worth deciding when ammo is given meaning.
 
+## 3d. The parity harness was itself unsound, and how it was caught
+
+The ground parity fixture passed on its first run. It was proving nothing.
+
+**How it was caught.** After the first green run, the Rust `TURRET_SLEW_RATE` was
+mutated from 2.6 to 2.65 — a 2% error — and the suite was rerun. **Still 68/68
+green.** A parity test that cannot detect a 2% error in a turret slew rate is not a
+parity test. Every mutation below is now verified to fail the suite:
+
+| Mutated constant | Error | Result |
+|---|---|---|
+| `TURRET_SLEW_RATE` | 2.6 → 2.65 (2%) | caught, 1 test |
+| `MAX_TRAVERSE` | 2.1 → 2.2 (5%) | caught, 8 tests |
+| `MAX_SPEED_MPS` | 12.0 → 12.5 (4%) | caught, 8 tests |
+| `MAX_GUN_PITCH_RAD` | 20.0° → 20.4° (2%) | **initially not caught** — see below |
+
+**Why it was blind.** Two independent reasons, and both had to be fixed.
+
+*The scenarios never reached the clamps.* The aim sweep ran at 0.75 deg/tick. But the
+hull is pulled onto the gun's line while driving (`HULL_AUTO_ALIGN_STRENGTH = 0.35`),
+so a slow sweep is simply *followed* by the hull. Measured over that scenario: turret
+yaw spanned **0.47 rad against a 2.1 rad traverse limit**, and gun pitch spanned
+**0.0019 rad against a 0.52 rad range**. No clamp was ever reached, so no wrong clamp
+could be observed. The fix was to sweep at **6 deg/tick** and put the aim point 30 m
+*up*, so the hull cannot keep up and the clamps saturate. `ScenariosActuallyReachTheClamps`
+now asserts the coverage rather than assuming it, so a future retune that weakens the
+schedule fails loudly instead of silently proving nothing again.
+
+*The tolerance was too loose for clamps.* `Tolerance = 0.05` is right for integrated
+fields but useless for a clamp, because a wrong clamp is a one-shot offset, not an
+accumulating one: 20.0° → 20.4° is only **0.007 rad** at the limit, seven times inside
+the bound. Tightening the general bound is not the fix — the ground sim's AI genuinely
+compounds error, and a bound tight enough to catch this would be tight enough to fail
+on an unrelated compiler change. So clamps are now checked **separately and exactly**,
+by `ClampedFieldsMustMatchExactly`, which asserts on the ceiling the gun settles at
+rather than on the trace.
+
+An intermediate attempt at this was itself wrong and was caught the same way: it
+compared *every* gun-pitch sample for exact equality. Gun pitch is an integrated value
+that merely gets clamped, so away from the limit the two sides differ by an ulp or two
+(measured 0.0229406115 vs 0.0229406133) and 8 tests failed on float noise. Comparing
+the ceiling isolates the clamp from the integration.
+
+**Generalisable lesson.** A green parity suite is evidence only to the extent that it
+can go red. Every parity harness needs mutation testing to establish its own
+sensitivity, and the scenarios need assertions about their own coverage rather than
+trust in the reader's intent.
+
 ---
 
 ## 4. ABI design decisions
@@ -360,6 +416,70 @@ port names the parameter `filler`, forces `penetration_0_mm` to 0, and
 
 **`AirCombatSim.TracerPositions` returned a shared mutable list** — see §3b.
 
+### Phase 3
+
+Four defects, all in the ground hit model. The first is the most serious bug found
+in the entire migration.
+
+**1. Plate selection used an expression containing no heading term.** The C# wrote
+
+```csharp
+float lateral = Mathf.Abs((-f.z) * in.x + (-f.z) * in.z);
+```
+
+where `f` is the target's forward vector and `in` the incoming round. The third term
+should be `f.x`, so this reduces to `|f.z| * |in.x + in.z|` — a quantity with no
+geometric meaning, which ignores which way the tank is pointing entirely. Which plate
+was struck therefore depended on the round's *world* Z velocity.
+
+Even corrected, the intended expression `|dot(right, incoming)| < 0.4` is wrong,
+because it measures distance from the **fore/aft axis**, which cannot tell head-on
+from dead astern: both give a small value. A round arriving from directly behind was
+classified as a **front** hit.
+
+**2. Consequently, rear armour was impenetrable.** Impact angle was computed from the
+hull's *facing* for every plate, so that rear hit measured 180°, past every shell's
+ricochet limit. Nothing could be hit from the side or the rear, ever. Since the player
+tops 12 m/s against the AI's ~4.3, overtaking the enemy was a one-way trip: you
+could drive past it and then never damage it again. This is what made the port's first
+end-to-end test fail — every shot ricocheted at 136–147° and no kill ever occurred.
+
+The Rust port classifies by which way the round is arriving relative to the hull
+(`FRONT_PLATE_CONE_DEG = 45°`), then measures the impact angle against the normal of
+the plate actually struck: `hull + slope` for the front, `|hull - 90|` for the side,
+`|180 - hull|` for the rear. Ricochet is now a front-plate-only test.
+
+**3. `FrontSlopeDeg` was read and never used.** The C# assigned `slope` and then
+compared `impactAngleDeg` against it without ever adding it in, so a Panther's 55°
+glacis behaved as flat plate — the exact thing sloped armour exists to defeat.
+
+**4. The respawn offset counter was `private static`.** Process-global mutable state
+shared by every `BattleSim` in existence, so an engagement could respawn to different
+positions depending on what else happened to be running. Replays were impossible.
+Now per-instance; `two_engagements_do_not_share_state` advances two identical sims
+interleaved and compares 13 fields after every one of 1200 steps.
+
+**Also fixed:** `InFlightPositions` returned a shared list the next access cleared
+(the Phase 2 tracer bug, repeated), and the managed `OnPlayerFired` event became an
+`player_fired_count` edge counter, since Rust has no events to subscribe to and the
+count is observable from either side.
+
+#### A sixth bug, self-inflicted and caught immediately
+
+The aiming reticle (`AimWouldPenetrate`) assumed a *front* plate while the shot
+resolution classified properly. Once #1 and #2 were fixed the two disagreed: the shot
+correctly struck the thin rear plate, while the reticle still measured ~180° against
+the sloped glacis and reported "no penetration" — on precisely the shot a flanking
+gunner most wants to take. A reticle that lies is worse than no reticle.
+
+Both now call one private `struck_plate(def, heading, from_shooter)` helper, so the
+classification cannot drift again. `struck_plate` takes the heading explicitly rather
+than deriving it, because a `VehicleDefinition` carries no heading.
+
+Note the AI always turns to face the player, so a live flank shot is unreachable
+through `BattleSim`'s public API. That is why the reticle test sweeps the aim point
+around the enemy rather than trying to set up a rear engagement.
+
 ### Dead code dropped rather than translated
 
 | Removed | Was |
@@ -401,27 +521,52 @@ false; it now asserts the actual, more interesting relationship.
 
 ## 6. Pre-existing test flakiness (not caused by this work)
 
-`WarArena.Tests.TankControlsPlayModeTests.CameraPlacementMatchesMode` fails
+**Fixed, in the test rather than in the game.** `CameraPlacementMatchesMode` failed
 intermittently on its own precondition:
 
 ```
 Trim must actually have slewed the turret, otherwise this test proves nothing
   Expected: greater than 0.100000001f
-  But was:  0.0716481283f
+  But was:  0.0761422515f
 ```
 
-Attribution was measured, not assumed:
+Observed four times across the migration — 0.0716, 0.0761, 0.0780, 0.0762 rad —
+always in the same narrow band, always just short of the 0.1 rad threshold. That
+pattern pointed at the test rather than the game, and it was: the test held trim for a
+fixed `WaitForSeconds(0.4f)` and then demanded a specific distance had been covered.
+
+Two decayed accumulators feed the turret (`WarArenaBootstrap`: `_turretTrim` integrates
+at `1.2/s` and is multiplied by `0.9` every frame once trim input stops), so distance
+covered in 0.4 s depends on how many frames actually ran. In batch mode that varies
+with machine load and with frame coalescing.
+
+The fix polls the quantity under test — the gunner's eye position — until it has moved
+far enough, then until it stops, instead of waiting a fixed duration and hoping.
+
+The second half of the fix needed a second correction. The original settle timeout was
+3 s, and that failed too, by 0.0001 s: `_turretTrim` decays by 0.9 **per frame**, so
+the number of frames required to fall below the epsilon scales inversely with framerate,
+and batch-mode framerates vary. The check is "does it stop", not "does it stop quickly",
+so the timeout is now 10 s. After that, four consecutive PlayMode runs passed 36/36.
+
+This is the same lesson as §3d from a different direction: a test whose precondition
+depends on frame timing will pass most of the time and fail in exactly the situations
+you cannot debug, which is why the fix polls a real quantity rather than tuning a
+constant until it stops flaking.
+
+Attribution was measured before the fix, not assumed:
 
 | Tree | Runs | Result |
 |---|---|---|
 | Baseline (`04dd12a`, changes stashed) | 3 | 36/36, **35/36**, 36/36 |
 | With Phase 0 changes | 3 | 36/36, **35/36**, 36/36 |
 
-Fails at the same rate on both, so it is pre-existing. The cause is that the test
-drives `Time.deltaTime` through `[UnityTest]` coroutines, so the distance the
-turret slews depends on frame timing; the assertion sits just above the typical
-value. Not fixed here — fixing a PlayMode timing test is out of scope for the
-migration and would muddy the signal. Worth a separate look.
+Failing at the same rate on both confirmed it was pre-existing rather than caused by
+the migration, which is why it was left alone for two phases. Fixing it required
+touching `Assets/`, so it was deferred until the Rust work was finished and the
+signal was no longer muddied.
+
+After the fix: 4 consecutive runs, 36/36 each.
 
 ---
 
@@ -430,8 +575,10 @@ migration and would muddy the signal. Worth a separate look.
 - `WarArenaBootstrap` gained exactly one line: `WarSimRuntime.BeginLoad()` in
   `Awake`. It only starts a download and logs. Nothing reads from Rust, so the 36
   PlayMode tests are unaffected.
-- **No C# simulation file has been deleted or edited.** The C# sim remains the
-  parity oracle for Phases 2–4.
+- **No C# *simulation* file has been deleted or edited.** `BattleSim`, `AirCombatSim`
+  and `FlightModel` are byte-identical to their pre-migration state and remain the
+  parity oracle. What *was* changed in C# is listed below, and none of it is in a file
+  the parity harness compares against.
 - Phases 1–4 touch no Unity files at all. Phase 1's Rust is compiled and tested,
   but is not yet reachable from the `extern "C"` surface, so the shipped `.wasm`
   is unchanged in size.
@@ -439,6 +586,111 @@ migration and would muddy the signal. Worth a separate look.
   The C# path still has the contradiction, because the C# file is being kept as
   the parity oracle until the Rust core replaces it. When the swap happens, the
   behaviour change lands.
+- Phase 3 extends this to all four hit-model fixes. They exist in Rust only, so
+  the game as currently played still has them. This is the first phase where the
+  Rust and C# implementations are **intentionally** not interchangeable.
+
+### The consequence for the parity test
+
+Because the two implementations diverge on hit *resolution* by design,
+`BattleSimParityTests` compares only up to the first tick on which either vehicle
+takes damage. That is the strongest honest claim available: everything the two
+share — driving, steering, hull rotation, turret slew and traverse, gun elevation,
+the AI, shell ballistics in flight, and hit *detection* — must agree exactly, and
+the comparison stops precisely where the deliberate divergence begins. See §3a.
+
+## 7a. Bugs fixed in C# that are outside the parity harness
+
+The hit-model fixes above exist only in Rust, because the C# has to stay the oracle.
+These four are different: they are in `VehicleDamageModel` and `NetworkVehicle`, which
+no parity test compares, so fixing them in C# cannot desynchronise anything. They were
+left alone for two phases on the grounds that touching `Assets/` would muddy the parity
+signal, then fixed once the Rust work was finished.
+
+All four are covered by `Assets/Tests/EditMode/VehicleDamageModelBugTests.cs`. Each was
+verified by **mutation**: the original code was reinstated and the suite re-run to prove
+the test actually goes red. This mattered, because three of the six tests as first
+written passed against the buggy code:
+
+| Mutation | Caught by |
+|---|---|
+| `GetPlate` zero-thickness fallback restored | `AMissingPlateMustNotSilentlyBecomeZeroThickness` |
+| fire condition restored to `&& AliveCrewCount <= 0` | `FireMustCookTheVehicleOffEvenWithCrewAlive` |
+| fire condition given the crew term *and* module term | `FireMustCookTheVehicleOffEvenWithCrewAlive` |
+| `HullStrengthPermille` switched back to `/4` | `ReplicatedHullStrengthMustNotAssumeFourCrew` |
+
+The third row is the one worth keeping. Two separate reinstatements of the fire
+condition both had to be caught, because they break it in different directions.
+
+Three tests as first written were **discarded and rewritten** after they proved
+incapable of failing:
+
+- Two ammo tests fired a shell at the rack's position and compared final HP. The module
+  loop destroyed the rack before the cook-off block ran, and once it is at 0 HP the two
+  paths are indistinguishable. Reinstating the bug left the suite green. Rewritten to
+  pin `ApplyDamage`'s reachability semantics directly, which is where the fault was.
+- `TheCookOffMustLandOnlyWhileTheRackStillStands` asserts an ordering guarantee that is
+  only visible from inside `ApplyBlast`. It is kept because the guarantee is now real,
+  but it is a weaker test than the other five and is labelled as such.
+
+**1. `GetPlate` returned zero thickness for an unknown plate.** The fallback was
+`new ArmourPlate("unknown", 0f)`, and a zero-thickness plate stops nothing. Not
+hypothetical: `NetworkVehicle` resolves impacts with a hard-coded `"front"` plate name,
+so any vehicle definition that fails to register a front plate has *every* round
+penetrate cleanly and presents as "this tank takes no damage", with nothing logged.
+The fallback is now 200 mm — armour should fail toward the target surviving.
+
+**2. The ammo cook-off was unconditional, and double-counted damage.** `ApplyBlast` did:
+
+```csharp
+ammo.ApplyDamage(baseDamage * 3f, blastRadius);
+OnModuleDestroyed(ammo);   // return value discarded
+```
+
+Two distinct defects in three lines:
+
+- `ApplyDamage` returns `false` *without applying anything* when
+  `distance >= HazardRadius`, and the call passed `blastRadius` as the distance. The
+  rack's hazard radius is 1.8 m and `blastRadius` is `CaliberMm * 0.022`, so for **any
+  shell over ~82 mm** the blast radius exceeded the rack's own, nothing was applied, and
+  the cook-off fired anyway — producing a tank reporting `IsDestroyed` with an
+  *untouched* ammo module.
+- The blast loop above already applies falloff-scaled damage to every module including
+  the rack, so a single direct hit cost the rack 4x the blast it was credited with.
+
+Now gated on the rack actually crossing zero, with the redundant radius check removed
+by passing the real distance to `ApplyDamage`.
+
+**3. Fire could never cook a tank off.** `Tick` destroyed the vehicle on
+`EnginePowerFraction <= 0f && AliveCrewCount <= 0`. Fire attrition only ever damages
+*modules* — the crew loop merely decrements recovery timers — so the crew half of the
+AND can never become true through fire. Every burning tank consumed all of its modules
+and then sat at `IsDestroyed == false` permanently: never removed, never recoverable.
+Now destroys when the crew are wiped (which `RecomputeFlags` already handles) **or** when
+no module survives.
+
+**4. Replicated hull strength assumed exactly four crew.** `NetworkVehicle` computed
+`AliveCrewCount / 4f`. The divisor was never derived from the roster, so a five-crew
+vehicle reporting `5/4 = 1.25` was silently flattened by `Mathf.Clamp01` — and the moment
+it lost a single crew member it still reported `1.0`. A 20% loss was invisible to clients
+until a second casualty, then it jumped. `VehicleDamageModel.CrewHealthFraction` now owns
+the division.
+
+Also removed: `RecomputeFlags` looked the gun breech up into a local and never read it.
+The behaviour was correct — `CanFireGun` queries the module directly, and a gun kill
+should not destroy the vehicle — but a dead local that looks like an unfinished check is
+a trap for the next reader, so the reasoning is now recorded as a comment.
+
+**Not fixed:** `VehicleDamageModel`'s dependence on `UnityEngine.Random.value` for engine
+fire. It is the last known bug, and the only remaining one that needs a decision rather
+than a fix — see §9.
+
+One structural note on bug 4. The fix moved the arithmetic out of `NetworkVehicle` into
+`VehicleDamageModel.HullStrengthPermille`, because a `NetworkBehaviour` cannot be
+constructed in an EditMode test — which is precisely why the original inline
+`AliveCrewCount / 4f` went unnoticed. Mutating `NetworkVehicle` directly was confirmed
+to leave the suite green; mutating the new property was caught. The number that crosses
+the wire now has exactly one definition, and it is tested.
 
 ---
 
@@ -476,15 +728,32 @@ Fixed in Phase 1: the `BuildDamageModel` cast-hull contradiction, the dead
 `ShellType` field, the negative `RecoveryTimer`, and `Shell.HE`'s parameter
 tr (§5).
 
-Still outstanding, by the phase that owns the file:
+Fixed in Phase 3: items 1, 3, 4 and 5 below, plus the glacis slope and the
+rear-armour bug they combine to cause. See §5 Phase 3 and §3d.
 
-| # | Bug | Lands in |
+| # | Bug | State |
 |---|---|---|
-| 1 | `BattleSim.ResolveHit` lateral test degenerates to `|incoming.z|`, so the plate is chosen from the shell's world-Z velocity regardless of target heading, and `FrontSlopeDeg` is computed into a dead local. The Panther's 55° glacis is never modelled | Phase 3 |
+| 1 | `BattleSim.ResolveHit` lateral test degenerates to `|incoming.z|`, so the plate is chosen from the shell's world-Z velocity regardless of target heading, and `FrontSlopeDeg` is computed into a dead local. The Panther's 55° glacis is never modelled | **fixed, Phase 3** |
 | 2 | `VehicleDamageModel` uses `UnityEngine.Random.value` — non-deterministic, contradicting its own server-replay claim | Phase 4 |
-| 3 | `BattleSim._respawnCounter` is `static`, shared across instances | Phase 3 |
-| 4 | `InFlightPositions` / `TracerPositions` hand out a shared mutable `List` that is cleared and refilled on every get | Phase 3 |
-| 5 | Remaining dead locals: `FlightModel`'s `pathCorrection`, `BattleSim`'s `local`/`slope`, `VehicleDamageModel`'s `breech`, `AircraftView.WingRight` | Phases 2–3 |
+| 3 | `BattleSim._respawnCounter` is `static`, shared across instances | **fixed, Phase 3** |
+| 4 | `InFlightPositions` / `TracerPositions` hand out a shared mutable `List` that is cleared and refilled on every get | **fixed, Phases 2 and 3** |
+| 5 | Remaining dead locals: `FlightModel`'s `pathCorrection`, `BattleSim`'s `local`/`slope`, `VehicleDamageModel`'s `breech`, `AircraftView.WingRight` | **all fixed** (Phases 2–3, plus §7a for `breech`) |
+
+### Bugs found after this table was written
+
+These were not in the original backlog. All four are documented in §7a with the
+reasoning; they are listed here so the backlog stays the single place to look for
+outstanding work.
+
+| Bug | State |
+|---|---|
+| `GetPlate` returns a zero-thickness plate for an unknown name, and `NetworkVehicle` hard-codes `"front"` | **fixed** |
+| Ammo cook-off fires unconditionally and double-counts blast damage against the rack | **fixed** |
+| Fire attrition can never destroy a vehicle (`&& AliveCrewCount <= 0` is unsatisfiable via fire) | **fixed** |
+| Replicated hull strength divides by a hard-coded 4 rather than the roster size | **fixed** |
+| `CameraPlacementMatchesMode` depends on frame timing to satisfy its own precondition | **fixed in the test, §6** |
+
+Item 2 above is the only remaining known bug.
 
 **Tuning that must be preserved verbatim** (changing it moves balance):
 `ShellType` declaration order, the `0.42×` muzzle-velocity shell scale, the
@@ -540,3 +809,5 @@ change to a matchup, so it is not a call to make silently mid-migration.
   `panzer_iv.glb` (32.9 MB) and `panzer_iv_low.glb` (0.86 MB) both have
   `DefaultImporter` and can never load — they are 59% of the `Assets` tree and
   ship inside the build for nothing.
+---
+

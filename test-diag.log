@@ -1,0 +1,1193 @@
+VBCSCompilerPreWarmer: watching VBCSCompiler (PID 17464)
+VBCSCompilerPreWarmer: pre-warm launched (dotnet PID 3796)
+VBCSCompiler prewarm took 143.34 ms
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.6/staging' branch; Version is '6000.6.4f1 (12bfff696524) revision 1228799'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-varun" at "2026-10-09T18:35:28.7463735Z"
+OS: 'Windows 11  (10.0.26300) CoreSingleLanguage' Language: 'en' Physical Memory: 16071 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-10-09T18:35:28Z
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 36252, path: "C:/Program Files/Unity Hub/UnityLicensingClient_V1/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              f59ba98590934e6087abe6cc9957fbb9
+  Correlation Id:          699e0075bf7446ba5700d12eef577bcc
+  External correlation Id: 1031392051140995617
+  Machine Id:              +ImojN3bZun0Qoq+olhAxx7hK5o=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-varun" (connect: 0.00s, validation: 0.00s, handshake: 0.22s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-varun-notifications" at "2026-10-09T18:35:28.9747828Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 13469981201685-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 0.26s
+
+COMMAND LINE ARGUMENTS:
+C:\Users\varun\Unity\6000.6.4f1\Editor\Unity.exe
+-batchmode
+-quit
+-projectPath
+C:\Users\varun\Projects\browser-games\war-arena-unity
+-executeMethod
+ModelDiagnostics.Run
+-logFile
+C:\Users\varun\Projects\browser-games\war-arena-unity\test-diag.log
+Successfully changed project path to: C:\Users\varun\Projects\browser-games\war-arena-unity
+C:/Users/varun/Projects/browser-games/war-arena-unity
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-main-allocator-mimalloc-enabled=1"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+Logging is directed to a specific file, skipping project log.
+Player connection [16132]  Target information:
+
+Player connection [16132]  * "[IP] 192.168.97.1 [Port] 55504 [Flags] 2 [Guid] 815138613 [EditorId] 815138613 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-IAEIG8O) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [16132]  * "[IP] 192.168.199.1 [Port] 55504 [Flags] 2 [Guid] 815138613 [EditorId] 815138613 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-IAEIG8O) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [16132]  * "[IP] 192.168.1.4 [Port] 55504 [Flags] 2 [Guid] 815138613 [EditorId] 815138613 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-IAEIG8O) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [16132] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [16132] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-33028" after 0.2 seconds.
+[Licensing::Client] Successfully resolved entitlement details
+Library Redirect Path: Library/
+Initialising UDS system complete:
+  - System type: Client
+  - Resource namespace: 6708fe3b1eb30cc7923fca59ef42c981
+  - Shared memory size: 1073741824
+  - Command buffer id: 1052576
+  - Command buffer size: 8192
+  - Hashmap size: 4194304
+  - Service connected: false
+Launching Unity Data Store - C:/Users/varun/Unity/6000.6.4f1/Editor/Data/Tools/Unity.DataStore.exe 
+Unity Data Store artifact dir = Library/DataStore, working dir = C:/Users/varun/Projects/browser-games/war-arena-unityUnity Data Store running and initialised
+Refreshing native plugins compatible for Editor in 32.35 ms, found 1 plugins.
+[Physics::Module] Selected backend (deferred post-plugins).
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Initialize engine version: 6000.6.4f1 (12bfff696524)
+[EntityIdStore] init: VM path (explicit commit), pageSize=4096, blockCount=1048576, entitiesPerBlock=256, slots reserved=4294967296 bytes
+[Subsystems] Discovering subsystems at path C:/Users/varun/Unity/6000.6.4f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path C:/Users/varun/Projects/browser-games/war-arena-unity/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+d3d12: failed to query info queue interface (0x80004002).
+Direct3D:
+    Version:         Direct3D 12 [level 12.2]
+    Renderer:        NVIDIA GeForce RTX 3050 6GB Laptop GPU (ID=0x25ac)
+    Vendor:          NVIDIA
+    VRAM:            6001 MB
+    App VRAM Budget: 5233 MB
+    Driver:          32.0.16.1656
+Initialize mono
+Mono path[0] = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/BCLExtensions/runtime/netstandard2.1'
+Mono path[2] = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56028
+CodeReloadManager initialized
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Users/varun/Unity/6000.6.4f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+Register platform support module: C:/Users/varun/Unity/6000.6.4f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 1.036174 seconds.
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Package Manager log level set to [2]
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Scripting: successfully reloaded assembly
+- Finished resetting the current domain, in  6.480 seconds
+Domain Reload Profiling: 12379ms
+	BeginReloadAssembly (712ms)
+		CreateAndSetChildDomain (10ms)
+	RebuildCommonClasses (11ms)
+	RebuildNativeTypeToScriptingClass (453ms)
+	initialDomainReloadingComplete (1480ms)
+	LoadAllAssembliesAndSetupDomain (3241ms)
+		LoadAssemblies (708ms)
+		TypeCache.Refresh (3077ms)
+			TypeCache.ScanAssembly (2540ms)
+		AnalyzeDomain (2ms)
+	FinalizeReload (6482ms)
+		SetupLoadedEditorAssemblies (0ms)
+			LogAssemblyErrors (3ms)
+			InitializePlatformSupportModulesInManaged (5ms)
+			BeforeProcessingInitializeOnLoad (138ms)
+			ProcessInitializeOnLoadAttributes (152ms)
+			ProcessInitializeOnLoadMethodAttributes (4700ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 25 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.inputsystem@1.20.1 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.inputsystem@2436e68c60c4)
+    com.unity.netcode.gameobjects@2.13.3 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.netcode.gameobjects@277a288a1cea)
+    com.unity.nuget.mono-cecil@1.11.6 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+  Built-in packages:
+    com.unity.modules.animation@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.audio@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.physics@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.ui@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.vehicles@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.unitywebrequest@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.assetbundle@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.imageconversion@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.hierarchycore@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.transport@6.6.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.transport@b08a21757155)
+    com.unity.collections@6.6.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.collections@10fff0607388)
+    com.unity.burst@2.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.burst@626e66ab421b)
+    com.unity.mathematics@1.4.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.mathematics@8306a64d0cd6)
+    com.unity.test-framework@1.8.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.test-framework@80f691d4262b)
+    com.unity.test-framework.performance@6.6.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.test-framework.performance@b6023decb532)
+    com.unity.ext.nunit@2.1.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.ext.nunit@0198eae3b53e)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.02 seconds
+Starting: C:\Users\varun\Unity\6000.6.4f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/2000b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/varun/Projects/browser-games/war-arena-unity
+DisplayProgressbar: Compiling Scripts
+ExitCode: 4 Duration: 1s754ms
+[311/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/4747638433968585886.rsp
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/2000b0aE-inputdata.json
+[390/472    1s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+*** Tundra requires additional run (1.61 seconds), 2 items updated, 389 evaluated
+Starting: C:\Users\varun\Unity\6000.6.4f1\Editor\Data\DotNetSdk\dotnet.exe "C:\Users\varun\Unity\6000.6.4f1\Editor\Data\Tools\BuildPipeline\ScriptCompilationBuildProgram.exe" "Library/Bee/2000b0aE.dag.json" "Library/Bee/2000b0aE-inputdata.json" "Library\Bee\buildprogram0.traceevents"
+WorkingDir: C:/Users/varun/Projects/browser-games/war-arena-unity
+ExitCode: 0 Duration: 2s802ms
+Starting: C:\Users\varun\Unity\6000.6.4f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/2000b0aE.dag" --continue-on-failure --dagfilejson="Library\Bee\2000b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/varun/Projects/browser-games/war-arena-unity
+ExitCode: 0 Duration: 13s
+Finished compiling graph: 475 nodes, 6322 flattened edges (5584 ToBuild, 58 ToUse), maximum node priority 295
+[           0s] Delete 162 artifact files that are no longer in use. (like Library\Bee\artifacts\mvdfrm\UnityEngine.dll_4C4CEB8A2FBAA078.mvfrm)
+[157/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.rsp
+[158/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Runtime.dll.mvfrm.rsp
+[161/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Runtime.rsp
+[185/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Burst.rsp
+[186/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Burst.dll.mvfrm.rsp
+[187/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/UnityEngine.TestRunner.rsp
+[188/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Mathematics.dll.mvfrm.rsp
+[191/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.CodeGen.dll.mvfrm.rsp
+[192/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.CodeGen.dll.mvfrm.rsp
+[193/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.dll.mvfrm.rsp
+[200/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.CodeGen.rsp
+[215/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/4747638433968585886.rsp
+[220/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.rsp
+[221/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.dll.mvfrm.rsp
+[222/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.CodeGen.rsp
+[223/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/UnityEditor.TestRunner.dll.mvfrm.rsp
+[224/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.dll.mvfrm.rsp
+[225/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/UnityEditor.TestRunner.rsp
+[226/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.rsp
+[227/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.rsp
+[228/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.dll.mvfrm.rsp
+[229/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.PackageChecker.Editor.dll.mvfrm.rsp
+[230/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.Editor.dll.mvfrm.rsp
+[231/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.NetcodeInterop.dll.mvfrm.rsp
+[232/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.dll.mvfrm.rsp
+[233/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Editor.dll.mvfrm.rsp
+[234/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Editor.dll.mvfrm.rsp
+[235/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.dll.mvfrm.rsp
+[236/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.dll.mvfrm.rsp
+[237/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PrivateJobNested.dll.mvfrm.rsp
+[238/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.dll.mvfrm.rsp
+[239/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/WarArena.Scripts.dll.mvfrm.rsp
+[240/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.Editor.rsp
+[241/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.rsp
+[242/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.PackageChecker.Editor.rsp
+[243/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.rsp
+[244/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.NetcodeInterop.rsp
+[245/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Editor.rsp
+[246/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.rsp
+[249/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.rsp
+[254/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Editor.rsp
+[259/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PrivateJobNested.rsp
+[262/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.dll.mvfrm.rsp
+[263/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.rsp
+[264/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/UnityEngine.TestRunner.dll.mvfrm.rsp
+[265/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/WarArena.Scripts.rsp
+[266/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.Mathematics.rsp
+[267/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/WarArena.EditTests.dll.mvfrm.rsp
+[268/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/4791036871885797247.rsp
+[269/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.TestFramework.dll.mvfrm.rsp
+[270/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/549338256765220428.rsp
+[271/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/16281722388786852417.rsp
+[272/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.DocCodeSamples.dll.mvfrm.rsp
+[273/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/WarArena.PlayTests.dll.mvfrm.rsp
+[274/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.Editor.dll.mvfrm.rsp
+[275/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/16897501281906277931.rsp
+[276/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/WarArena.PlayTests.rsp
+[277/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Assembly-CSharp-Editor.rsp
+[278/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.TestFramework.rsp
+[279/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.Editor.rsp
+[280/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/11992331504993020930.rsp
+[281/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/WarArena.EditTests.rsp
+[282/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.DocCodeSamples.rsp
+[283/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/5298954385961088545.rsp
+[284/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/7043081479946485425.rsp
+[285/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Assembly-CSharp-Editor.dll.mvfrm.rsp
+[286/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/4769955788402727329.rsp
+[287/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/9108431451323468221.rsp
+[288/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/13533216416878207048.rsp
+[289/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/9594543228266602487.rsp
+[290/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/6987655401940753962.rsp
+[291/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/10307860231964595937.rsp
+[292/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/10746227388266335481.rsp
+[293/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/3729887623031042230.rsp
+[294/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/17558154393097359094.rsp
+[295/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/7848219146160440027.rsp
+[296/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/10017656952941242526.rsp
+[297/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/15138774623803097380.rsp
+[298/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/12111171550377732882.rsp
+[299/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/18412738271167965968.rsp
+[300/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/15569745926999849003.rsp
+[301/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/11271230730764107239.rsp
+[302/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/9891893477969888860.rsp
+[303/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/5427111750534911576.rsp
+[304/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/5622266516000910904.rsp
+[305/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/5094194044562797102.rsp
+[306/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/UnityEngine.WebGLModule.dll_F8E0835A8BC8055F.mvfrm
+[307/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Collections.LowLevel.ILSupport.dll_EE544B55637299A5.mvfrm
+[308/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Mathematics.dll.mvfrm
+[309/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/UnityEngine.TestRunner.dll.mvfrm
+[310/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.dll.mvfrm
+[311/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Burst.dll.mvfrm
+[311/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Burst.dll (+2 others) [CacheHit 1ba6c1829ba7cfa5db0c5801b8f8110200000000000000000000000000000006]
+[312/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Burst.dll (+2 others)
+[312/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/UnityEngine.TestRunner.dll (+2 others) [CacheHit 998e5c5c1ea40edd12f080182503db1100000000000000000000000000000006]
+[314/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/UnityEngine.TestRunner.dll (+2 others)
+[313/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Mathematics.dll (+2 others) [CacheHit b58f12ec552490eeee6276c6377fc47000000000000000000000000000000006]
+[316/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Mathematics.dll (+2 others)
+[314/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.dll (+2 others) [CacheHit a00f90bced8c69949d9752137951262100000000000000000000000000000006]
+[318/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.dll (+2 others)
+[320/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Mathematics.ref.dll_9B4CF66C9079F0F4.mvfrm
+[321/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Burst.ref.dll_75A67EE1951F90CE.mvfrm
+[322/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/UnityEngine.TestRunner.ref.dll_50E26CF31C06CD18.mvfrm
+[323/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.InputSystem.ref.dll_AF8BE3CD1809BA27.mvfrm
+[324/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.dll.mvfrm
+[325/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.dll.mvfrm
+[326/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.dll.mvfrm
+[327/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/UnityEditor.TestRunner.dll.mvfrm
+[323/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.dll (+2 others) [CacheHit 1be7749ff0556aca1d1070515db8062c00000000000000000000000000000006]
+[328/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.dll (+2 others)
+[324/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.dll (+2 others) [CacheHit ad25a7a285a8608f07f757d57930487800000000000000000000000000000006]
+[330/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.dll (+2 others)
+[325/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/UnityEditor.TestRunner.dll (+2 others) [CacheHit 8404d287f6d641457fd8be853674332500000000000000000000000000000006]
+[332/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/UnityEditor.TestRunner.dll (+2 others)
+[326/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.dll (+2 others) [CacheHit 47a2e963823efdef748b2d6605331c3000000000000000000000000000000006]
+[334/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.dll (+2 others)
+[336/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.PerformanceTesting.ref.dll_C41144C1FA8DF118.mvfrm
+[337/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Collections.ref.dll_17CA8F61EA9E7873.mvfrm
+[338/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.InputSystem.ForUI.ref.dll_7A6B648994A56256.mvfrm
+[339/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/UnityEditor.TestRunner.ref.dll_84C42244F0436F2D.mvfrm
+[340/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.dll.mvfrm
+[341/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.dll.mvfrm
+[342/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.dll.mvfrm
+[343/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.dll.mvfrm
+[344/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.CodeGen.dll.mvfrm
+[345/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PrivateJobNested.dll.mvfrm
+[346/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.Editor.dll.mvfrm
+[347/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/WarArena.EditTests.dll.mvfrm
+[348/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/WarArena.PlayTests.dll.mvfrm
+[349/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.DocCodeSamples.dll.mvfrm
+[350/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.TestFramework.dll.mvfrm
+[351/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Editor.dll.mvfrm
+[352/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.PackageChecker.Editor.dll.mvfrm
+[353/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Editor.dll.mvfrm
+[345/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.dll (+2 others) [CacheHit 1a861580f9e4088f6069ec2774f2291200000000000000000000000000000006]
+[354/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.dll (+2 others)
+[346/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.dll (+2 others) [CacheHit f35486cb1b1f140f48e7fb1372ff52fb00000000000000000000000000000006]
+[356/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.dll (+2 others)
+[347/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.dll (+2 others) [CacheHit e53678e05e929a527fb7a680fe3a060b00000000000000000000000000000006]
+[358/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.dll (+2 others)
+[348/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.dll (+2 others) [CacheHit 30cfc7802892a4287ea53333a830cecb00000000000000000000000000000006]
+[360/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.dll (+2 others)
+[349/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.CodeGen.dll (+2 others) [CacheHit d65a8d0ca9817cd332039615b2a0d38a00000000000000000000000000000006]
+[362/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.CodeGen.dll (+2 others)
+[350/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PrivateJobNested.dll (+2 others) [CacheHit f8443d54c927b5c15f0dc001b595097c00000000000000000000000000000006]
+[364/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PrivateJobNested.dll (+2 others)
+[367/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.Editor.dll.mvfrm
+[353/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.TestFramework.dll (+2 others) [CacheHit f959cc34a2bf82444e869e622630263000000000000000000000000000000006]
+[368/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.TestFramework.dll (+2 others)
+[354/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.Editor.dll (+2 others) [CacheHit f035071f597a3426cdd7791d177518c900000000000000000000000000000006]
+[370/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.Editor.dll (+2 others)
+[355/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.DocCodeSamples.dll (+2 others) [CacheHit adf78daef2edd792ca4b91aa263af3ca00000000000000000000000000000006]
+[372/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.DocCodeSamples.dll (+2 others)
+[356/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Editor.dll (+2 others) [CacheHit 1b6f50b6b10e8bf7cc860caaf588fdb200000000000000000000000000000006]
+[374/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Editor.dll (+2 others)
+[357/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Editor.dll (+2 others) [CacheHit d0c3fb7f23555574604259f96caaa93600000000000000000000000000000006]
+[376/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Editor.dll (+2 others)
+[358/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.Editor.dll (+2 others) [CacheHit a38a2460dd5e29af14fb3a27c8b5b10700000000000000000000000000000006]
+[378/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.Editor.dll (+2 others)
+[359/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.PackageChecker.Editor.dll (+2 others) [CacheHit 40192594bbf00649465a2bb39c3ff8c900000000000000000000000000000006]
+[380/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.PackageChecker.Editor.dll (+2 others)
+[383/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Networking.Transport.ref.dll_02E662F34C953327.mvfrm
+[384/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.ref.dll_073BC63E14CFC1BE.mvfrm
+[385/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.ref.dll_987AB8B1653F6D7C.mvfrm
+[386/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.ref.dll_45D94D929AC39858.mvfrm
+[387/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Collections.Tests.CoreCLR.PrivateJobNested.ref.dll_0B315B39EB331A33.mvfrm
+[388/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.InputSystem.ForUI.Editor.ref.dll_256FC2E7E8C45CBB.mvfrm
+[389/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Networking.Editor.ref.dll_0CB3CC1650C7A5A5.mvfrm
+[390/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Collections.Editor.ref.dll_AEBC9A320FD4776E.mvfrm
+[391/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Netcode.PackageChecker.Editor.ref.dll_189086518799A8E6.mvfrm
+[392/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Runtime.dll.mvfrm
+[371/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Runtime.dll (+2 others) [CacheHit 0b83d5c35deb501b23e764c3f5aca66500000000000000000000000000000006]
+[393/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Runtime.dll (+2 others)
+[395/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Netcode.Runtime.ref.dll_D46CF7579B3C2AA2.mvfrm
+[396/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.dll.mvfrm
+[397/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.NetcodeInterop.dll.mvfrm
+[398/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/WarArena.Scripts.dll.mvfrm
+[399/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.CodeGen.dll.mvfrm
+[377/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.NetcodeInterop.dll (+2 others) [CacheHit 21bc9d1a9700d88cffb1ecc7cd113e9100000000000000000000000000000006]
+[400/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.NetcodeInterop.dll (+2 others)
+[378/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.dll (+2 others) [CacheHit b56485f8f72eb60c1410a30a3f47d2dd00000000000000000000000000000006]
+[402/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.dll (+2 others)
+[379/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.CodeGen.dll (+2 others) [CacheHit 352f9e5d2bd4ed025b91c2a8d386406800000000000000000000000000000006]
+[404/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.CodeGen.dll (+2 others)
+[407/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Netcode.Editor.ref.dll_A7709E80F3214779.mvfrm
+[408/472    0s] MovedFromExtractor Library/Bee/artifacts/mvdfrm/Unity.Networking.Transport.NetcodeInterop.ref.dll_2984465486DD95F0.mvfrm
+[409/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Assembly-CSharp-Editor.dll.mvfrm
+[411/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/WarArena.Scripts.dll (+2 others)
+Assets\Scripts\Net\NetworkVehicle.cs(138,70): warning CS0618: 'FindObjectsSortMode' is obsolete: 'FindObjectsSortMode has been deprecated. Use the FindObjectsByType overloads that do not take a FindObjectsSortMode parameter.'
+
+Assets\Scripts\Net\NetworkVehicle.cs(138,36): warning CS0618: 'Object.FindObjectsByType<T>(FindObjectsSortMode)' is obsolete: 'FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType<T>() or FindObjectsByType<T>(FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.'
+
+Assets\Scripts\Net\NetworkVehicle.cs(46,35): warning UAC1001: Field 'Damage' type 'WarArena.Vehicles.VehicleDamageModel' is skipped by serialization (missing the [Serializable] attribute). Refer to the Serialization rules analyzer reference. (https://docs.unity3d.com/6000.6/Documentation/Manual/script-serialization-analyzer.html#uac1001)
+[412/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/WarArena.PlayTests.dll (+2 others)
+[413/472    0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[414/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Mathematics.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Mathematics.dll, with 125 defines and 265 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[415/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Burst.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Burst.dll, with 125 defines and 265 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[416/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.InputSystem.ForUI.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.dll, with 125 defines and 266 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[417/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/WarArena.PlayTests.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/WarArena.PlayTests.dll, with 125 defines and 264 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[418/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.InputSystem.TestFramework.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.TestFramework.dll, with 127 defines and 263 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[419/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.PerformanceTesting.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.dll, with 126 defines and 261 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[420/472    3s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.dll, with 125 defines and 266 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[421/472    3s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.InputSystem.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.dll, with 134 defines and 265 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[422/472    3s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Collections.Tests.CoreCLR.PrivateJobNested.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PrivateJobNested.dll, with 125 defines and 266 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[423/472    2s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.dll, with 125 defines and 266 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[424/472    3s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.dll, with 125 defines and 266 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[425/472    2s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Networking.Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Editor.dll, with 123 defines and 302 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[428/472    2s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Collections.Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Editor.dll, with 124 defines and 303 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[429/472    2s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.InputSystem.ForUI.Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.Editor.dll, with 123 defines and 304 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[455/472    3s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/UnityEngine.TestRunner.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/UnityEngine.TestRunner.dll, with 126 defines and 260 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[457/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Netcode.PackageChecker.Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.PackageChecker.Editor.dll, with 123 defines and 302 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[460/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.InputSystem.DocCodeSamples.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.DocCodeSamples.dll, with 123 defines and 300 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[461/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.PerformanceTesting.Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.PerformanceTesting.Editor.dll, with 124 defines and 300 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[465/472    4s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Networking.Transport.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.dll, with 125 defines and 268 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[468/472    1s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/UnityEditor.TestRunner.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/UnityEditor.TestRunner.dll, with 124 defines and 302 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[473/472    4s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/WarArena.Scripts.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/WarArena.Scripts.dll, with 125 defines and 268 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[476/472    5s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Collections.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.dll, with 127 defines and 267 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[480/472    5s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Networking.Transport.NetcodeInterop.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.NetcodeInterop.dll, with 126 defines and 269 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[483/472    2s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Netcode.Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.dll, with 125 defines and 304 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[486/472    7s] Csc Library/Bee/artifacts/2000b0aE.dag/WarArena.EditTests.dll (+2 others)
+[487/472    7s] Csc Library/Bee/artifacts/2000b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+Assets\Editor\WebBuildSetup.cs(131,9): warning CS0618: 'PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup, ManagedStrippingLevel)' is obsolete: 'Use SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level) instead'
+[488/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/WarArena.EditTests.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/WarArena.EditTests.dll, with 123 defines and 301 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[490/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Assembly-CSharp-Editor.dll, with 123 defines and 320 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[494/472    7s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Unity.Netcode.Runtime.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Runtime.dll, with 136 defines and 269 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+*** Tundra build success (13.18 seconds), 169 items updated, 472 evaluated
+Assets\Scripts\Net\NetworkVehicle.cs(138,70): warning CS0618: 'FindObjectsSortMode' is obsolete: 'FindObjectsSortMode has been deprecated. Use the FindObjectsByType overloads that do not take a FindObjectsSortMode parameter.'
+Assets\Scripts\Net\NetworkVehicle.cs(138,36): warning CS0618: 'Object.FindObjectsByType<T>(FindObjectsSortMode)' is obsolete: 'FindObjectsByType with FindObjectsSortMode parameter has been deprecated. Use FindObjectsByType<T>() or FindObjectsByType<T>(FindObjectsInactive) instead. InstanceID will be replaced in the future with EntityId and previous sort order cannot be maintained.'
+Assets\Scripts\Net\NetworkVehicle.cs(46,35): warning UAC1001: Field 'Damage' type 'WarArena.Vehicles.VehicleDamageModel' is skipped by serialization (missing the [Serializable] attribute). Refer to the Serialization rules analyzer reference. (https://docs.unity3d.com/6000.6/Documentation/Manual/script-serialization-analyzer.html#uac1001)
+Assets\Editor\WebBuildSetup.cs(131,9): warning CS0618: 'PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup, ManagedStrippingLevel)' is obsolete: 'Use SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level) instead'
+AssetDatabase: script compilation time: 19.247876s
+Begin MonoManager ReloadAssembly
+Total cache size 73603687
+Total cache size after purge 73603687, took 00:00:00.1693867
+Importing 'GUID: a970afec1ee0f364584440b4dd4e8551 - Path: Assets/Artwork/SourceModels/T34' with importer (DefaultImporter)
+Imported 'GUID: a970afec1ee0f364584440b4dd4e8551' -> (Import Result ID: 'a9953d1f3823d2249e2b629da3d42fc0') in 0.076 seconds [static dependencies only]. Details - ImportResultOutputID=b431acfa26c2e9eca80d64005338f3c0 DependenciesID=73d60e9c5455aef4518f30fd7485b88d StaticDependenciesID=929475ba8d897b91e35523be7ae3b1b0 
+Refreshing native plugins compatible for Editor in 29.77 ms, found 1 plugins.
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Scripting: successfully reloaded assembly
+- Finished resetting the current domain, in  0.784 seconds
+Domain Reload Profiling: 2762ms
+	BeginReloadAssembly (315ms)
+		DisableScriptedObjects (61ms)
+		CreateAndSetChildDomain (64ms)
+	RebuildCommonClasses (10ms)
+	RebuildNativeTypeToScriptingClass (15ms)
+	initialDomainReloadingComplete (56ms)
+	LoadAllAssembliesAndSetupDomain (1580ms)
+		LoadAssemblies (1461ms)
+		TypeCache.Refresh (56ms)
+			TypeCache.ScanAssembly (40ms)
+		AnalyzeDomain (26ms)
+			BuildScriptInfoCaches (21ms)
+	FinalizeReload (786ms)
+		SetupLoadedEditorAssemblies (0ms)
+			BeforeProcessingInitializeOnLoad (153ms)
+			ProcessInitializeOnLoadAttributes (198ms)
+			ProcessInitializeOnLoadMethodAttributes (106ms)
+			AfterProcessingInitializeOnLoad (8ms)
+		AwakeInstancesAfterBackupRestoration (39ms)
+Starting new worker id: 0 with log in C:/Users/varun/Projects/browser-games/war-arena-unity/Logs/AssetImportWorkerHW0.log
+Importing 'GUID: c023937ce7b38fb4997963a5e64a4150 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM_N.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM_N.png: File could not be read
+Imported 'GUID: c023937ce7b38fb4997963a5e64a4150' -> (Import Result ID: '10622e9ca89f2050ffc5366adfa5372c') in 0.233 seconds [static dependencies only]. Details - ImportResultOutputID=661669dd9d806dfd6c55f66f0e55ea3f DependenciesID=9e2d9eb62571cb287fd6bd4abb031c7b StaticDependenciesID=524037cf42f10ab21977de3b893605c2 
+Importing 'GUID: d0c6b1be101570f499905c2dbe65c4d6 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM_N.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM_N.png: File could not be read
+Imported 'GUID: d0c6b1be101570f499905c2dbe65c4d6' -> (Import Result ID: '03e25b685b37e2772808f0e13aec2ca8') in 0.028 seconds [static dependencies only]. Details - ImportResultOutputID=3cd9033eec52e5f7edd73fd7562ad859 DependenciesID=c0c9dd011fa6bf4259374923cc631266 StaticDependenciesID=6069da0332bc0463a7eb02072598e725 
+Importing 'GUID: 029536785e55e5c48be9c1167623357e - Path: Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM_Summer_N.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM_Summer_N.png: File could not be read
+Imported 'GUID: 029536785e55e5c48be9c1167623357e' -> (Import Result ID: 'd48a452cb7ed4f90c4814bc3eae934a9') in 0.028 seconds [static dependencies only]. Details - ImportResultOutputID=850f37e28333f6a531d69fbe0273db96 DependenciesID=c3847e29541f29d10c8968d679e56c67 StaticDependenciesID=2c2f5c5e0f17a075924f70a4f05cc424 
+Importing 'GUID: 55a166c023208df4dadbdd6ba43313ff - Path: Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png: File could not be read
+Imported 'GUID: 55a166c023208df4dadbdd6ba43313ff' -> (Import Result ID: '0393eec072874a717d550950a526e396') in 0.036 seconds [static dependencies only]. Details - ImportResultOutputID=8e92126b03538b45bfecd48e8cf56f68 DependenciesID=8f4a0a7fec6271d35ad10afa1a548f0c StaticDependenciesID=4ff15ecf85185a5d706bc66175cb0545 
+Importing 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png: File could not be read
+Imported 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1' -> (Import Result ID: '196490673c4f95162df2244c5347252b') in 0.023 seconds [static dependencies only]. Details - ImportResultOutputID=333f6ccbbe997e698b50c19f4ab41a3a DependenciesID=56545d813ccb0b297d4831e2f70aec07 StaticDependenciesID=94b3b071031058343d5c1c2439edc0a4 
+Importing 'GUID: 58d8100b6dc7caf4a9a3bf158f4a4cc2 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM_N.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM_N.png: File could not be read
+Imported 'GUID: 58d8100b6dc7caf4a9a3bf158f4a4cc2' -> (Import Result ID: '19cc9d8827a01962631b510f9c13d036') in 0.019 seconds [static dependencies only]. Details - ImportResultOutputID=6dc942870491d080aec2d470ba16fa11 DependenciesID=131b01d2e73167ebf5bcacc447367ed4 StaticDependenciesID=087d22122b533aff0623e6a82875aa07 
+Importing 'GUID: ab1ced8011b764e479ae6a1096a2839f - Path: Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png: File could not be read
+Imported 'GUID: ab1ced8011b764e479ae6a1096a2839f' -> (Import Result ID: 'd1b530b881391819e3426dca03ea39ed') in 0.025 seconds [static dependencies only]. Details - ImportResultOutputID=c54002010208c055dd3a05f604847a60 DependenciesID=5ed557f01bd40f5ec3b951cd007e9a13 StaticDependenciesID=d9efc6c513187c6c8c3becad5ce807ee 
+Importing 'GUID: 6fd864d593b20c34d93c3a435c614b07 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png: File could not be read
+Imported 'GUID: 6fd864d593b20c34d93c3a435c614b07' -> (Import Result ID: '132cfb5ac8e004d6eb392b0cd79d281a') in 0.028 seconds [static dependencies only]. Details - ImportResultOutputID=fc9bc84da3e37e059e1100c30f5ca716 DependenciesID=487af9ed44fb8fbded5ca81c0b9c9c47 StaticDependenciesID=8cb2f3076ef67a4f453ce9ca9fddaf40 
+Importing 'GUID: da5b00194e7fda34f8cd2a03ec07564a - Path: Assets/Artwork/SourceModels/T34/T-34-85.fbx' with importer (FBXImporter)
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.08 seconds
+Identifier uniqueness violation: 'Name:Default-Material, Type:Material'. Multiple Objects with the same name/type are generated by this Importer. There is no guarantee that subsequent imports of this asset will properly re-link to these targets.
+Identifier uniqueness violation: 'Name:Default-Material, Type:Material'. Multiple Objects with the same name/type are generated by this Importer. There is no guarantee that subsequent imports of this asset will properly re-link to these targets.
+Identifier uniqueness violation: 'Name:Default-Material, Type:Material'. Multiple Objects with the same name/type are generated by this Importer. There is no guarantee that subsequent imports of this asset will properly re-link to these targets.
+Imported 'GUID: da5b00194e7fda34f8cd2a03ec07564a' -> (Import Result ID: 'ff8d87bee45d79f72978ef277046eec9') in 1.578 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=60cf7ffc2cbd5ffb4e3ae168b88b0e93 DependenciesID=d802796f375ad113600a88120964e806 StaticDependenciesID=b8859d1a29259460562066ee3681ba91 
+Importing 'GUID: 55a166c023208df4dadbdd6ba43313ff - Path: Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png: File could not be read
+Imported 'GUID: 55a166c023208df4dadbdd6ba43313ff' -> (Import Result ID: 'f31e4e1cdb147fbf8a7b8cfa48167be3') in 0.006 seconds [static dependencies only]. Details - ImportResultOutputID=3eb9571653c3f6193d996b960780c199 DependenciesID=8f4a0a7fec6271d35ad10afa1a548f0c StaticDependenciesID=4ff15ecf85185a5d706bc66175cb0545 
+Importing 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png: File could not be read
+Imported 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1' -> (Import Result ID: 'cf1cb49bda84900aced8fb6dcf89a669') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=1a94bf8ab4fdfef7c63841e1679a80aa DependenciesID=56545d813ccb0b297d4831e2f70aec07 StaticDependenciesID=94b3b071031058343d5c1c2439edc0a4 
+Importing 'GUID: ab1ced8011b764e479ae6a1096a2839f - Path: Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png: File could not be read
+Imported 'GUID: ab1ced8011b764e479ae6a1096a2839f' -> (Import Result ID: 'f9f5f6c70af42943635a550d391172f9') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=6a0b95d21e740e03a268e3c6c36f1247 DependenciesID=5ed557f01bd40f5ec3b951cd007e9a13 StaticDependenciesID=d9efc6c513187c6c8c3becad5ce807ee 
+Importing 'GUID: 6fd864d593b20c34d93c3a435c614b07 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png: File could not be read
+Imported 'GUID: 6fd864d593b20c34d93c3a435c614b07' -> (Import Result ID: '240e5f0a6c60f1cfd3d1c9e4f1ad66c8') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=cf4dc781096b152495204c312d61151e DependenciesID=487af9ed44fb8fbded5ca81c0b9c9c47 StaticDependenciesID=8cb2f3076ef67a4f453ce9ca9fddaf40 
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: f9f5f6c70af42943635a550d391172f9, producedFiles[0].extension: , producedFiles[0].contentHash: a67b844c0e9b90d1d0583115596a43b5
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: d1b530b881391819e3426dca03ea39ed, producedFiles[0].extension: , producedFiles[0].contentHash: 7b6d2143208188cae4b1ae50bedc32f1
+Importer(TextureImporter) generated inconsistent result for asset(guid:ab1ced8011b764e479ae6a1096a2839f) "Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png"
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: f31e4e1cdb147fbf8a7b8cfa48167be3, producedFiles[0].extension: , producedFiles[0].contentHash: 05acd0960f4a58265e68f95672b5d6eb
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: 0393eec072874a717d550950a526e396, producedFiles[0].extension: , producedFiles[0].contentHash: bc640f5fdf861c18ab87f2c9866cc199
+Importer(TextureImporter) generated inconsistent result for asset(guid:55a166c023208df4dadbdd6ba43313ff) "Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png"
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: cf1cb49bda84900aced8fb6dcf89a669, producedFiles[0].extension: , producedFiles[0].contentHash: b16c23da917000b5516f9fd22eacb377
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: 196490673c4f95162df2244c5347252b, producedFiles[0].extension: , producedFiles[0].contentHash: 8e13615239af2007cefb3b582d52de10
+Importer(TextureImporter) generated inconsistent result for asset(guid:a73c03a6b3ca8b54cbad7f1978afa0c1) "Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png"
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 240e5f0a6c60f1cfd3d1c9e4f1ad66c8, producedFiles[0].extension: , producedFiles[0].contentHash: 5a16449532e14b04bfc8fd1188edf238
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 132cfb5ac8e004d6eb392b0cd79d281a, producedFiles[0].extension: , producedFiles[0].contentHash: 46bf8660f2cf2370b6a79021a4ccba5a
+Importer(TextureImporter) generated inconsistent result for asset(guid:6fd864d593b20c34d93c3a435c614b07) "Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png"
+Importing 'GUID: 55a166c023208df4dadbdd6ba43313ff - Path: Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png: File could not be read
+Imported 'GUID: 55a166c023208df4dadbdd6ba43313ff' -> (Import Result ID: 'f31e4e1cdb147fbf8a7b8cfa48167be3') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=3eb9571653c3f6193d996b960780c199 DependenciesID=8f4a0a7fec6271d35ad10afa1a548f0c StaticDependenciesID=4ff15ecf85185a5d706bc66175cb0545 
+Importing 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png: File could not be read
+Imported 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1' -> (Import Result ID: 'cf1cb49bda84900aced8fb6dcf89a669') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=1a94bf8ab4fdfef7c63841e1679a80aa DependenciesID=56545d813ccb0b297d4831e2f70aec07 StaticDependenciesID=94b3b071031058343d5c1c2439edc0a4 
+Importing 'GUID: ab1ced8011b764e479ae6a1096a2839f - Path: Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png: File could not be read
+Imported 'GUID: ab1ced8011b764e479ae6a1096a2839f' -> (Import Result ID: 'f9f5f6c70af42943635a550d391172f9') in 0.004 seconds [static dependencies only]. Details - ImportResultOutputID=6a0b95d21e740e03a268e3c6c36f1247 DependenciesID=5ed557f01bd40f5ec3b951cd007e9a13 StaticDependenciesID=d9efc6c513187c6c8c3becad5ce807ee 
+Importing 'GUID: 6fd864d593b20c34d93c3a435c614b07 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png: File could not be read
+Imported 'GUID: 6fd864d593b20c34d93c3a435c614b07' -> (Import Result ID: '240e5f0a6c60f1cfd3d1c9e4f1ad66c8') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=cf4dc781096b152495204c312d61151e DependenciesID=487af9ed44fb8fbded5ca81c0b9c9c47 StaticDependenciesID=8cb2f3076ef67a4f453ce9ca9fddaf40 
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: f9f5f6c70af42943635a550d391172f9, producedFiles[0].extension: , producedFiles[0].contentHash: a67b844c0e9b90d1d0583115596a43b5
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: d1b530b881391819e3426dca03ea39ed, producedFiles[0].extension: , producedFiles[0].contentHash: 7b6d2143208188cae4b1ae50bedc32f1
+Importer(TextureImporter) generated inconsistent result for asset(guid:ab1ced8011b764e479ae6a1096a2839f) "Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png"
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: f31e4e1cdb147fbf8a7b8cfa48167be3, producedFiles[0].extension: , producedFiles[0].contentHash: 05acd0960f4a58265e68f95672b5d6eb
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: 0393eec072874a717d550950a526e396, producedFiles[0].extension: , producedFiles[0].contentHash: bc640f5fdf861c18ab87f2c9866cc199
+Importer(TextureImporter) generated inconsistent result for asset(guid:55a166c023208df4dadbdd6ba43313ff) "Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png"
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: cf1cb49bda84900aced8fb6dcf89a669, producedFiles[0].extension: , producedFiles[0].contentHash: b16c23da917000b5516f9fd22eacb377
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: 196490673c4f95162df2244c5347252b, producedFiles[0].extension: , producedFiles[0].contentHash: 8e13615239af2007cefb3b582d52de10
+Importer(TextureImporter) generated inconsistent result for asset(guid:a73c03a6b3ca8b54cbad7f1978afa0c1) "Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png"
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 240e5f0a6c60f1cfd3d1c9e4f1ad66c8, producedFiles[0].extension: , producedFiles[0].contentHash: 5a16449532e14b04bfc8fd1188edf238
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 132cfb5ac8e004d6eb392b0cd79d281a, producedFiles[0].extension: , producedFiles[0].contentHash: 46bf8660f2cf2370b6a79021a4ccba5a
+Importer(TextureImporter) generated inconsistent result for asset(guid:6fd864d593b20c34d93c3a435c614b07) "Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png"
+Importing 'GUID: 55a166c023208df4dadbdd6ba43313ff - Path: Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png: File could not be read
+Imported 'GUID: 55a166c023208df4dadbdd6ba43313ff' -> (Import Result ID: 'f31e4e1cdb147fbf8a7b8cfa48167be3') in 0.004 seconds [static dependencies only]. Details - ImportResultOutputID=3eb9571653c3f6193d996b960780c199 DependenciesID=8f4a0a7fec6271d35ad10afa1a548f0c StaticDependenciesID=4ff15ecf85185a5d706bc66175cb0545 
+Importing 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png: File could not be read
+Imported 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1' -> (Import Result ID: 'cf1cb49bda84900aced8fb6dcf89a669') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=1a94bf8ab4fdfef7c63841e1679a80aa DependenciesID=56545d813ccb0b297d4831e2f70aec07 StaticDependenciesID=94b3b071031058343d5c1c2439edc0a4 
+Importing 'GUID: ab1ced8011b764e479ae6a1096a2839f - Path: Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png: File could not be read
+Imported 'GUID: ab1ced8011b764e479ae6a1096a2839f' -> (Import Result ID: 'f9f5f6c70af42943635a550d391172f9') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=6a0b95d21e740e03a268e3c6c36f1247 DependenciesID=5ed557f01bd40f5ec3b951cd007e9a13 StaticDependenciesID=d9efc6c513187c6c8c3becad5ce807ee 
+Importing 'GUID: 6fd864d593b20c34d93c3a435c614b07 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png: File could not be read
+Imported 'GUID: 6fd864d593b20c34d93c3a435c614b07' -> (Import Result ID: '240e5f0a6c60f1cfd3d1c9e4f1ad66c8') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=cf4dc781096b152495204c312d61151e DependenciesID=487af9ed44fb8fbded5ca81c0b9c9c47 StaticDependenciesID=8cb2f3076ef67a4f453ce9ca9fddaf40 
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: f9f5f6c70af42943635a550d391172f9, producedFiles[0].extension: , producedFiles[0].contentHash: a67b844c0e9b90d1d0583115596a43b5
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: d1b530b881391819e3426dca03ea39ed, producedFiles[0].extension: , producedFiles[0].contentHash: 7b6d2143208188cae4b1ae50bedc32f1
+Importer(TextureImporter) generated inconsistent result for asset(guid:ab1ced8011b764e479ae6a1096a2839f) "Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png"
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: f31e4e1cdb147fbf8a7b8cfa48167be3, producedFiles[0].extension: , producedFiles[0].contentHash: 05acd0960f4a58265e68f95672b5d6eb
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: 0393eec072874a717d550950a526e396, producedFiles[0].extension: , producedFiles[0].contentHash: bc640f5fdf861c18ab87f2c9866cc199
+Importer(TextureImporter) generated inconsistent result for asset(guid:55a166c023208df4dadbdd6ba43313ff) "Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png"
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: cf1cb49bda84900aced8fb6dcf89a669, producedFiles[0].extension: , producedFiles[0].contentHash: b16c23da917000b5516f9fd22eacb377
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: 196490673c4f95162df2244c5347252b, producedFiles[0].extension: , producedFiles[0].contentHash: 8e13615239af2007cefb3b582d52de10
+Importer(TextureImporter) generated inconsistent result for asset(guid:a73c03a6b3ca8b54cbad7f1978afa0c1) "Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png"
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 240e5f0a6c60f1cfd3d1c9e4f1ad66c8, producedFiles[0].extension: , producedFiles[0].contentHash: 5a16449532e14b04bfc8fd1188edf238
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 132cfb5ac8e004d6eb392b0cd79d281a, producedFiles[0].extension: , producedFiles[0].contentHash: 46bf8660f2cf2370b6a79021a4ccba5a
+Importer(TextureImporter) generated inconsistent result for asset(guid:6fd864d593b20c34d93c3a435c614b07) "Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png"
+Importing 'GUID: 55a166c023208df4dadbdd6ba43313ff - Path: Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png: File could not be read
+Imported 'GUID: 55a166c023208df4dadbdd6ba43313ff' -> (Import Result ID: 'f31e4e1cdb147fbf8a7b8cfa48167be3') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=3eb9571653c3f6193d996b960780c199 DependenciesID=8f4a0a7fec6271d35ad10afa1a548f0c StaticDependenciesID=4ff15ecf85185a5d706bc66175cb0545 
+Importing 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png: File could not be read
+Imported 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1' -> (Import Result ID: 'cf1cb49bda84900aced8fb6dcf89a669') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=1a94bf8ab4fdfef7c63841e1679a80aa DependenciesID=56545d813ccb0b297d4831e2f70aec07 StaticDependenciesID=94b3b071031058343d5c1c2439edc0a4 
+Importing 'GUID: ab1ced8011b764e479ae6a1096a2839f - Path: Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png: File could not be read
+Imported 'GUID: ab1ced8011b764e479ae6a1096a2839f' -> (Import Result ID: 'f9f5f6c70af42943635a550d391172f9') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=6a0b95d21e740e03a268e3c6c36f1247 DependenciesID=5ed557f01bd40f5ec3b951cd007e9a13 StaticDependenciesID=d9efc6c513187c6c8c3becad5ce807ee 
+Importing 'GUID: 6fd864d593b20c34d93c3a435c614b07 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png: File could not be read
+Imported 'GUID: 6fd864d593b20c34d93c3a435c614b07' -> (Import Result ID: '240e5f0a6c60f1cfd3d1c9e4f1ad66c8') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=cf4dc781096b152495204c312d61151e DependenciesID=487af9ed44fb8fbded5ca81c0b9c9c47 StaticDependenciesID=8cb2f3076ef67a4f453ce9ca9fddaf40 
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: f9f5f6c70af42943635a550d391172f9, producedFiles[0].extension: , producedFiles[0].contentHash: a67b844c0e9b90d1d0583115596a43b5
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: d1b530b881391819e3426dca03ea39ed, producedFiles[0].extension: , producedFiles[0].contentHash: 7b6d2143208188cae4b1ae50bedc32f1
+Importer(TextureImporter) generated inconsistent result for asset(guid:ab1ced8011b764e479ae6a1096a2839f) "Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png"
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: f31e4e1cdb147fbf8a7b8cfa48167be3, producedFiles[0].extension: , producedFiles[0].contentHash: 05acd0960f4a58265e68f95672b5d6eb
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: 0393eec072874a717d550950a526e396, producedFiles[0].extension: , producedFiles[0].contentHash: bc640f5fdf861c18ab87f2c9866cc199
+Importer(TextureImporter) generated inconsistent result for asset(guid:55a166c023208df4dadbdd6ba43313ff) "Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png"
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: cf1cb49bda84900aced8fb6dcf89a669, producedFiles[0].extension: , producedFiles[0].contentHash: b16c23da917000b5516f9fd22eacb377
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: 196490673c4f95162df2244c5347252b, producedFiles[0].extension: , producedFiles[0].contentHash: 8e13615239af2007cefb3b582d52de10
+Importer(TextureImporter) generated inconsistent result for asset(guid:a73c03a6b3ca8b54cbad7f1978afa0c1) "Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png"
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 240e5f0a6c60f1cfd3d1c9e4f1ad66c8, producedFiles[0].extension: , producedFiles[0].contentHash: 5a16449532e14b04bfc8fd1188edf238
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 132cfb5ac8e004d6eb392b0cd79d281a, producedFiles[0].extension: , producedFiles[0].contentHash: 46bf8660f2cf2370b6a79021a4ccba5a
+Importer(TextureImporter) generated inconsistent result for asset(guid:6fd864d593b20c34d93c3a435c614b07) "Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png"
+Importing 'GUID: 55a166c023208df4dadbdd6ba43313ff - Path: Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png: File could not be read
+Imported 'GUID: 55a166c023208df4dadbdd6ba43313ff' -> (Import Result ID: 'f31e4e1cdb147fbf8a7b8cfa48167be3') in 0.005 seconds [static dependencies only]. Details - ImportResultOutputID=3eb9571653c3f6193d996b960780c199 DependenciesID=8f4a0a7fec6271d35ad10afa1a548f0c StaticDependenciesID=4ff15ecf85185a5d706bc66175cb0545 
+Importing 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png: File could not be read
+Imported 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1' -> (Import Result ID: 'cf1cb49bda84900aced8fb6dcf89a669') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=1a94bf8ab4fdfef7c63841e1679a80aa DependenciesID=56545d813ccb0b297d4831e2f70aec07 StaticDependenciesID=94b3b071031058343d5c1c2439edc0a4 
+Importing 'GUID: ab1ced8011b764e479ae6a1096a2839f - Path: Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png: File could not be read
+Imported 'GUID: ab1ced8011b764e479ae6a1096a2839f' -> (Import Result ID: 'f9f5f6c70af42943635a550d391172f9') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=6a0b95d21e740e03a268e3c6c36f1247 DependenciesID=5ed557f01bd40f5ec3b951cd007e9a13 StaticDependenciesID=d9efc6c513187c6c8c3becad5ce807ee 
+Importing 'GUID: 6fd864d593b20c34d93c3a435c614b07 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png: File could not be read
+Imported 'GUID: 6fd864d593b20c34d93c3a435c614b07' -> (Import Result ID: '240e5f0a6c60f1cfd3d1c9e4f1ad66c8') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=cf4dc781096b152495204c312d61151e DependenciesID=487af9ed44fb8fbded5ca81c0b9c9c47 StaticDependenciesID=8cb2f3076ef67a4f453ce9ca9fddaf40 
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: f9f5f6c70af42943635a550d391172f9, producedFiles[0].extension: , producedFiles[0].contentHash: a67b844c0e9b90d1d0583115596a43b5
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: d1b530b881391819e3426dca03ea39ed, producedFiles[0].extension: , producedFiles[0].contentHash: 7b6d2143208188cae4b1ae50bedc32f1
+Importer(TextureImporter) generated inconsistent result for asset(guid:ab1ced8011b764e479ae6a1096a2839f) "Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png"
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: f31e4e1cdb147fbf8a7b8cfa48167be3, producedFiles[0].extension: , producedFiles[0].contentHash: 05acd0960f4a58265e68f95672b5d6eb
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: 0393eec072874a717d550950a526e396, producedFiles[0].extension: , producedFiles[0].contentHash: bc640f5fdf861c18ab87f2c9866cc199
+Importer(TextureImporter) generated inconsistent result for asset(guid:55a166c023208df4dadbdd6ba43313ff) "Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png"
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: cf1cb49bda84900aced8fb6dcf89a669, producedFiles[0].extension: , producedFiles[0].contentHash: b16c23da917000b5516f9fd22eacb377
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: 196490673c4f95162df2244c5347252b, producedFiles[0].extension: , producedFiles[0].contentHash: 8e13615239af2007cefb3b582d52de10
+Importer(TextureImporter) generated inconsistent result for asset(guid:a73c03a6b3ca8b54cbad7f1978afa0c1) "Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png"
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 240e5f0a6c60f1cfd3d1c9e4f1ad66c8, producedFiles[0].extension: , producedFiles[0].contentHash: 5a16449532e14b04bfc8fd1188edf238
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 132cfb5ac8e004d6eb392b0cd79d281a, producedFiles[0].extension: , producedFiles[0].contentHash: 46bf8660f2cf2370b6a79021a4ccba5a
+Importer(TextureImporter) generated inconsistent result for asset(guid:6fd864d593b20c34d93c3a435c614b07) "Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png"
+Importing 'GUID: 55a166c023208df4dadbdd6ba43313ff - Path: Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png: File could not be read
+Imported 'GUID: 55a166c023208df4dadbdd6ba43313ff' -> (Import Result ID: 'f31e4e1cdb147fbf8a7b8cfa48167be3') in 0.004 seconds [static dependencies only]. Details - ImportResultOutputID=3eb9571653c3f6193d996b960780c199 DependenciesID=8f4a0a7fec6271d35ad10afa1a548f0c StaticDependenciesID=4ff15ecf85185a5d706bc66175cb0545 
+Importing 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png: File could not be read
+Imported 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1' -> (Import Result ID: 'cf1cb49bda84900aced8fb6dcf89a669') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=1a94bf8ab4fdfef7c63841e1679a80aa DependenciesID=56545d813ccb0b297d4831e2f70aec07 StaticDependenciesID=94b3b071031058343d5c1c2439edc0a4 
+Importing 'GUID: ab1ced8011b764e479ae6a1096a2839f - Path: Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png: File could not be read
+Imported 'GUID: ab1ced8011b764e479ae6a1096a2839f' -> (Import Result ID: 'f9f5f6c70af42943635a550d391172f9') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=6a0b95d21e740e03a268e3c6c36f1247 DependenciesID=5ed557f01bd40f5ec3b951cd007e9a13 StaticDependenciesID=d9efc6c513187c6c8c3becad5ce807ee 
+Importing 'GUID: 6fd864d593b20c34d93c3a435c614b07 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png: File could not be read
+Imported 'GUID: 6fd864d593b20c34d93c3a435c614b07' -> (Import Result ID: '240e5f0a6c60f1cfd3d1c9e4f1ad66c8') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=cf4dc781096b152495204c312d61151e DependenciesID=487af9ed44fb8fbded5ca81c0b9c9c47 StaticDependenciesID=8cb2f3076ef67a4f453ce9ca9fddaf40 
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: f9f5f6c70af42943635a550d391172f9, producedFiles[0].extension: , producedFiles[0].contentHash: a67b844c0e9b90d1d0583115596a43b5
+ConsistencyChecker - guid: ab1ced8011b764e479ae6a1096a2839f, dependenciesHash.value: 5ed557f01bd40f5ec3b951cd007e9a13, importResultID: d1b530b881391819e3426dca03ea39ed, producedFiles[0].extension: , producedFiles[0].contentHash: 7b6d2143208188cae4b1ae50bedc32f1
+Importer(TextureImporter) generated inconsistent result for asset(guid:ab1ced8011b764e479ae6a1096a2839f) "Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png"
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: f31e4e1cdb147fbf8a7b8cfa48167be3, producedFiles[0].extension: , producedFiles[0].contentHash: 05acd0960f4a58265e68f95672b5d6eb
+ConsistencyChecker - guid: 55a166c023208df4dadbdd6ba43313ff, dependenciesHash.value: 8f4a0a7fec6271d35ad10afa1a548f0c, importResultID: 0393eec072874a717d550950a526e396, producedFiles[0].extension: , producedFiles[0].contentHash: bc640f5fdf861c18ab87f2c9866cc199
+Importer(TextureImporter) generated inconsistent result for asset(guid:55a166c023208df4dadbdd6ba43313ff) "Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png"
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: cf1cb49bda84900aced8fb6dcf89a669, producedFiles[0].extension: , producedFiles[0].contentHash: b16c23da917000b5516f9fd22eacb377
+ConsistencyChecker - guid: a73c03a6b3ca8b54cbad7f1978afa0c1, dependenciesHash.value: 56545d813ccb0b297d4831e2f70aec07, importResultID: 196490673c4f95162df2244c5347252b, producedFiles[0].extension: , producedFiles[0].contentHash: 8e13615239af2007cefb3b582d52de10
+Importer(TextureImporter) generated inconsistent result for asset(guid:a73c03a6b3ca8b54cbad7f1978afa0c1) "Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png"
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 240e5f0a6c60f1cfd3d1c9e4f1ad66c8, producedFiles[0].extension: , producedFiles[0].contentHash: 5a16449532e14b04bfc8fd1188edf238
+ConsistencyChecker - guid: 6fd864d593b20c34d93c3a435c614b07, dependenciesHash.value: 487af9ed44fb8fbded5ca81c0b9c9c47, importResultID: 132cfb5ac8e004d6eb392b0cd79d281a, producedFiles[0].extension: , producedFiles[0].contentHash: 46bf8660f2cf2370b6a79021a4ccba5a
+Importer(TextureImporter) generated inconsistent result for asset(guid:6fd864d593b20c34d93c3a435c614b07) "Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png"
+Importing 'GUID: 55a166c023208df4dadbdd6ba43313ff - Path: Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png: File could not be read
+Imported 'GUID: 55a166c023208df4dadbdd6ba43313ff' -> (Import Result ID: 'f31e4e1cdb147fbf8a7b8cfa48167be3') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=3eb9571653c3f6193d996b960780c199 DependenciesID=8f4a0a7fec6271d35ad10afa1a548f0c StaticDependenciesID=4ff15ecf85185a5d706bc66175cb0545 
+Importing 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png: File could not be read
+Imported 'GUID: a73c03a6b3ca8b54cbad7f1978afa0c1' -> (Import Result ID: 'cf1cb49bda84900aced8fb6dcf89a669') in 0.003 seconds [static dependencies only]. Details - ImportResultOutputID=1a94bf8ab4fdfef7c63841e1679a80aa DependenciesID=56545d813ccb0b297d4831e2f70aec07 StaticDependenciesID=94b3b071031058343d5c1c2439edc0a4 
+Importing 'GUID: ab1ced8011b764e479ae6a1096a2839f - Path: Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png: File could not be read
+Imported 'GUID: ab1ced8011b764e479ae6a1096a2839f' -> (Import Result ID: 'f9f5f6c70af42943635a550d391172f9') in 0.002 seconds [static dependencies only]. Details - ImportResultOutputID=6a0b95d21e740e03a268e3c6c36f1247 DependenciesID=5ed557f01bd40f5ec3b951cd007e9a13 StaticDependenciesID=d9efc6c513187c6c8c3becad5ce807ee 
+Importing 'GUID: 6fd864d593b20c34d93c3a435c614b07 - Path: Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png' with importer (TextureImporter)
+Could not create asset from Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png: File could not be read
+Imported 'GUID: 6fd864d593b20c34d93c3a435c614b07' -> (Import Result ID: '240e5f0a6c60f1cfd3d1c9e4f1ad66c8') in 0.001 seconds [static dependencies only]. Details - ImportResultOutputID=cf4dc781096b152495204c312d61151e DependenciesID=487af9ed44fb8fbded5ca81c0b9c9c47 StaticDependenciesID=8cb2f3076ef67a4f453ce9ca9fddaf40 
+An infinite import loop has been detected when processing post process all assets callbacks. Please check if any custom code is trying to import them:
+Assets/Artwork/SourceModels/T34/T-34-85_Hull_01_AM.png (changed)
+Assets/Artwork/SourceModels/T34/T-34-85_Chassis_01_AM.png (changed)
+Assets/Artwork/SourceModels/T34/T-34-85_Guns_AM.png (changed)
+Assets/Artwork/SourceModels/T34/T-34-85_Turret_02_AM.png (changed)
+Assets/Artwork/SourceModels/T34/T-34-85.fbx (changed)
+
+Asset Pipeline Refresh (id=130ba08d11fbf4b43ae3dc1d1d4697be): Total: 29.099 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=45 (actual=38, local cache=7, cache server=0)
+		Asset DB Process Time: managed=29 ms, native=7486 ms
+		Asset DB Callback time: managed=187 ms, native=83 ms
+		Scripting: domain reloads=1, domain reload time=2030 ms, compile time=19253 ms, other=26 ms
+		Project Asset Count: scripts=370, non-scripts=326
+		Asset File Changes: new=10, changed=10, moved=0, deleted=0
+		Scan Filter Count: 8
+	InvokeCustomDependenciesCallbacks: 0.106ms
+	InvokePackagesCallback: 66.214ms
+	ApplyChangesToAssetFolders: 1.304ms
+	Scan: 162.626ms
+	Collect global state as custom dependencies: 24.544ms
+	OnSourceAssetsModified: 1.373ms
+	CategorizeScriptCompilationAssets: 502.387ms
+	ProcessAssetsWithTransientArtifactChanges: 32.652ms
+	CategorizeAssets: 19.110ms
+	CompileScripts: 19253.406ms
+	ImportOutOfDateAssets: 3068.575ms (822.522ms without children)
+		ImportManagerImport: 2211.958ms (12.365ms without children)
+			UpdateCategorizedAssets: 0.702ms
+		ReloadNativeAssets: 0.558ms
+		UnloadImportedAssets: 7.604ms
+		ReloadImportedAssets: 30.114ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.892ms
+		InitializingProgressBar: 0.085ms
+		ImportSchedulerStart: 24.933ms
+	PostProcessAllAssets: 421.089ms
+		PostProcessCallbackCreateDeferredMaterials 219.241ms
+		XRBuildSystem.XRAssetImported 3.403ms
+		VersionControlSettings.HiddenFilePostprocess 0.709ms
+		WindowTitlePostprocess 0.326ms
+		ShaderAssetModifiedCallback 0.261ms
+		SpeedTreeImporter.PostprocessAllAssets 0.159ms
+		RaytracingShaderImportPostprocess 0.151ms
+		LocalizationDatabase.AssetDatabasePostprocessCallback 0.150ms
+		BlockShaderImporter.PostprocessAllAssets 0.143ms
+		AssemblyValidation.PostprocessAllAssets 0.050ms
+		MonoPostProcessAllAssets: 187.137ms
+			AssetPostprocessor.OnPostprocessAllAssets 0.111ms
+			NetworkPrefabProcessor.OnPostprocessAllAssets 0.068ms
+			EditModeScopePostprocessor.OnPostprocessAllAssets 0.060ms
+			SyncVS.PostprocessSyncProject 0.058ms
+	GatherAllCurrentPrimaryImportResultRevisions: 0.841ms
+	UnloadStreamsBegin: 1.403ms
+	PersistCurrentRevisions: 0.436ms
+	GenerateScriptTypeHashes: 2.081ms
+	GenerateScriptTypeSerializationHashes: 5.234ms
+	Untracked: 5682.236ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 2.287ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-war-arena-unity
+Unloading 3 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 1917 unused Assets / (2.3 MB). Loaded Objects now: 2351.
+Memory consumption went from 276.0 MB to 273.7 MB.
+Total: 12.432200 ms (FindLiveObjects: 0.557900 ms CreateObjectMapping: 0.109400 ms MarkObjects: 9.819900 ms  DeleteObjects: 1.402800 ms)
+
+[ModelDiagnostics] model assets found under Assets/Resources:
+  Assets/Resources/Artwork/Models
+      main asset = DefaultAsset
+  Assets/Resources/Artwork/Models/PanzerIV
+      main asset = DefaultAsset
+  Assets/Resources/Artwork/Models/PanzerIV/panzer_iv_low.glb
+      main asset = DefaultAsset
+  Assets/Resources/Artwork/Models/PanzerIV/PanzerIV.prefab
+      main asset = GameObject
+
+[ModelDiagnostics] importer actually selected per file:
+  Assets/Artwork/Models/PanzerIV/panzer_iv.glb
+      importer   = AssetImporter
+      isReadable = False
+  Assets/Resources/Artwork/Models/PanzerIV/panzer_iv_low.glb
+      importer   = AssetImporter
+      isReadable = False
+
+[ModelDiagnostics] direct Resources.Load probes:
+  'Artwork/Models/PanzerIV/panzer_iv_low' -> NULL
+  'Artwork/Models/PanzerIV/panzer_iv' -> NULL
+
+[ModelDiagnostics] catalogue sweep:
+  pziv-h         model OK
+  vehicles=19  distinct ids=19  with model=1
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+ModelDiagnostics:Run () (at Assets/Editor/ModelDiagnostics.cs:77)
+
+(Filename: Assets/Editor/ModelDiagnostics.cs Line: 77)
+
+Worker ready: AssetImportWorkerHW0 0
+Batchmode quit successfully invoked - shutting down!
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input Polling Thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-varun-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-varun channel disconnected successfully.
+Lingering sessions upon destruction of worker manager
+Unity Data Store service was successfully shut down
+UDS shutting down local client system
+Shut down UDS service system complete
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+CodeReloadManager destroyed
+Exiting batchmode successfully now!
+[ExitDontLaunchBugReporter] Exiting without the bug reporter. Application will exit with return code 0

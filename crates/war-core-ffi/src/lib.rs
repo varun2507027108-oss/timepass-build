@@ -1,4 +1,4 @@
-﻿//! # war-core-ffi
+//! # war-core-ffi
 //!
 //! The C ABI Unity binds to. Every symbol here is `extern "C"`, has a primitive
 //! or pointer-only signature, and is safe to call from an IL2CPP-compiled
@@ -201,11 +201,7 @@ pub unsafe extern "C" fn wa_spike_reset(handle: *mut SpikeSim) -> u32 {
 /// `handle` must be a live handle. `out` must be `NULL` or point to at least
 /// `cap` writable `f32`s.
 #[no_mangle]
-pub unsafe extern "C" fn wa_spike_read(
-    handle: *mut SpikeSim,
-    out: *mut f32,
-    cap: u32,
-) -> u32 {
+pub unsafe extern "C" fn wa_spike_read(handle: *mut SpikeSim, out: *mut f32, cap: u32) -> u32 {
     let cap = cap as usize;
     let Some(sim) = (unsafe { handle.as_mut() }) else {
         return 0;
@@ -356,7 +352,8 @@ pub unsafe extern "C" fn wa_flight_trace(
         return 0;
     };
 
-    let mut model = war_core::air::FlightModel::new(spec, Vec3::new(0.0, altitude, 0.0), heading_deg);
+    let mut model =
+        war_core::air::FlightModel::new(spec, Vec3::new(0.0, altitude, 0.0), heading_deg);
 
     let stride = FLIGHT_TRACE_STRIDE as usize;
     let capacity = cap as usize / stride;
@@ -372,7 +369,7 @@ pub unsafe extern "C" fn wa_flight_trace(
         let base = tick * stride;
         let p = model.position();
         let v = model.velocity();
-        trace[base + 0] = p.x;
+        trace[base] = p.x;
         trace[base + 1] = p.y;
         trace[base + 2] = p.z;
         trace[base + 3] = v.x;
@@ -384,6 +381,179 @@ pub unsafe extern "C" fn wa_flight_trace(
         trace[base + 9] = model.throttle();
         trace[base + 10] = if model.is_stalled() { 1.0 } else { 0.0 };
         trace[base + 11] = if model.is_overstressed() { 1.0 } else { 0.0 };
+    }
+
+    (ticks_to_run * stride) as u32
+}
+
+// ---------------------------------------------------------------------------
+// Battle sim parity trace
+// ---------------------------------------------------------------------------
+
+/// Number of `f32` values written per simulation tick by [`wa_battle_trace`].
+/// Mirrored by `BattleSimParityTests.TraceStride` on the C# side.
+pub const BATTLE_TRACE_STRIDE: u32 = 14;
+
+/// Trace field indices, in write order. Kept explicit because the C# side indexes
+/// the same layout positionally and a silent reorder would compare nonsense.
+pub mod battle_trace_field {
+    pub const PLAYER_X: usize = 0;
+    pub const PLAYER_Z: usize = 1;
+    pub const ENEMY_X: usize = 2;
+    pub const ENEMY_Z: usize = 3;
+    pub const PLAYER_HEADING: usize = 4;
+    pub const PLAYER_TURRET_YAW: usize = 5;
+    pub const PLAYER_GUN_PITCH: usize = 6;
+    pub const ENEMY_HEADING: usize = 7;
+    pub const ENEMY_TURRET_YAW: usize = 8;
+    pub const PLAYER_SPEED: usize = 9;
+    pub const PLAYER_HEALTH: usize = 10;
+    pub const ENEMY_HEALTH: usize = 11;
+    pub const KILLS: usize = 12;
+    pub const RELOAD_REMAINING: usize = 13;
+}
+
+/// Radius of the scripted aim circle used by aim mode 0.
+const SWEEP_RADIUS_M: f32 = 60.0;
+/// Bearing at tick 0 for aim mode 0.
+const SWEEP_BASE_DEG: f32 = 25.0;
+/// Bearing advance per tick for aim mode 0.
+///
+/// **6 deg/tick is load-bearing, and was arrived at empirically.** The hull is
+/// pulled onto the gun's line while driving, so a slow aim sweep is simply followed
+/// by the hull and the turret never leaves the centreline. At 0.75 deg/tick this
+/// scenario left the turret spanning 0.47 rad against a 2.1 rad traverse limit, and
+/// the gun pitch spanning 0.0019 rad against a 0.52 rad range -- no clamp was ever
+/// reached, so the C# parity test could not have detected a wrong slew rate or a
+/// wrong pitch limit. It passed anyway. At 6 deg/tick the hull cannot keep up and
+/// the traverse clamp saturates for roughly half the run.
+const SWEEP_RATE_DEG: f32 = 6.0;
+
+/// Height of the aim point for aim mode 0, metres.
+///
+/// Above the muzzle, so the gun must depress to reach it and the upper pitch clamp
+/// saturates. Kept separate from `SWEEP_RADIUS_M` so the elevation clamps are
+/// genuinely exercised rather than approximated by a long, flat trajectory.
+const SWEEP_HEIGHT_M: f32 = 30.0;
+
+/// Aim point for a scripted battle scenario.
+///
+/// **Both implementations must compute this identically**, because it is the only
+/// coupling between the two traces: every other input is constant for the run.
+///
+/// Mode 0 is deliberately a pure function of `tick` and *not* of the simulation
+/// state. If the aim depended on the vehicle's position, then any tiny
+/// floating-point difference in position would feed back into the aim, then into
+/// the turret angle, then into where the vehicle ends up -- a divergence amplifier
+/// that would make a 900-tick trace impossible to compare for reasons that have
+/// nothing to do with porting fidelity. A state-independent schedule keeps the
+/// comparison honest: any difference that appears is a real difference.
+fn scripted_aim(mode: u32, tick: u32, enemy_position: Vec3) -> Vec3 {
+    match mode {
+0 => {
+            let bearing = war_core::math::mathf::DEG2RAD
+                * (SWEEP_BASE_DEG + tick as f32 * SWEEP_RATE_DEG);
+            Vec3::new(
+                SWEEP_RADIUS_M * war_core::math::mathf::cos(bearing),
+                SWEEP_HEIGHT_M,
+                SWEEP_RADIUS_M * war_core::math::mathf::sin(bearing),
+            )
+        }
+        // Aim at the enemy, at muzzle height. State-coupled by design: this is what
+        // exercises turret tracking and the fire solution, and the C# parity test
+        // only compares the ticks before the first damage lands.
+        _ => Vec3::new(enemy_position.x, 1.6, enemy_position.z),
+    }
+}
+
+/// Run a scripted ground engagement and write a per-tick state trace.
+///
+/// This is the ground-combat counterpart to [`wa_flight_trace`], and it exists for
+/// the same reason: the model is full of sign conventions, clamp orders and
+/// thresholds that cannot be verified by reading either implementation, and a Rust
+/// unit test only proves the Rust agrees with itself. Running the C# `BattleSim`
+/// and the Rust `BattleSim` through one identical scenario and comparing every
+/// tick is the only check that catches a ported-but-wrong constant. See
+/// `Assets/Tests/EditMode/BattleSimParityTests.cs`.
+///
+/// Only fields present on *both* sides are traced, so the layout is identical:
+/// the C# exposes `OnPlayerFired` as an event and has no enemy gun pitch, so
+/// neither is compared. Player-fired is observable through the ammo counter in
+/// either implementation.
+///
+/// # Safety
+/// `player_vehicle_id` must point to `player_vehicle_id_len` readable ASCII bytes,
+/// likewise for the enemy id. `out` must be `NULL` or point to at least `cap`
+/// writable `f32`s. Must not race another call on the same buffer.
+#[no_mangle]
+pub unsafe extern "C" fn wa_battle_trace(
+    player_vehicle_id: *const u8,
+    player_vehicle_id_len: u32,
+    enemy_vehicle_id: *const u8,
+    enemy_vehicle_id_len: u32,
+    ticks: u32,
+    dt: f32,
+    throttle: f32,
+    steer: f32,
+    turret_trim: f32,
+    fire: u32,
+    aim_mode: u32,
+    out: *mut f32,
+    cap: u32,
+) -> u32 {
+    if out.is_null() || player_vehicle_id.is_null() || enemy_vehicle_id.is_null() {
+        return 0;
+    }
+    // SAFETY: caller guarantees both id pointers are readable for their lengths.
+    let player_bytes =
+        unsafe { core::slice::from_raw_parts(player_vehicle_id, player_vehicle_id_len as usize) };
+    // SAFETY: as above.
+    let enemy_bytes =
+        unsafe { core::slice::from_raw_parts(enemy_vehicle_id, enemy_vehicle_id_len as usize) };
+    let (Ok(player_id), Ok(enemy_id)) = (
+        core::str::from_utf8(player_bytes),
+        core::str::from_utf8(enemy_bytes),
+    ) else {
+        return 0;
+    };
+    if war_core::vehicles::VehicleCatalog::get(player_id).is_none()
+        || war_core::vehicles::VehicleCatalog::get(enemy_id).is_none()
+    {
+        return 0;
+    }
+
+    let mut sim = war_core::gameplay::BattleSim::new(player_id, enemy_id);
+
+    let stride = BATTLE_TRACE_STRIDE as usize;
+    let capacity = cap as usize / stride;
+    let ticks_to_run = core::cmp::min(ticks as usize, capacity);
+
+    // SAFETY: caller guarantees `out` is valid for `cap` writable f32s, and every
+    // write below is bounded by `ticks_to_run * stride <= cap`.
+    let trace = unsafe { core::slice::from_raw_parts_mut(out, cap as usize) };
+
+    for tick in 0..ticks_to_run {
+        let aim = scripted_aim(aim_mode, tick as u32, sim.enemy_position());
+        sim.advance(dt, throttle, steer, turret_trim, fire != 0, aim);
+
+        let base = tick * stride;
+        use battle_trace_field::*;
+        let p = sim.player_position();
+        let e = sim.enemy_position();
+        trace[base + PLAYER_X] = p.x;
+        trace[base + PLAYER_Z] = p.z;
+        trace[base + ENEMY_X] = e.x;
+        trace[base + ENEMY_Z] = e.z;
+        trace[base + PLAYER_HEADING] = sim.player_heading_rad();
+        trace[base + PLAYER_TURRET_YAW] = sim.player_turret_yaw_rad();
+        trace[base + PLAYER_GUN_PITCH] = sim.player_gun_pitch_rad();
+        trace[base + ENEMY_HEADING] = sim.enemy_heading_rad();
+        trace[base + ENEMY_TURRET_YAW] = sim.enemy_turret_yaw_rad();
+        trace[base + PLAYER_SPEED] = sim.player_speed_kph();
+        trace[base + PLAYER_HEALTH] = sim.player_health() as f32;
+        trace[base + ENEMY_HEALTH] = sim.enemy_health() as f32;
+        trace[base + KILLS] = sim.kills() as f32;
+        trace[base + RELOAD_REMAINING] = sim.reload_remaining();
     }
 
     (ticks_to_run * stride) as u32
@@ -402,7 +572,10 @@ mod tests {
             layout::USED,
             "the host must be able to check its highest slot against this"
         );
-        assert!(layout::USED <= STATE_SLOTS);
+        // Both sides are compile-time constants, so a plain ssert! folds away and
+        // clippy correctly reports it as a constant value. lack_box keeps the
+        // invariant checked at runtime without weakening it.
+        assert!(core::hint::black_box(layout::USED) <= STATE_SLOTS);
     }
 
     #[test]
@@ -413,7 +586,17 @@ mod tests {
         unsafe {
             assert!(wa_spike_echo(core::ptr::null_mut(), 1.0).is_nan());
             assert_eq!(
-                wa_spike_advance(core::ptr::null_mut(), 0.016, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0),
+                wa_spike_advance(
+                    core::ptr::null_mut(),
+                    0.016,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0,
+                    0.0,
+                    0.0,
+                    0.0
+                ),
                 0
             );
             assert_eq!(
@@ -421,7 +604,11 @@ mod tests {
                 0
             );
             assert_eq!(
-                wa_spike_feed(core::ptr::null_mut(), bytes.as_mut_ptr(), bytes.len() as u32),
+                wa_spike_feed(
+                    core::ptr::null_mut(),
+                    bytes.as_mut_ptr(),
+                    bytes.len() as u32
+                ),
                 0
             );
             assert_eq!(
@@ -438,6 +625,148 @@ mod tests {
             );
             // Destroying NULL is explicitly a no-op.
             wa_spike_destroy(core::ptr::null_mut());
+        }
+    }
+
+    #[test]
+    fn battle_trace_rejects_bad_arguments_instead_of_trapping() {
+        let mut buf = [0.0f32; BATTLE_TRACE_STRIDE as usize * 4];
+        let p = b"t34-76";
+        let e = b"panther-g";
+        unsafe {
+            assert_eq!(
+                wa_battle_trace(
+                    core::ptr::null(),
+                    6,
+                    e.as_ptr(),
+                    e.len() as u32,
+                    4,
+                    0.033,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0,
+                    1,
+                    buf.as_mut_ptr(),
+                    buf.len() as u32,
+                ),
+                0
+            );
+            assert_eq!(
+                wa_battle_trace(
+                    p.as_ptr(),
+                    p.len() as u32,
+                    e.as_ptr(),
+                    e.len() as u32,
+                    4,
+                    0.033,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0,
+                    1,
+                    core::ptr::null_mut(),
+                    buf.len() as u32,
+                ),
+                0
+            );
+            // An unknown vehicle id must be reported, not substituted with a
+            // default vehicle: a silent substitution would produce a trace that
+            // looks plausible and compares against the wrong tank.
+            assert_eq!(
+                wa_battle_trace(
+                    b"not-a-tank".as_ptr(),
+                    10,
+                    e.as_ptr(),
+                    e.len() as u32,
+                    4,
+                    0.033,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0,
+                    1,
+                    buf.as_mut_ptr(),
+                    buf.len() as u32,
+                ),
+                0
+            );
+        }
+    }
+
+    #[test]
+    fn battle_trace_fills_a_full_stride_per_tick_and_stops_at_capacity() {
+        let stride = BATTLE_TRACE_STRIDE as usize;
+        // Room for exactly 4 ticks, but 6 requested: capacity must win, and the
+        // return value must describe what was actually written so the host can tell.
+        let mut buf = vec![0.0f32; stride * 4];
+
+        let written = run_battle_trace(&mut buf, "t34-76", "panther-g", 6, 1.0, 0.0, 0.0, 0, 1);
+        assert_eq!(written, stride * 4);
+
+        // The player must have moved under full throttle, and the tail of the buffer
+        // must be untouched.
+        use battle_trace_field::*;
+        assert!(
+            buf[PLAYER_Z] > -35.0,
+            "full throttle did not move the player"
+        );
+        assert!(buf[PLAYER_HEALTH] > 0.0 && buf[ENEMY_HEALTH] > 0.0);
+    }
+
+    #[test]
+    fn battle_trace_is_deterministic_for_the_state_independent_aim_mode() {
+        let stride = BATTLE_TRACE_STRIDE as usize;
+        let mut a = vec![0.0f32; stride * 60];
+        let mut b = vec![0.0f32; stride * 60];
+        assert_eq!(
+            run_battle_trace(&mut a, "t34-76", "panther-g", 60, 0.5, 0.3, 0.0, 0, 0),
+            stride * 60
+        );
+        assert_eq!(
+            run_battle_trace(&mut b, "t34-76", "panther-g", 60, 0.5, 0.3, 0.0, 0, 0),
+            stride * 60
+        );
+        // The C# parity test relies on this: identical inputs must produce an
+        // identical trace, or the tick-by-tick comparison measures noise.
+        assert_eq!(a, b);
+    }
+
+    /// Drive [`wa_battle_trace`] with length-prefixed ids, so a test can never
+    /// accidentally pass a length that includes a NUL terminator and silently get
+    /// back a "0 means unknown vehicle" rejection.
+    ///
+    /// Argument count mirrors the export it wraps, which is what keeps the two in
+    /// step; collapsing them into a struct would hide exactly the correspondence the
+    /// test is meant to check.
+    #[allow(clippy::too_many_arguments)]
+    fn run_battle_trace(
+        buf: &mut [f32],
+        player: &str,
+        enemy: &str,
+        ticks: usize,
+        throttle: f32,
+        steer: f32,
+        turret_trim: f32,
+        fire: u32,
+        aim_mode: u32,
+    ) -> usize {
+        unsafe {
+            wa_battle_trace(
+                player.as_ptr(),
+                player.len() as u32,
+                enemy.as_ptr(),
+                enemy.len() as u32,
+                ticks as u32,
+                1.0 / 30.0,
+                throttle,
+                steer,
+                turret_trim,
+                fire,
+                aim_mode,
+                buf.as_mut_ptr(),
+                buf.len() as u32,
+            ) as usize
         }
     }
 

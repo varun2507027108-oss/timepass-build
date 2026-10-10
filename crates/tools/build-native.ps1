@@ -53,7 +53,7 @@ $required = @(
     'wa_spike_abi_version', 'wa_spike_state_slots', 'wa_spike_state_layout_slots',
     'wa_spike_create', 'wa_spike_destroy', 'wa_spike_advance',
     'wa_spike_read', 'wa_spike_feed', 'wa_spike_echo',
-    'wa_flight_trace'
+    'wa_flight_trace', 'wa_battle_trace'
 )
 $missing = @()
 foreach ($symbol in $required) {

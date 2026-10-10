@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Unity.Netcode;
 using UnityEngine;
 using WarArena.Ballistics;
@@ -184,8 +184,11 @@ namespace WarArena.Net
                 target.transform.InverseTransformDirection(incoming),
                 target.transform);
 
-            _networkHull.Value = (short)(1000f * Mathf.Clamp01(
-                (target.Damage.AliveCrewCount / 4f)));
+            // Sourced from the damage model rather than computed here. The previous inline
+            // `AliveCrewCount / 4f` hard-coded a four-crew roster: a five-crew vehicle
+            // reported 1.25, which Clamp01 flattened, and then still reported 1.0 after
+            // losing a crewman -- so the first casualty was invisible to clients.
+            _networkHull.Value = target.Damage.HullStrengthPermille;
             if (target.Damage.IsDestroyed)
             {
                 _networkKillId.Value = NetworkObjectId;

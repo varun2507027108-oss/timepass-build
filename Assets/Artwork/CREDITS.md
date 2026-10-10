@@ -32,10 +32,15 @@ falls back to a generated seamless noise texture, and
 
 ---
 
-## Vehicle models: none shipped yet
+## Vehicle models
 
-No tank or aircraft models are included. Every vehicle in the game is still built
-from Unity primitives in `TankView` and `AircraftView`.
+### T-34-85 (medium tank)
+- Source: [PanzerWar](https://github.com/11one/PanzerWar) open-source repository
+- Format: Native FBX binary 7.2 (`Assets/Artwork/SourceModels/T34/T-34-85.fbx`)
+- Hierarchy: Clean independent left/right tracks, road wheels, sprockets, idlers, turret, and elevating gun.
+- Rigging & Prefab: Built via `ModelPrefabBuilder.cs` and saved to `Assets/Resources/Artwork/Models/PanzerIV/PanzerIV.prefab`.
+- Materials: Rebuilt procedurally via `VisualMaterials.Matte` (hull/turret/paint) and `VisualMaterials.Metal` (tracks/wheels).
+
 
 A search for free WW2 vehicle models turned up **no CC0 option at all** for either
 tanks or aircraft. The realistic options are:

@@ -1,0 +1,533 @@
+VBCSCompilerPreWarmer: watching VBCSCompiler (PID 47228)
+VBCSCompilerPreWarmer: pre-warm launched (dotnet PID 45172)
+VBCSCompiler prewarm took 47.90 ms
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.6/staging' branch; Version is '6000.6.4f1 (12bfff696524) revision 1228799'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-varun" at "2026-10-09T19:04:44.7107373Z"
+OS: 'Windows 11  (10.0.26300) CoreSingleLanguage' Language: 'en' Physical Memory: 16071 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-10-09T19:04:44Z
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 36252, path: "C:/Program Files/Unity Hub/UnityLicensingClient_V1/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              a66bde02ca184d9f938b5a1f8994cfad
+  Correlation Id:          699e0075bf7446ba5700d12eef577bcc
+  External correlation Id: 7940738262854119162
+  Machine Id:              +ImojN3bZun0Qoq+olhAxx7hK5o=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-varun" (connect: 0.00s, validation: 0.01s, handshake: 0.09s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-varun-notifications" at "2026-10-09T19:04:44.8115361Z"
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 13469981201685-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.00
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 0.12s
+
+COMMAND LINE ARGUMENTS:
+C:\Users\varun\Unity\6000.6.4f1\Editor\Unity.exe
+-batchmode
+-quit
+-projectPath
+c:\Users\varun\Projects\browser-games\war-arena-unity
+-executeMethod
+WarArena.Editor.EnvironmentPrefabBuilder.BuildAll
+-logfile
+env-build.log
+Successfully changed project path to: c:\Users\varun\Projects\browser-games\war-arena-unity
+C:/Users/varun/Projects/browser-games/war-arena-unity
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-main-allocator-mimalloc-enabled=1"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+Logging is directed to a specific file, skipping project log.
+Player connection [24956]  Target information:
+
+Player connection [24956]  * "[IP] 192.168.97.1 [Port] 55504 [Flags] 2 [Guid] 2046836706 [EditorId] 2046836706 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-IAEIG8O) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [24956]  * "[IP] 192.168.199.1 [Port] 55504 [Flags] 2 [Guid] 2046836706 [EditorId] 2046836706 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-IAEIG8O) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [24956]  * "[IP] 192.168.1.4 [Port] 55504 [Flags] 2 [Guid] 2046836706 [EditorId] 2046836706 [Version] 1048832 [Id] WindowsEditor(7,DESKTOP-IAEIG8O) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [24956] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [24956] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Package Manager] Connected to IPC stream "Upm-45312" after 0.5 seconds.
+[Licensing::Client] Successfully resolved entitlement details
+Library Redirect Path: Library/
+Launching Unity Data Store - C:/Users/varun/Unity/6000.6.4f1/Editor/Data/Tools/Unity.DataStore.exe 
+Unity Data Store artifact dir = Library/DataStore, working dir = C:/Users/varun/Projects/browser-games/war-arena-unityUnity Data Store running and initialised
+[Physics::Module] Selected backend (deferred post-plugins).
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Initialize engine version: 6000.6.4f1 (12bfff696524)
+[EntityIdStore] init: VM path (explicit commit), pageSize=4096, blockCount=1048576, entitiesPerBlock=256, slots reserved=4294967296 bytes
+[Subsystems] Discovering subsystems at path C:/Users/varun/Unity/6000.6.4f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path C:/Users/varun/Projects/browser-games/war-arena-unity/Assets
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+d3d12: failed to query info queue interface (0x80004002).
+Direct3D:
+    Version:         Direct3D 12 [level 12.2]
+    Renderer:        NVIDIA GeForce RTX 3050 6GB Laptop GPU (ID=0x25ac)
+    Vendor:          NVIDIA
+    VRAM:            6001 MB
+    App VRAM Budget: 5233 MB
+    Driver:          32.0.16.1656
+Initialize mono
+Mono path[0] = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/BCLExtensions/runtime/netstandard2.1'
+Mono path[2] = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Users/varun/Unity/6000.6.4f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56312
+CodeReloadManager initialized
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Users/varun/Unity/6000.6.4f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
+Register platform support module: C:/Users/varun/Unity/6000.6.4f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.002949 seconds.
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+Package Manager log level set to [2]
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Scripting: successfully reloaded assembly
+- Finished resetting the current domain, in  1.649 seconds
+Domain Reload Profiling: 2809ms
+	BeginReloadAssembly (302ms)
+		CreateAndSetChildDomain (11ms)
+	RebuildCommonClasses (12ms)
+	RebuildNativeTypeToScriptingClass (26ms)
+	initialDomainReloadingComplete (169ms)
+	LoadAllAssembliesAndSetupDomain (649ms)
+		LoadAssemblies (289ms)
+		TypeCache.Refresh (453ms)
+			TypeCache.ScanAssembly (416ms)
+		AnalyzeDomain (3ms)
+	FinalizeReload (1652ms)
+		SetupLoadedEditorAssemblies (0ms)
+			LogAssemblyErrors (4ms)
+			InitializePlatformSupportModulesInManaged (6ms)
+			BeforeProcessingInitializeOnLoad (177ms)
+			ProcessInitializeOnLoadAttributes (185ms)
+			ProcessInitializeOnLoadMethodAttributes (914ms)
+			EditorAssembliesLoaded (3ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 25 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.inputsystem@1.20.1 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.inputsystem@2436e68c60c4)
+    com.unity.netcode.gameobjects@2.13.3 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.netcode.gameobjects@277a288a1cea)
+    com.unity.nuget.mono-cecil@1.11.6 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.nuget.mono-cecil@ecb9724e46ff)
+  Built-in packages:
+    com.unity.modules.animation@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.audio@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.physics@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.ui@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.vehicles@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.vehicles)
+    com.unity.modules.unitywebrequest@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.unitywebrequestwww@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequestwww)
+    com.unity.modules.unitywebrequestassetbundle@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequestassetbundle)
+    com.unity.modules.unitywebrequestaudio@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.unitywebrequestaudio)
+    com.unity.modules.assetbundle@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.assetbundle)
+    com.unity.modules.imageconversion@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.hierarchycore@1.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.transport@6.6.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.transport@b08a21757155)
+    com.unity.collections@6.6.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.collections@10fff0607388)
+    com.unity.burst@2.0.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.burst@626e66ab421b)
+    com.unity.mathematics@1.4.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.mathematics@8306a64d0cd6)
+    com.unity.test-framework@1.8.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.test-framework@80f691d4262b)
+    com.unity.test-framework.performance@6.6.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.test-framework.performance@b6023decb532)
+    com.unity.ext.nunit@2.1.0 (location: C:\Users\varun\Projects\browser-games\war-arena-unity\Library\PackageCache\com.unity.ext.nunit@0198eae3b53e)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.03 seconds
+[ScriptCompilation] Requested script compilation because: AssetDatabase observed changes in script compilation related files
+Starting: C:\Users\varun\Unity\6000.6.4f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/2000b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/varun/Projects/browser-games/war-arena-unity
+DisplayProgressbar: Compiling Scripts
+Starting: C:\Users\varun\Unity\6000.6.4f1\Editor\Data\DotNetSdk\dotnet.exe "C:\Users\varun\Unity\6000.6.4f1\Editor\Data\Tools\BuildPipeline\ScriptCompilationBuildProgram.exe" "Library/Bee/2000b0aE.dag.json" "Library/Bee/2000b0aE-inputdata.json" "Library\Bee\buildprogram0.traceevents"
+ExitCode: 4 Duration: 0s509ms
+WorkingDir: C:/Users/varun/Projects/browser-games/war-arena-unity
+[308/472    0s] WriteResponseFile Library/Bee/artifacts/rsp/4747638433968585886.rsp
+Rebuilding DAG because FileSignature timestamp changed: Library/Bee/2000b0aE-inputdata.json
+[319/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.dll.mvfrm
+[320/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Burst.dll.mvfrm
+[321/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Mathematics.dll.mvfrm
+[322/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Editor.dll.mvfrm
+[323/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.PackageChecker.Editor.dll.mvfrm
+*** Tundra requires additional run (0.40 seconds), 6 items updated, 318 evaluated
+ExitCode: 0 Duration: 1s76ms
+Starting: C:\Users\varun\Unity\6000.6.4f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/2000b0aE.dag" --continue-on-failure --dagfilejson="Library\Bee\2000b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+WorkingDir: C:/Users/varun/Projects/browser-games/war-arena-unity
+ExitCode: 0 Duration: 3s740ms
+Finished compiling graph: 475 nodes, 6322 flattened edges (5584 ToBuild, 58 ToUse), maximum node priority 295
+[311/472    0s] WriteText Library/Bee/artifacts/2000b0aE.dag/Assembly-CSharp-Editor.rsp
+[340/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.dll.mvfrm
+[341/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.dll.mvfrm
+[350/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.dll.mvfrm
+[351/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.InputSystem.ForUI.Editor.dll.mvfrm
+[356/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.dll.mvfrm
+[357/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.dll.mvfrm
+[358/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.dll.mvfrm
+[359/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Editor.dll.mvfrm
+[360/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Collections.Tests.CoreCLR.PrivateJobNested.dll.mvfrm
+[371/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Runtime.dll.mvfrm
+[378/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Networking.Transport.NetcodeInterop.dll.mvfrm
+[381/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/WarArena.Scripts.dll.mvfrm
+[382/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Unity.Netcode.Editor.dll.mvfrm
+[388/472    0s] ILPP-Configuration Library/ilpp-configuration.nevergeneratedoutput
+[467/472    0s] MovedFromExtractor-Combine Library/Bee/artifacts/2000b0aE.dag/Assembly-CSharp-Editor.dll.mvfrm
+[468/472    0s] Csc Library/Bee/artifacts/2000b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+Assets\Editor\WebBuildSetup.cs(131,9): warning CS0618: 'PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup, ManagedStrippingLevel)' is obsolete: 'Use SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level) instead'
+[469/472    0s] ILPostProcess Library/Bee/artifacts/2000b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/2000b0aE.dag/Assembly-CSharp-Editor.dll, with 123 defines and 320 references
+
+processors: Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+1 processor(s) skipped this assembly
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+[470/472    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[471/472    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+*** Tundra build success (3.67 seconds), 20 items updated, 472 evaluated
+Assets\Editor\WebBuildSetup.cs(131,9): warning CS0618: 'PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup, ManagedStrippingLevel)' is obsolete: 'Use SetManagedStrippingLevel(NamedBuildTarget buildTarget, ManagedStrippingLevel level) instead'
+Total cache size 73603687
+Total cache size after purge 73603687, took 00:00:00.1542806
+AssetDatabase: script compilation time: 6.685840s
+Begin MonoManager ReloadAssembly
+Importing 'GUID: 905b3629ccad7b74ba1f6f8502b5be4e - Path: Assets/Artwork/Environment' with importer (DefaultImporter)
+Imported 'GUID: 905b3629ccad7b74ba1f6f8502b5be4e' -> (Import Result ID: '630e2dea5e2cbe57af202b0bb29ca671') in 0.076 seconds [static dependencies only]. Details - ImportResultOutputID=6ce479b584e67eb4271770d2ee4ca0e5 DependenciesID=ad0d84f5575a8d165c8c0c61bc69895b StaticDependenciesID=011a5faa983988f9d0e28eb202df396f 
+Importing 'GUID: b6ebbb461e0dd8a4d8f46f7851c5bdac - Path: Assets/Artwork/Environment/Props' with importer (DefaultImporter)
+Imported 'GUID: b6ebbb461e0dd8a4d8f46f7851c5bdac' -> (Import Result ID: 'fed71670682bb1f20f4e732bef73e53a') in 0.029 seconds [static dependencies only]. Details - ImportResultOutputID=9c90b0a5cae93f0118a04bd2371f6a70 DependenciesID=7a39b6f02a87fe9e843d46c10f833f94 StaticDependenciesID=86aa4b7e3ef7dd4ef0256640ecd1652a 
+Importing 'GUID: 3a4e566e3f132414fae45e47b21faa4f - Path: Assets/Artwork/Environment/Ruins' with importer (DefaultImporter)
+Imported 'GUID: 3a4e566e3f132414fae45e47b21faa4f' -> (Import Result ID: 'df8c5b2d406065ecfcf1e60c979fd0e1') in 0.027 seconds [static dependencies only]. Details - ImportResultOutputID=052fd052c99a906e72ca2d462dba260a DependenciesID=40a66c96257a0fbfd8a22533ca104a73 StaticDependenciesID=a7c16c0a53ac65d84c891f73c29408b2 
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Scripting: successfully reloaded assembly
+- Finished resetting the current domain, in  1.083 seconds
+Domain Reload Profiling: 2968ms
+	BeginReloadAssembly (783ms)
+		DisableScriptedObjects (78ms)
+		CreateAndSetChildDomain (180ms)
+	RebuildCommonClasses (25ms)
+	RebuildNativeTypeToScriptingClass (33ms)
+	initialDomainReloadingComplete (132ms)
+	LoadAllAssembliesAndSetupDomain (909ms)
+		LoadAssemblies (780ms)
+		TypeCache.Refresh (154ms)
+			TypeCache.ScanAssembly (118ms)
+		AnalyzeDomain (34ms)
+			BuildScriptInfoCaches (28ms)
+	FinalizeReload (1085ms)
+		SetupLoadedEditorAssemblies (0ms)
+			LogAssemblyErrors (6ms)
+			InitializePlatformSupportModulesInManaged (6ms)
+			BeforeProcessingInitializeOnLoad (228ms)
+			ProcessInitializeOnLoadAttributes (236ms)
+			ProcessInitializeOnLoadMethodAttributes (134ms)
+			AfterProcessingInitializeOnLoad (13ms)
+		AwakeInstancesAfterBackupRestoration (66ms)
+Starting new worker id: 0 with log in C:/Users/varun/Projects/browser-games/war-arena-unity/Logs/AssetImportWorkerHW0.log
+Importing 'GUID: 13c7e9167c41c234f8b8a1b952f4e491 - Path: Assets/Artwork/Environment/Ruins/vhouse_diff.png' with importer (TextureImporter)
+Imported 'GUID: 13c7e9167c41c234f8b8a1b952f4e491' -> (Import Result ID: 'a80c42cfed76da4d7d0c84f06b36e701') in 0.173 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=b8291532613b22dbe8d57a2ab39b5bd2 DependenciesID=ebe8fdc462648ec5a01a47ef7ae4a376 StaticDependenciesID=c89a82f997b4a905da9f45fa1aa78648 
+Importing 'GUID: b4718ee077dac4642b64bcd5af57d18a - Path: Assets/Artwork/Environment/Props/T-26_AM.png' with importer (TextureImporter)
+Imported 'GUID: b4718ee077dac4642b64bcd5af57d18a' -> (Import Result ID: '06c5f5b94866955165896f570e6a60a8') in 0.200 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=e62f9ffd00e6306b2d983d761519388c DependenciesID=3c8e935b08af91858538c5b453a0ec4d StaticDependenciesID=39b8841518b53c49aae9e83b9aa4a8fd 
+Importing 'GUID: bdb59b5ce7d5ab3448e4763c765f9ae8 - Path: Assets/Artwork/Environment/Ruins/blr205_Church.png' with importer (TextureImporter)
+Imported 'GUID: bdb59b5ce7d5ab3448e4763c765f9ae8' -> (Import Result ID: '5653d08fd82f41700fccbf190d9a03f6') in 0.296 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=fcbf170f69895fc2f69bb3c48fcfdd7e DependenciesID=7205cf8bed3b4607f2868a0f2483c3e0 StaticDependenciesID=6431423671f301c9b88133e736ca7ff8 
+Importing 'GUID: 3077f65ed4d02904c8ddef8021eefae7 - Path: Assets/Artwork/Environment/Ruins/church.FBX' with importer (FBXImporter)
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.04 seconds
+Imported 'GUID: 3077f65ed4d02904c8ddef8021eefae7' -> (Import Result ID: 'b15447b213f3a7cb29966b96d287722b') in 0.277 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=f6e5f9d92a1e693696b90d8615c6f5ad DependenciesID=f3dc6f8b61e51434715109fcde2805e0 StaticDependenciesID=fe755d34b195845dbfc7894444bcb90f 
+Importing 'GUID: c2b242086b1198c419a67ec29f3e288e - Path: Assets/Artwork/Environment/Props/Rock11.obj' with importer (FBXImporter)
+Imported 'GUID: c2b242086b1198c419a67ec29f3e288e' -> (Import Result ID: '69e1c411b542df1990726e52fc30f393') in 0.044 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=e5bc68be56234f4ebb7b8d2b784f01d0 DependenciesID=3626e3ebc728de7fa077edf0c0d28a63 StaticDependenciesID=0d11ca9a78b124e92f192d397826c41f 
+Importing 'GUID: 37402df346f1ec343b8fbb34f99a899f - Path: Assets/Artwork/Environment/Ruins/vhouse_DM.FBX' with importer (FBXImporter)
+Imported 'GUID: 37402df346f1ec343b8fbb34f99a899f' -> (Import Result ID: '04471767336659e39dd7d77ba9c795f2') in 0.057 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=616bd2dbc74fe2d8c79925164f3a88ea DependenciesID=82ce1b88221c6df041a1ac191ca7efb6 StaticDependenciesID=7684ffbbfab8d033dff2e32096eb85d1 
+Importing 'GUID: b781b6829f653fe4da67ae3e5754a9df - Path: Assets/Artwork/Environment/Props/tower.obj' with importer (FBXImporter)
+Imported 'GUID: b781b6829f653fe4da67ae3e5754a9df' -> (Import Result ID: 'f5dfa869a9be7da6db5c00719353aa5e') in 0.051 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=5eb41bfd4214215df5d1c3a1c7b5d1a1 DependenciesID=ab7af1bb3e367c07558c1d996a413536 StaticDependenciesID=259f99623fb682611372f850e23f136d 
+Importing 'GUID: 2c92091a9fcd6b54e8e690c9bdbb284f - Path: Assets/Artwork/Environment/Props/T-26_Wreck.FBX' with importer (FBXImporter)
+Keyframe reduction: Ratio: 100.000000%;
+Imported 'GUID: 2c92091a9fcd6b54e8e690c9bdbb284f' -> (Import Result ID: 'cb00050ba0086d8928a72cff2e352157') in 0.143 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=b746eba1b65038f2d1dd5ea043207cde DependenciesID=6e21bb1d2234f2d06885c5ec30c3641b StaticDependenciesID=c538acaecda1c1dbe318f46124165754 
+Importing 'GUID: 4c88cc3766bf2aa4a85b5d01544032ef - Path: Assets/Artwork/Environment/Props/Rock6.obj' with importer (FBXImporter)
+Imported 'GUID: 4c88cc3766bf2aa4a85b5d01544032ef' -> (Import Result ID: '375aa57ab6e3399b8d09a75f471d17eb') in 0.058 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=aced5c1932044abbd5058c78e3346e97 DependenciesID=6b73a7a78e35348734b322e818bdfb37 StaticDependenciesID=c0ec3895a3631e433be615f346795222 
+Importing 'GUID: 3ebd7c556a7da734d8630bb681ad0324 - Path: Assets/Artwork/Environment/Props/Rock4.obj' with importer (FBXImporter)
+Imported 'GUID: 3ebd7c556a7da734d8630bb681ad0324' -> (Import Result ID: '60cff8095725a9524f49d7baa1b93b92') in 0.050 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=ea3c5beb5ef173c4ef7fd50b76115f5b DependenciesID=729954754540aac75742470b9339dc62 StaticDependenciesID=e2f9b60dcb6219631c1e74da7642a149 
+
+Asset Pipeline Refresh (id=301af1895c5f9d14ea4a915a08cd1edb): Total: 12.364 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	(Values over 0.05ms)
+	Summary:
+		Imports: total=13 (actual=13, local cache=0, cache server=0)
+		Asset DB Process Time: managed=49 ms, native=3333 ms
+		Asset DB Callback time: managed=214 ms, native=43 ms
+		Scripting: domain reloads=1, domain reload time=1987 ms, compile time=6691 ms, other=45 ms
+		Project Asset Count: scripts=373, non-scripts=336
+		Asset File Changes: new=14, changed=14, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.103ms
+	InvokePackagesCallback: 39.458ms
+	ApplyChangesToAssetFolders: 1.489ms
+	Scan: 268.375ms
+	Collect global state as custom dependencies: 23.709ms
+	OnSourceAssetsModified: 2.288ms
+	CategorizeScriptCompilationAssets: 16.620ms
+	ProcessAssetsWithTransientArtifactChanges: 62.393ms
+	CategorizeAssets: 20.785ms
+	CompileScripts: 6690.909ms
+	ImportOutOfDateAssets: 2635.325ms (1093.683ms without children)
+		ImportManagerImport: 1506.143ms (11.987ms without children)
+			UpdateCategorizedAssets: 0.387ms
+		UnloadImportedAssets: 2.590ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.201ms
+		ImportSchedulerStart: 32.678ms
+	PostProcessAllAssets: 214.279ms
+		XRBuildSystem.XRAssetImported 0.469ms
+		VersionControlSettings.HiddenFilePostprocess 0.388ms
+		PostProcessCallbackCreateDeferredMaterials 0.128ms
+		MonoPostProcessAllAssets: 208.855ms
+			AssetPostprocessor.OnPostprocessAllAssets 85.641ms
+			NetworkPrefabProcessor.OnPostprocessAllAssets 24.692ms
+			StyleCatalogPostProcessor.OnPostprocessAllAssets 24.281ms
+			WindowAssetPostprocessingWatcher.OnPostprocessAllAssets 20.570ms
+			BuilderAssetPostprocessor.OnPostprocessAllAssets 11.177ms
+			TextAssetPostProcessor.OnPostprocessAllAssets 3.404ms
+			SyncVS.PostprocessSyncProject 3.346ms
+			AssetChangedListener.OnPostprocessAllAssets 2.739ms
+			ArtifactBrowserPostProcessor.OnPostprocessAllAssets 2.504ms
+			EditModeScopePostprocessor.OnPostprocessAllAssets 2.406ms
+			RetainedModeAssetPostprocessor.OnPostprocessAllAssets 1.982ms
+			SpeedTree9Postprocessor.OnPostprocessAllAssets 1.684ms
+			ReferencedClipsPostProcessor.OnPostprocessAllAssets 1.284ms
+			AudioMixerPostprocessor.OnPostprocessAllAssets 0.906ms
+			InputActionAssetPostprocessor.OnPostprocessAllAssets 0.880ms
+			AssetEvents.OnPostprocessAllAssets 0.670ms
+			ProjectSettingsPostprocessor.OnPostprocessAllAssets 0.645ms
+			AssetDatabaseCallbacks.OnPostprocessAllAssets 0.538ms
+			InputActionJsonNameModifierAssetProcessor.OnPostprocessAllAssets 0.503ms
+			ThemePostprocessor.OnPostprocessAllAssets 0.446ms
+			ConfigAssetsTracker.OnPostprocessAllAssets 0.363ms
+			TerrainToolbarOverlayPostProcessor.OnPostprocessAllAssets 0.346ms
+			ScenarioDriftAssetsTracker.OnPostprocessAllAssets 0.332ms
+			SpeedTreePostProcessor.OnPostprocessAllAssets 0.263ms
+			RenderPipelineGlobalSettingsPostprocessor.OnPostprocessAllAssets 0.185ms
+			AudioContainerPostProcessor.OnPostprocessAllAssets 0.159ms
+	PostAssetChangesProfiler: 9.624ms
+	UnloadStreamsBegin: 6.140ms
+	PersistCurrentRevisions: 0.240ms
+	GenerateScriptTypeHashes: 2.918ms
+	GenerateScriptTypeSerializationHashes: 6.606ms
+	Untracked: 2264.437ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 1.717ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-war-arena-unity
+Unloading 11 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 1841 unused Assets / (1.9 MB). Loaded Objects now: 2352.
+Memory consumption went from 283.3 MB to 281.5 MB.
+Total: 23.622100 ms (FindLiveObjects: 0.630800 ms CreateObjectMapping: 0.332700 ms MarkObjects: 19.167300 ms  DeleteObjects: 2.945900 ms)
+
+Importing 'GUID: 13c7e9167c41c234f8b8a1b952f4e491 - Path: Assets/Artwork/Environment/Ruins/vhouse_diff.png' with importer (TextureImporter)
+Imported 'GUID: 13c7e9167c41c234f8b8a1b952f4e491' -> (Import Result ID: '401adf88f2b7d9888e3e3d728edb47d6') in 0.091 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=c56dbf7e3971e41e6216eeaf7dbb20d1 DependenciesID=3a1dbb8c1cefda19ca5fdebaa204e1e1 StaticDependenciesID=f5d9da64e8ef5c01cbe3af3328e0f1ce 
+Refreshing native plugins compatible for Editor in 2.55 ms, found 1 plugins.
+Asset Pipeline Refresh (id=728a49810fa50c641808ce43aa080f75): Total: 0.290 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: c2a82fcd691a00f4c95be6dc911c3ccd - Path: Assets/Resources/Artwork/Environment' with importer (DefaultImporter)
+Imported 'GUID: c2a82fcd691a00f4c95be6dc911c3ccd' -> (Import Result ID: 'a076991f6076bd67f0ccbc8be51aabe1') in 0.025 seconds [static dependencies only]. Details - ImportResultOutputID=7f72cc707177c4939a7b3ea079fd73a5 DependenciesID=87fb9ad0925ea1ea96658da9a142e659 StaticDependenciesID=af0abfaffd668bb8f77625fa84701215 
+Importing 'GUID: d83b76e4f3c09be489bcd04f3a68ccb2 - Path: Assets/Resources/Artwork/Environment/RuinedHouse.prefab' with importer (PrefabImporter)
+Imported 'GUID: d83b76e4f3c09be489bcd04f3a68ccb2' -> (Import Result ID: '0c2b4be19a2b8f09c0042cfd4bfc5ebb') in 0.027 seconds [static dependencies only]. Details - ImportResultOutputID=485ce8ab035b07231ce0330d137e1abf DependenciesID=48f8727b968b56f27e3c47045f1dcaa5 StaticDependenciesID=a010a2b74d8e1828eb2341c9f48178a8 
+Asset Pipeline Refresh (id=9e8aa2849cb01784a8eda26edaf34e8c): Total: 0.090 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[EnvironmentPrefabBuilder] Saved Assets/Resources/Artwork/Environment/RuinedHouse.prefab
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildRuinedHouse () (at Assets/Editor/EnvironmentPrefabBuilder.cs:63)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildAll () (at Assets/Editor/EnvironmentPrefabBuilder.cs:19)
+
+(Filename: Assets/Editor/EnvironmentPrefabBuilder.cs Line: 63)
+
+Importing 'GUID: bdb59b5ce7d5ab3448e4763c765f9ae8 - Path: Assets/Artwork/Environment/Ruins/blr205_Church.png' with importer (TextureImporter)
+Imported 'GUID: bdb59b5ce7d5ab3448e4763c765f9ae8' -> (Import Result ID: '5f03e158256d9d289a9592519e3913af') in 0.219 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=86f154240d23f5b7df71312eea2d0297 DependenciesID=84b9fbeede773b453b9049ae4c224d6e StaticDependenciesID=6993af872761a85989d4ec70f67e53ad 
+Asset Pipeline Refresh (id=2a680a8314e3b1e4b818844633c24da5): Total: 0.285 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: 08a092735654b964c9339947ff3eefdf - Path: Assets/Resources/Artwork/Environment/RuinedChurch.prefab' with importer (PrefabImporter)
+Imported 'GUID: 08a092735654b964c9339947ff3eefdf' -> (Import Result ID: '6f883a51cc4a44c2b20bb54c395f45bf') in 0.031 seconds [static dependencies only]. Details - ImportResultOutputID=6db2005251e72ad6ee4566d8d79493c4 DependenciesID=293289a451020c6ecbd381c880c71ade StaticDependenciesID=6943cc1556ee85ae5416d2287369f7bf 
+Asset Pipeline Refresh (id=383fade860d9a7b4d83c2cdcb303861d): Total: 0.060 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[EnvironmentPrefabBuilder] Saved Assets/Resources/Artwork/Environment/RuinedChurch.prefab
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildRuinedChurch () (at Assets/Editor/EnvironmentPrefabBuilder.cs:99)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildAll () (at Assets/Editor/EnvironmentPrefabBuilder.cs:20)
+
+(Filename: Assets/Editor/EnvironmentPrefabBuilder.cs Line: 99)
+
+Importing 'GUID: 275489fc09192e6478bd75d7207e672a - Path: Assets/Resources/Artwork/Environment/Watchtower.prefab' with importer (PrefabImporter)
+Imported 'GUID: 275489fc09192e6478bd75d7207e672a' -> (Import Result ID: '58f86db49dc6a2b1c27a3f5648e38e2f') in 0.052 seconds [static dependencies only]. Details - ImportResultOutputID=b8be73e42e5893bb6605d939d4f925ec DependenciesID=ab4420c43775b1cf3475e36cde08cb6b StaticDependenciesID=1e14853a947c3e428eb665f05893c8bb 
+Asset Pipeline Refresh (id=159b5c1d807a4174bbdaf9f41a54aba2): Total: 0.092 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[EnvironmentPrefabBuilder] Saved Assets/Resources/Artwork/Environment/Watchtower.prefab
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildWatchtower () (at Assets/Editor/EnvironmentPrefabBuilder.cs:128)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildAll () (at Assets/Editor/EnvironmentPrefabBuilder.cs:21)
+
+(Filename: Assets/Editor/EnvironmentPrefabBuilder.cs Line: 128)
+
+Importing 'GUID: b4718ee077dac4642b64bcd5af57d18a - Path: Assets/Artwork/Environment/Props/T-26_AM.png' with importer (TextureImporter)
+Imported 'GUID: b4718ee077dac4642b64bcd5af57d18a' -> (Import Result ID: '31c4d338b48249be7bcc1a254ded9dc2') in 0.113 seconds [static and dynamic dependencies]. Details - ImportResultOutputID=cfccb433cebf57ba98c9c6dbfffa8cbc DependenciesID=797167cbf49ed8e807d15fc00a67fc11 StaticDependenciesID=21722ff7244e8081683ab5bb0f8f9f3a 
+Asset Pipeline Refresh (id=38b0a120f6062fd4084f74498a0f8443): Total: 0.182 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Importing 'GUID: f3716d67f1ea3414cac382be44e44ec5 - Path: Assets/Resources/Artwork/Environment/TankWreck.prefab' with importer (PrefabImporter)
+Imported 'GUID: f3716d67f1ea3414cac382be44e44ec5' -> (Import Result ID: '2a73fefee82baceaf34e32acbfb0e399') in 0.035 seconds [static dependencies only]. Details - ImportResultOutputID=928c96fa12a38556048a4c07cddae890 DependenciesID=0fe2e0420cf74c13c6d0a7e6ecf1177f StaticDependenciesID=2b9c4071729bcde2f941c2d3c9c3a369 
+Asset Pipeline Refresh (id=30180db77577dba4db6f8464027acf9d): Total: 0.066 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[EnvironmentPrefabBuilder] Saved Assets/Resources/Artwork/Environment/TankWreck.prefab
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildTankWreck () (at Assets/Editor/EnvironmentPrefabBuilder.cs:173)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildAll () (at Assets/Editor/EnvironmentPrefabBuilder.cs:22)
+
+(Filename: Assets/Editor/EnvironmentPrefabBuilder.cs Line: 173)
+
+Importing 'GUID: 8a639bf1b531758408ff6811ddc73f49 - Path: Assets/Resources/Artwork/Environment/Rock4.prefab' with importer (PrefabImporter)
+Imported 'GUID: 8a639bf1b531758408ff6811ddc73f49' -> (Import Result ID: '083fd31f1ac6011f8f590ca68052829e') in 0.030 seconds [static dependencies only]. Details - ImportResultOutputID=7240740ce367cf2ba2873f8b872a94ce DependenciesID=49a71eb781d576a4d46b65ced5aa8bcd StaticDependenciesID=49a1e17d333894fda46fd4fd7f8d83c4 
+Asset Pipeline Refresh (id=a97f46cce434d7d4bac051c77b3dfa19): Total: 0.059 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[EnvironmentPrefabBuilder] Saved Assets/Resources/Artwork/Environment/Rock4.prefab
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildRocks () (at Assets/Editor/EnvironmentPrefabBuilder.cs:200)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildAll () (at Assets/Editor/EnvironmentPrefabBuilder.cs:23)
+
+(Filename: Assets/Editor/EnvironmentPrefabBuilder.cs Line: 200)
+
+Importing 'GUID: dd94e2861e7b14a41bce823f008c76b6 - Path: Assets/Resources/Artwork/Environment/Rock6.prefab' with importer (PrefabImporter)
+Imported 'GUID: dd94e2861e7b14a41bce823f008c76b6' -> (Import Result ID: '6c9e8a99681fa5219d5156610e028616') in 0.035 seconds [static dependencies only]. Details - ImportResultOutputID=ac99533976cbc3f8ba4fd1b191fe5b76 DependenciesID=27ed49a5d0f511f014f8aa181083cf8b StaticDependenciesID=a7fac0542888bc522b92ac1c3978445b 
+Asset Pipeline Refresh (id=2e643ba57e517a741b601199217786ea): Total: 0.067 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[EnvironmentPrefabBuilder] Saved Assets/Resources/Artwork/Environment/Rock6.prefab
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildRocks () (at Assets/Editor/EnvironmentPrefabBuilder.cs:200)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildAll () (at Assets/Editor/EnvironmentPrefabBuilder.cs:23)
+
+(Filename: Assets/Editor/EnvironmentPrefabBuilder.cs Line: 200)
+
+Importing 'GUID: 81635d43fe0b2bc42ae06d17405410ef - Path: Assets/Resources/Artwork/Environment/Rock11.prefab' with importer (PrefabImporter)
+Imported 'GUID: 81635d43fe0b2bc42ae06d17405410ef' -> (Import Result ID: '86bb1b19455bb5d1dc2d18e87d20c802') in 0.037 seconds [static dependencies only]. Details - ImportResultOutputID=e3e26445a646b38caac6b58d0e9e34d9 DependenciesID=6db255fdc418d6872b0ebc3873aac573 StaticDependenciesID=e8f188e72e7f8d3e1c5ea804fedf8ab1 
+Asset Pipeline Refresh (id=47dc6339dbeee0541925864705b22d92): Total: 0.114 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+[EnvironmentPrefabBuilder] Saved Assets/Resources/Artwork/Environment/Rock11.prefab
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildRocks () (at Assets/Editor/EnvironmentPrefabBuilder.cs:200)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildAll () (at Assets/Editor/EnvironmentPrefabBuilder.cs:23)
+
+(Filename: Assets/Editor/EnvironmentPrefabBuilder.cs Line: 200)
+
+Asset Pipeline Refresh (id=6dec4eb430019114ea143b0dd8d4b1fc): Total: 0.018 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+[EnvironmentPrefabBuilder] All environment prefabs built successfully!
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+WarArena.Editor.EnvironmentPrefabBuilder:BuildAll () (at Assets/Editor/EnvironmentPrefabBuilder.cs:27)
+
+(Filename: Assets/Editor/EnvironmentPrefabBuilder.cs Line: 27)
+
+Batchmode quit successfully invoked - shutting down!
+Curl error 42: Callback aborted
+Worker ready: AssetImportWorkerHW0 0
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input Polling Thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-varun-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-varun channel disconnected successfully.
+Lingering sessions upon destruction of worker manager
+Unity Data Store service was successfully shut down
+UDS shutting down local client system
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+CodeReloadManager destroyed
+Exiting batchmode successfully now!
+[ExitDontLaunchBugReporter] Exiting without the bug reporter. Application will exit with return code 0

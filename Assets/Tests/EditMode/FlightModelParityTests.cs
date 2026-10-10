@@ -164,7 +164,7 @@ namespace WarArena.Tests
 /// expression evaluation order are not specified to match Rust's.
 /// </para>
 /// </remarks>
-private const float Tolerance = 0.05f;
+        private const float Tolerance = 0.05f;
 
         private static int RunRustTrace(
             string aircraftId, float altitude, float headingDeg, int ticks,

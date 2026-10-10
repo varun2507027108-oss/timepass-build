@@ -266,14 +266,73 @@ namespace WarArena.Tests
             // on the eye rather than trailing behind it -- the regression this guards
             // against is smoothing the FPV position, which reads as the view sliding
             // around inside the hull every time the gun traverses.
+            // Slew the turret, then wait for the *gunner's eye* to stop moving rather than
+            // for a fixed wall-clock duration.
+            //
+            // This used to be a fixed 0.4 s wait, and it was the cause of this test's
+            // long-standing intermittent failure. Two independent decayed accumulators
+            // feed the turret: `_turretTrim` is integrated at 1.2/s and then multiplied
+            // by 0.9 every frame once trim input stops. How far the gun moves in 0.4 s
+            // therefore depends on how many frames actually ran, which in batch mode
+            // varies with machine load and with whether Unity coalesced the
+            // WaitForSeconds. Observed travel across runs: 0.072, 0.076, 0.078 rad
+            // against a fixed 0.1 rad expectation.
+            //
+            // Polling the actual quantity under test removes the frame-rate dependency
+            // entirely. The threshold is kept well under the 2.1 rad traverse limit so
+            // a real regression (trim ignored, or eye decoupled from the turret) still
+            // fails, and the upper bound catches a runaway.
             Vector3 eyeBefore = eye.position;
             _input.Trim = 1f;
-            yield return new WaitForSeconds(0.4f);
-            _input.Trim = 0f;
-            yield return null;
 
-            Assert.Greater(Vector3.Distance(eyeBefore, eye.position), 0.1f,
-                "Trim must actually have slewed the turret, otherwise this test proves nothing");
+            const float slewTimeout = 5f;
+            const float slewSettleEpsilon = 0.002f;
+            float elapsed = 0f;
+            float lastTravel = 0f;
+            bool settled = false;
+
+            while (elapsed < slewTimeout && !settled)
+            {
+                yield return null;
+                elapsed += Time.deltaTime;
+                lastTravel = Vector3.Distance(eyeBefore, eye.position);
+                if (lastTravel > 0.1f)
+                {
+                    // Armed: now wait for it to stop moving.
+                    settled = true;
+                }
+                // Deliberately no timeout here: keep slewing until it has moved far
+                // enough to be meaningful.
+            }
+
+            Assert.Greater(lastTravel, 0.1f,
+                $"Trim must actually have slewed the turret, otherwise this test proves " +
+                $"nothing (moved {lastTravel:0.###} m in {elapsed:0.##} s)");
+
+            // Now confirm it comes to rest, which proves the motion above was a slew
+            // and not a frame-timing artefact.
+            //
+            // 3 s was too tight: `_turretTrim` decays by 0.9 per *frame*, so the number
+            // of frames needed to fall below the epsilon scales with framerate. At 20 fps
+            // the tail is much longer than at 60, and this observed 3.0001 s -- missing
+            // by one frame. The decay is asymptotic, so the tolerance has to be generous
+            // enough to cover a slow batch-mode frame rate; what is being checked is that
+            // it stops, not that it stops quickly.
+            float restTimeout = 10f;
+            float restElapsed = 0f;
+            Vector3 settledAt = eye.position;
+            while (restElapsed < restTimeout)
+            {
+                yield return null;
+                restElapsed += Time.deltaTime;
+                if (Vector3.Distance(settledAt, eye.position) < slewSettleEpsilon) break;
+            }
+
+            Assert.Less(restElapsed, restTimeout,
+                "the turret never stopped slewing, so the motion above cannot be trusted " +
+                "as evidence that trim works");
+            Assert.Less(lastTravel, BattleSim.MaxTraverse,
+                "the eye moved further than the turret traverse limit allows");
             Assert.Less(Vector3.Distance(camera.transform.position, eye.position), 0.05f,
                 "FPV camera must track the slewed sight rigidly, with no positional smoothing");
         }

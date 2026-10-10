@@ -37,6 +37,8 @@ namespace WarArena.Gameplay
 
         private Transform _leftWheels;
         private Transform _rightWheels;
+        private Transform[] _leftWheelList;
+        private Transform[] _rightWheelList;
         private Transform _leftTrack;
         private Transform _rightTrack;
 
@@ -117,61 +119,66 @@ namespace WarArena.Gameplay
                 renderer.sharedMaterial = metal ? steel : paint;
             }
 
-            // Create a clean, aligned Turret pivot at the turret ring
-            Turret = new GameObject("Turret").transform;
-            Turret.SetParent(Root, false);
-            Turret.localPosition = new Vector3(0f, 1.85f, -0.3f);
-            Turret.localRotation = Quaternion.identity;
-            _turretBaseRotation = Quaternion.identity;
-
-            // Create a clean GunPivot child under Turret
-            GunPivot = new GameObject("GunPivot").transform;
-            GunPivot.SetParent(Turret, false);
-            GunPivot.localPosition = new Vector3(0f, 0.15f, 0.5f);
-            GunPivot.localRotation = Quaternion.identity;
-            _gunBaseRotation = Quaternion.identity;
-
-            // Reparent gun components under GunPivot so elevation moves barrel, mount, and muzzle
-            string[] gunParts = { "mount_low", "barrel_low", "gun_002_low", "muzzle_low" };
-            for (int i = 0; i < gunParts.Length; i++)
+            // Bind Turret directly to the imported model's turret node (e.g. turret_low)
+            Turret = FindDeep(instance.transform, "turret_low");
+            if (Turret == null)
             {
-                Transform t = FindDeep(instance.transform, gunParts[i]);
-                if (t != null)
-                {
-                    t.SetParent(GunPivot, true);
-                }
+                Turret = new GameObject("Turret").transform;
+                Turret.SetParent(Root, false);
+                Turret.localPosition = new Vector3(0f, 1.85f, -0.3f);
+            }
+            _turretBaseRotation = Turret.localRotation;
+
+            // Bind GunPivot directly to the imported model's gun elevation node (e.g. gun_002_low)
+            GunPivot = FindDeep(instance.transform, "gun_002_low");
+            if (GunPivot != null)
+            {
+                _gunBaseRotation = GunPivot.localRotation;
+            }
+            else
+            {
+                GunPivot = new GameObject("GunPivot").transform;
+                GunPivot.SetParent(Turret, false);
+                GunPivot.localPosition = new Vector3(0f, 0.15f, 0.5f);
+                _gunBaseRotation = Quaternion.identity;
             }
 
-            // Reparent remaining turret components under Turret
-            string[] turretParts = {
-                "turret_low", "commanderCupola_low", "window_003_low",
-                "window_004_low", "hatch_002_low", "hinge_004_low", "handleBracket_low"
-            };
-            for (int i = 0; i < turretParts.Length; i++)
-            {
-                Transform t = FindDeep(instance.transform, turretParts[i]);
-                if (t != null)
-                {
-                    t.SetParent(Turret, true);
-                }
-            }
-
-            // Muzzle exit point
+            // Muzzle exit point (binds under muzzle_low if present, or GunPivot)
+            Transform muzzleNode = FindDeep(instance.transform, "muzzle_low");
             Muzzle = new GameObject("Muzzle").transform;
-            Muzzle.SetParent(GunPivot, false);
-            Muzzle.localPosition = new Vector3(0f, 0f, 2.5f);
-            Muzzle.localRotation = Quaternion.identity;
+            if (muzzleNode != null)
+            {
+                Muzzle.SetParent(muzzleNode, false);
+                Muzzle.localPosition = Vector3.zero;
+                Muzzle.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+            else if (GunPivot != null)
+            {
+                Muzzle.SetParent(GunPivot, false);
+                Muzzle.localPosition = new Vector3(0f, -2.12f, 0f);
+                Muzzle.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+            else
+            {
+                Muzzle.SetParent(Turret, false);
+                Muzzle.localPosition = new Vector3(0f, 0.15f, 3.0f);
+                Muzzle.localRotation = Quaternion.identity;
+            }
 
             // Gunner's sight eye point, parented to Turret matching the rig contract
             GunnerEye = new GameObject("GunnerEye").transform;
             GunnerEye.SetParent(Turret, false);
-            GunnerEye.localPosition = new Vector3(0f, 0.20f, 0.42f);
-            GunnerEye.localRotation = Quaternion.identity;
+            GunnerEye.localPosition = new Vector3(0f, -0.60f, 0.28f);
+            GunnerEye.localRotation = Quaternion.Euler(90f, 0f, 0f);
 
             // Keep a reference to the instantiated hierarchy
             _modelRoot = instance;
-
-            BuildTrackRig(instance, steel);
+            _leftWheels = null;
+            _rightWheels = null;
+            _leftWheelList = null;
+            _rightWheelList = null;
+            _leftTrack = leftTrack.transform;
+            _rightTrack = null;
 
             Root.localScale = Vector3.one * scale;
         }
@@ -185,69 +192,6 @@ namespace WarArena.Gameplay
         /// yet, so callers must null-check before using it.
         /// </summary>
         public Transform GunPivot { get; private set; }
-
-        /// <summary>
-        /// Groups the imported track meshes under one pivot per side so they can be
-        /// rolled.
-        ///
-        /// The model's own track pivots sit at y ~0.02, which is the ground contact
-        /// line rather than the middle of the track. Rotating those directly would
-        /// swing the whole track through the terrain in a visible arc, so a new pivot
-        /// is placed at the running gear's centre height and the original nodes are
-        /// reparented under it.
-        ///
-        /// Sides are decided by the sign of the node's X in the tank's own space, not
-        /// by assuming an index. Unity is left-handed with the tank facing +Z, so the
-        /// tank's right flank is +X.
-        /// </summary>
-        private void BuildTrackRig(GameObject instance, Material steel)
-        {
-            Transform[] tracks = instance.GetComponentsInChildren<Transform>(true);
-            Transform left = null;
-            Transform right = null;
-
-            for (int i = 0; i < tracks.Length; i++)
-            {
-                Transform t = tracks[i];
-                if (!t.name.ToLowerInvariant().StartsWith("track")) continue;
-
-                // Skip the interior nodes of an already-grouped run.
-                if (t.parent != null && t.parent.name.StartsWith("TrackRun")) continue;
-
-                bool isLeft = t.localPosition.x < 0f;
-                Transform sideRoot = isLeft ? left : right;
-
-                if (sideRoot == null)
-                {
-                    var go = new GameObject(isLeft ? "TrackRunLeft" : "TrackRunRight");
-                    go.transform.SetParent(Root, false);
-                    // Half the height of the running gear, which is where a track
-                    // actually rolls about.
-                    go.transform.localPosition = new Vector3(0f, 0.34f, 0f);
-                    sideRoot = go.transform;
-                    if (isLeft) left = sideRoot; else right = sideRoot;
-                }
-
-                t.SetParent(sideRoot, true);
-            }
-
-            _leftWheels = left;
-            _rightWheels = right;
-            _leftTrack = left;
-            _rightTrack = right;
-        }
-
-        private static Transform Require(GameObject root, string name)
-        {
-            Transform found = FindDeep(root.transform, name);
-            if (found == null)
-            {
-                throw new System.InvalidOperationException(
-                    $"Imported tank model is missing the '{name}' pivot, so the turret, " +
-                    "gun or muzzle cannot be driven.");
-            }
-            return found;
-        }
 
         private static Transform FindDeep(Transform root, string name)
         {
@@ -278,11 +222,13 @@ namespace WarArena.Gameplay
 
             Material wheelMat = SteelMaterial(new Color(0.13f, 0.12f, 0.11f));
 
+            _leftWheelList = new Transform[5];
+            _rightWheelList = new Transform[5];
             for (int i = 0; i < 5; i++)
             {
                 float z = -2.8f + i * 1.4f;
-                Cylinder("LeftWheel" + i, 0.45f, 1.15f, wheelMat, _leftWheels, new Vector3(-1.7f, 0.5f, z));
-                Cylinder("RightWheel" + i, 0.45f, 1.15f, wheelMat, _rightWheels, new Vector3(1.7f, 0.5f, z));
+                _leftWheelList[i] = Cylinder("LeftWheel" + i, 0.45f, 1.15f, wheelMat, _leftWheels, new Vector3(-1.7f, 0.5f, z)).transform;
+                _rightWheelList[i] = Cylinder("RightWheel" + i, 0.45f, 1.15f, wheelMat, _rightWheels, new Vector3(1.7f, 0.5f, z)).transform;
             }
 
             // Hull, glacis, deck
@@ -378,8 +324,32 @@ namespace WarArena.Gameplay
         /// </summary>
         public void Place(Vector3 worldPosition, float headingRad, float turretLocalYawRad, float gunPitchRad = 0f)
         {
-            Root.position = worldPosition;
-            Root.rotation = Quaternion.Euler(0f, headingRad * Mathf.Rad2Deg, 0f);
+            float headingDeg = headingRad * Mathf.Rad2Deg;
+            Vector3 fwd = new Vector3(Mathf.Sin(headingRad), 0f, Mathf.Cos(headingRad));
+            Vector3 right = new Vector3(fwd.z, 0f, -fwd.x);
+
+            // Sample terrain under 4 track contact points (wheelbase ~ 3.4m, track width ~ 2.4m)
+            Vector3 fl = worldPosition + fwd * 1.7f - right * 1.2f;
+            Vector3 fr = worldPosition + fwd * 1.7f + right * 1.2f;
+            Vector3 rl = worldPosition - fwd * 1.7f - right * 1.2f;
+            Vector3 rr = worldPosition - fwd * 1.7f + right * 1.2f;
+
+            float yFL = BattlefieldBuilder.GetTerrainHeight(fl.x, fl.z);
+            float yFR = BattlefieldBuilder.GetTerrainHeight(fr.x, fr.z);
+            float yRL = BattlefieldBuilder.GetTerrainHeight(rl.x, rl.z);
+            float yRR = BattlefieldBuilder.GetTerrainHeight(rr.x, rr.z);
+
+            float avgGroundY = (yFL + yFR + yRL + yRR) * 0.25f;
+            Vector3 pos = worldPosition;
+            pos.y = Mathf.Max(pos.y, avgGroundY);
+
+            // Pitch angle (positive when front is higher than rear)
+            float pitchAngle = Mathf.Atan2(((yFL + yFR) * 0.5f) - ((yRL + yRR) * 0.5f), 3.4f) * Mathf.Rad2Deg;
+            // Roll angle (positive when right is higher than left)
+            float rollAngle = Mathf.Atan2(((yFR + yRR) * 0.5f) - ((yFL + yRL) * 0.5f), 2.4f) * Mathf.Rad2Deg;
+
+            Root.position = pos;
+            Root.rotation = Quaternion.Euler(0f, headingDeg, 0f) * Quaternion.Euler(-pitchAngle, 0f, -rollAngle);
             Turret.localRotation = Quaternion.Euler(0f, turretLocalYawRad * Mathf.Rad2Deg, 0f) * _turretBaseRotation;
             if (GunPivot != null)
             {
@@ -387,15 +357,38 @@ namespace WarArena.Gameplay
             }
         }
 
-        /// <summary>Rolls the track links by distance travelled on each side.</summary>
+        /// <summary>Rolls the track links / wheels by distance travelled on each side.</summary>
         public void SpinTracks(float leftSpeedMps, float rightSpeedMps, float dt)
         {
             float radius = 0.45f;
             _leftSpin -= (leftSpeedMps / radius) * dt * Mathf.Rad2Deg;
             _rightSpin -= (rightSpeedMps / radius) * dt * Mathf.Rad2Deg;
 
-            _leftWheels.localRotation = Quaternion.Euler(_leftSpin, 0f, 0f);
-            _rightWheels.localRotation = Quaternion.Euler(_rightSpin, 0f, 0f);
+            // In procedural mode, spin each individual road wheel on its axle.
+            // Never rotate _leftWheels / _rightWheels parent or the tracks as a whole,
+            // which would orbit them like a Ferris wheel.
+            if (_leftWheelList != null)
+            {
+                Quaternion leftRot = Quaternion.Euler(0f, 0f, 90f) * Quaternion.Euler(0f, _leftSpin, 0f);
+                for (int i = 0; i < _leftWheelList.Length; i++)
+                {
+                    if (_leftWheelList[i] != null)
+                    {
+                        _leftWheelList[i].localRotation = leftRot;
+                    }
+                }
+            }
+            if (_rightWheelList != null)
+            {
+                Quaternion rightRot = Quaternion.Euler(0f, 0f, 90f) * Quaternion.Euler(0f, _rightSpin, 0f);
+                for (int i = 0; i < _rightWheelList.Length; i++)
+                {
+                    if (_rightWheelList[i] != null)
+                    {
+                        _rightWheelList[i].localRotation = rightRot;
+                    }
+                }
+            }
         }
 
         public Vector3 MuzzleWorldPosition => Muzzle.position;
