@@ -50,22 +50,6 @@ namespace WarArena.Gameplay
         private float _leftSpin;
         private float _rightSpin;
 
-        /// <summary>
-        /// Smoothed hull pitch and roll, degrees. A tank sits on its suspension: the
-        /// hull rolls into a camber over a moment and settles back when the ground
-        /// flattens, rather than snapping to the instantaneous terrain normal.
-        /// Recomputing the tilt from scratch every frame from a 30 Hz simulation made
-        /// the vehicle judder on any curvature.
-        /// </summary>
-        private float _smoothedPitch;
-        private float _smoothedRoll;
-
-        /// <summary>
-        /// True once the tilt has been seeded from the terrain, so a tank that spawns
-        /// on a slope does not visibly roll into it from level over the first second.
-        /// </summary>
-        private bool _tiltSeeded;
-
         public void Build(Color bodyColor, Color trackColor, float scale)
         {
             Root = transform;
@@ -362,21 +346,16 @@ namespace WarArena.Gameplay
             // fixed 30 Hz while this is called from the render loop, and the
             // suspension is a spring-mass system that is under-damped at the
             // timestep it is integrated with.
-            if (!_tiltSeeded)
-            {
-                _smoothedPitch = pitchAngle;
-                _smoothedRoll = rollAngle;
-                _tiltSeeded = true;
-            }
-            else
-            {
-                const float TiltResponse = 18f;
-                float k = 1f - Mathf.Exp(-TiltResponse * Mathf.Max(Time.deltaTime, 1e-4f));
-                _smoothedPitch = Mathf.Lerp(_smoothedPitch, pitchAngle, k);
-                _smoothedRoll = Mathf.Lerp(_smoothedRoll, rollAngle, k);
-                pitchAngle = _smoothedPitch;
-                rollAngle = _smoothedRoll;
-            }
+            // The attitude arrives already interpolated from the simulation
+            // (PlayerRenderHullPitchRad / RollRad), so it is used as-is.
+            //
+            // There used to be a second, independent exponential lag layered on top
+            // here. It was driven by render frame time rather than tick time, so at any
+            // frame rate other than the one it was tuned for it lagged by a different
+            // amount, while position and heading went through the simulation's own
+            // interpolation. Two disagreeing smoothing paths meant the hull leaned into
+            // and out of terrain a beat away from where the body was travelling, which is
+            // most of what made the vehicle read as unmoored from the ground.
 
             // SIGN CONVENTION, and this is where the old code was wrong as well as
             // rigid. Unity's Euler(x, y, z) composes Z first, then X, then Y.

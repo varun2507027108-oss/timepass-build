@@ -246,6 +246,8 @@ namespace WarArena.Gameplay
             EnemyPositionPrev = EnemyPosition;
             PlayerHeadingPrevRad = PlayerHeadingRad;
             PlayerGunPitchPrevRad = PlayerGunPitchRad = 0f;
+            HullPitchPrevRad = 0f;
+            HullRollPrevRad = 0f;
             InterpolationAlpha = 1f;
         }
 
@@ -272,13 +274,6 @@ namespace WarArena.Gameplay
         public void Advance(float frameDelta, float throttle, float steer, float turretTrim,
             bool fire, Vector3 aimPoint)
         {
-            // Remember where the vehicles were at the start of this frame so the
-            // renderer can interpolate between simulation ticks.
-            PlayerPositionPrev = PlayerPosition;
-            EnemyPositionPrev = EnemyPosition;
-            PlayerHeadingPrevRad = PlayerHeadingRad;
-            PlayerGunPitchPrevRad = PlayerGunPitchRad;
-
             // Rolling accumulator, held across calls, so the simulation rate is
             // constant regardless of render frame rate.
             _accumulator += Mathf.Min(frameDelta, 0.1f);
@@ -287,6 +282,23 @@ namespace WarArena.Gameplay
             {
                 _accumulator -= FixedDt;
                 steps++;
+
+                // Snapshot the state IMMEDIATELY before each step, not once before the
+                // loop.
+                //
+                // Capturing before the loop made Prev the state before ALL steps this
+                // frame. When a frame runs two or more ticks -- which happens whenever
+                // the frame rate dips below 30 Hz, exactly when the player is most
+                // likely to be watching -- the interpolation then spanned the whole
+                // multi-step jump instead of the last tick, and the drawn vehicle
+                // lagged the simulation by up to MaxStepsPerFrame ticks.
+                PlayerPositionPrev = PlayerPosition;
+                EnemyPositionPrev = EnemyPosition;
+                PlayerHeadingPrevRad = PlayerHeadingRad;
+                PlayerGunPitchPrevRad = PlayerGunPitchRad;
+                HullPitchPrevRad = HullPitchRad;
+                HullRollPrevRad = HullRollRad;
+
                 Step(FixedDt, throttle, steer, turretTrim, fire, aimPoint);
             }
             if (_accumulator > FixedDt * MaxStepsPerFrame) _accumulator = 0f;
@@ -306,6 +318,12 @@ namespace WarArena.Gameplay
         public float PlayerHeadingPrevRad { get; private set; }
 
         public float PlayerGunPitchPrevRad { get; private set; }
+
+        /// <summary>Suspension attitude at the previous simulation tick, radians.</summary>
+        public float HullPitchPrevRad { get; private set; }
+
+        /// <inheritdoc cref="HullPitchPrevRad"/>
+        public float HullRollPrevRad { get; private set; }
 
         /// <summary>
         /// Fraction of the way from the previous simulation state to the current one,
@@ -346,6 +364,28 @@ namespace WarArena.Gameplay
         /// <summary>Interpolated player gun pitch for drawing this frame.</summary>
         public float PlayerRenderGunPitchRad =>
             Mathf.Lerp(PlayerGunPitchPrevRad, PlayerGunPitchRad, InterpolationAlpha);
+
+        /// <summary>
+        /// Hull attitude interpolated between simulation ticks, radians.
+        /// </summary>
+        /// <remarks>
+        /// The attitude used to be read straight off the simulation while position, heading
+        /// and gun elevation all went through <see cref="InterpolationAlpha">. The view
+        /// then smoothed it with its own exponential lag, which is a different filter at a
+        /// different time constant driven by render frame time rather than tick time. The
+        /// result was two disagreeing smoothing paths: the hull leaned into and out of
+        /// terrain a beat behind or ahead of where the body was actually travelling.
+        ///
+        /// <see cref="Mathf.LerpAngle"/> rather than <c>Lerp</c>, so the interpolation is
+        /// correct across the wrap even though the attitude is clamped well inside +/-45
+        /// degrees.
+        /// </remarks>
+        public float PlayerRenderHullPitchRad =>
+            Mathf.LerpAngle(HullPitchPrevRad, HullPitchRad, InterpolationAlpha);
+
+        /// <inheritdoc cref="PlayerRenderHullPitchRad"/>
+        public float PlayerRenderHullRollRad =>
+            Mathf.LerpAngle(HullRollPrevRad, HullRollRad, InterpolationAlpha);
 
         private float _accumulator;
 

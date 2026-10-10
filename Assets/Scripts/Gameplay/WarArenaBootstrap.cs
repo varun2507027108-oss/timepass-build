@@ -411,7 +411,7 @@ namespace WarArena.Gameplay
             // smoothness.
             _playerView.Place(_battle.PlayerRenderPosition, _battle.PlayerRenderHeadingRad,
                 _battle.PlayerTurretYawRad, _battle.PlayerRenderGunPitchRad,
-                _battle.HullPitchRad, _battle.HullRollRad);
+                _battle.PlayerRenderHullPitchRad, _battle.PlayerRenderHullRollRad);
 
             // Drive the track animation from the SIMULATION, not from the raw inputs.
             //
