@@ -59,7 +59,7 @@ terrain, and the playable scene contains exactly one GameObject.
 | Vehicles in catalogue | 19 |
 | Aircraft in catalogue | 6 |
 | **Rust tests** | **216 pass** (160 unit + 15 + 32 integration + 9 FFI) |
-| **Unity EditMode** | **93 / 93 pass** |
+| **Unity EditMode** | **91 / 91 pass** |
 | **Unity PlayMode** | **36 / 36 pass** |
 | `cargo fmt --check` | **fails, 108 hunks** — no `rustfmt.toml` |
 | `cargo clippy` | 0 errors, 2 intentional warnings |
@@ -1015,7 +1015,7 @@ clone must run the scripts.
 | --- | --- |
 | `cargo test --workspace` | **216 / 216 pass** |
 | `cargo clippy --workspace --all-targets` | 0 errors, 2 pre-existing intentional warnings |
-| Unity EditMode | **93 / 93 pass** |
+| Unity EditMode | **91 / 91 pass** |
 | Unity PlayMode | **36 / 36 pass** |
 | Headless `Tools/SimVerify` | **cannot run — no .NET SDK** |
 

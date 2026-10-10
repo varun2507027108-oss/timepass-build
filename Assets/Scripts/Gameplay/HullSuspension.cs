@@ -30,7 +30,7 @@ namespace WarArena.Gameplay
     /// forces drive three degrees of freedom:
     ///
     ///     m  * y'' = SUM(F_i) - m*g
-    ///     Ip * p'' = -SUM(F_i * z_i) + m * a_long * h_cg
+    ///     Ip * p'' = +SUM(F_i * z_i) + m * a_long * h_cg
     ///     Ir * r'' = +SUM(F_i * x_i) + m * a_lat  * h_cg
     ///
     /// Three signs in that block are load-bearing and all three are wrong in the
@@ -39,9 +39,9 @@ namespace WarArena.Gameplay
     ///   * The damper ADDS. For a mass on a spring, M*y'' = -k*y - c*y'; substituting
     ///     compression = -y gives the upward force as k*compression +
     ///     c*d(compression)/dt. Written as a minus it is negative damping.
-    ///   * The pitch spring term is NEGATED, the roll one is NOT. Pitch is nose-up
-    ///     positive while a contact force is nose-down positive about +X; roll is
-    ///     right-side-up positive, which is already the sense SUM(F*x) resolves in.
+    ///   * Both spring terms are added as they stand. For each, the attitude that
+    ///     compresses one end of the patch necessarily unbalances SUM(F * offset) in the
+    ///     direction that opposes the attitude, so the term is already restoring.'
     ///   * Weight transfer is applied at the CONTACT PATCH, which sits below the
     ///     centre of gravity. Accelerating pitches the nose up, braking pitches it
     ///     down, and a right-hand turn rolls the hull to the left, away from the
@@ -273,16 +273,24 @@ namespace WarArena.Gameplay
                 // that corner is.
                 //
                 // Roll first, about the forward axis:
-                //     x' = ox*cos(r),  y' = ox*sin(r),  z' = oz
+                //     y' = ox*sin(r)
                 // Then pitch, about the lateral axis:
-                //     y'' = y'*cos(p) - z'*sin(p)
+                //     y'' = y'*cos(p) + z*sin(p)
+                //
+                // The pitch term is PLUS. A positive pitch is nose-UP, so a contact
+                // ahead of the centre (z > 0) must RISE, which is a positive y offset.
+                // Writing the standard rotation (y'*cos p - z*sin p) here gives a
+                // nose-DOWN positive pitch, and since TankView renders
+                // Quaternion.Euler(-pitch) -- nose-up positive -- the renderer then
+                // inverts the whole attitude. The tank visibly nose-dives on every
+                // uphill and squats under power, and buries itself in the slope.
                 // With no attitude this is exactly zero, which is what makes a level
                 // hull on flat ground sit still instead of launching itself.
                 float ox = contactX[i];
                 float oz = contactZ[i];
 
                 float ry = ox * Mathf.Sin(rollRad);
-                float localY = ry * Mathf.Cos(pitchRad) - oz * Mathf.Sin(pitchRad);
+                float localY = ry * Mathf.Cos(pitchRad) + oz * Mathf.Sin(pitchRad);
 
                 float wx = x + ContactWorldX(i, headingRad);
                 float wz = z + ContactWorldZ(i, headingRad);
@@ -341,19 +349,19 @@ namespace WarArena.Gameplay
 
 totalForce += force;
 
-                // Restoring moments. These two terms have OPPOSITE signs, which is not a
-                // typo and is the single easiest thing to get wrong in this file.
+                // Restoring moments. The two spring terms have OPPOSITE signs, and neither is the
+                // obvious one.
                 //
-                // Pitch is nose-up positive. Nose-up sinks the front contacts and
-                // lifts the rear ones, so F_front > F_rear and SUM(F*z) is positive
-                // -- i.e. anti-restoring. It must be negated.
-                pitchMoment -= force * contactZ[i];
+                // Pitch is nose-up positive, so nose-up lifts the front contacts
+                // (z > 0) and presses the rear ones down. F_front therefore falls and
+                // F_rear rises, making SUM(F*z) negative -- already restoring. Adding
+                // it directly is correct; negating it turns the springs into a second
+                // source of pitch energy and the hull rolls onto its nose.
+                pitchMoment += force * contactZ[i];
 
-                // Roll is right-side-up positive. Right-side-up LIFTS the right
-                // contacts and SINKS the left ones, so F_left > F_right and
-                // SUM(F*x) comes out negative -- already restoring. Negating it as
-                // well turns the springs into a second source of roll energy, and
-                // the hull corkscrews to its stops on the first corner.
+                // Roll is right-side-up positive. Right-side-up lifts the right contacts
+                // (x > 0) and sinks the left ones, so F_left > F_right and SUM(F*x) is
+                // negative -- also already restoring, and added for the same reason.
                 rollMoment += force * contactX[i];
             }
 

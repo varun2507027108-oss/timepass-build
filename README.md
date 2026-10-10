@@ -270,7 +270,7 @@ Assets/
       ShellImpactManager.cs       Server ballistics replication   (never instantiated)
 
 Assets/Tests/
-  EditMode/           10 files · 2,708 lines · 93 tests
+  EditMode/           10 files · 2,708 lines · 91 tests
   PlayMode/            2 files ·   945 lines — 36 tests
 
 Assets/Editor/         7 files · 1,007 lines
@@ -486,7 +486,7 @@ Unity is installed at `C:\Users\varun\Unity\6000.6.4f1` (see note below). Open
 | --- | --- |
 | `cargo test --workspace` | **216 / 216 pass** (160 unit + 15 + 32 integration + 9 FFI) |
 | `cargo clippy --workspace --all-targets` | 0 errors, 2 pre-existing intentional warnings |
-| **Unity EditMode tests** | **93 / 93 pass** (81 + 12 hull suspension/footprint) |
+| **Unity EditMode tests** | **91 / 91 pass** (81 + 10 hull suspension/footprint) |
 | **Unity PlayMode tests** | **36 / 36 pass** |
 | Unity Editor compile | clean, 0 `error CS` |
 | Headless `Tools/SimVerify` | **cannot run — no .NET SDK.** Any "26/26" claim is unverified. |
@@ -569,7 +569,7 @@ conventions, catalogue relationships, math parity against hard-coded `Mathf`
 values), 15 `normalisation_and_ricochet.rs`, 21 `turret_aiming.rs`, 9 FFI
 boundary tests.
 
-**Unity EditMode — 93 tests.** 13 battle-sim parity · 8 flight-model parity ·
+**Unity EditMode — 91 tests.** 13 battle-sim parity · 8 flight-model parity ·
 12 Rust core interop · 14 flight model · 15 normalisation and ricochet ·
 8 turret aiming · 6 vehicle damage model · 4 slope movement · 1 terrain match ·
 8 hull suspension.

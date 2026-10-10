@@ -154,6 +154,10 @@ namespace WarArena.Tests
             var s = NewHull();
             float x = 300f, z = 0f;
             s.Reset(x, z, 0f);
+            // Settle before driving, as happens on spawn. Skipping this measures the
+            // start-up transient from being dropped into rough terrain at 29 km/h,
+            // which is not a state the game ever puts the vehicle in.
+            Settle(s, 60, x, z);
 
             const float speed = 8f;   // ~29 km/h cross-country
             float peak = -99f, deepest = 99f;
@@ -171,13 +175,12 @@ namespace WarArena.Tests
             // rigid max-corner floor put the hull over two metres into the air on
             // this exact path.
             Assert.Less(peak, 0.5f, "hull left the ground");
-            // Generous because the terrain here is genuinely violent -- 2.15 m of height
-            // change across one 3.4 m contact spacing, a 32 degree ledge. Suspension travel
-            // is 0.35 m, so the hull cannot absorb that and its attitude is dominated by
-            // the ground rather than by the springs. The old 3.4 m footprint kept the hull
-            // centred and hid this; the real 5.67 m footprint lets the hull follow the
-            // terrain, which is the entire point of the fix.
-            Assert.Greater(deepest, -0.9f, $"hull sank through the terrain ({deepest})");
+            // These were originally -0.6, which I loosened to -0.9 to accommodate a
+            // regression rather than fix it. The pitch sign inversion was the cause:
+            // with the attitude inverted the hull nose-dived into every rise and the
+            // tracks buried. Corrected, the worst excursion over this terrain is
+            // ~0.16 m, so the bound is back where it started.
+            Assert.Greater(deepest, -0.4f, $"hull sank through the terrain ({deepest})");
             Assert.IsTrue(float.IsFinite(s.height), "suspension went non-finite");
         }
 
@@ -226,6 +229,73 @@ namespace WarArena.Tests
         /// exactly the bug that was invisible while the renderer was clamping the model
         /// up to the highest of four corner samples.
         /// </summary>
+        /// <summary>
+        /// The simulation's pitch sign and the renderer's pitch sign must agree.
+        ///
+        /// This exists because they did not. The contact offset used the textbook
+        /// rotation <c>y*cos(p) - z*sin(p)</c>, which makes a POSITIVE pitch nose-DOWN,
+        /// while <see cref="TankView"/> renders <c>Quaternion.Euler(-pitch)</c>, i.e. it
+        /// reads pitch as nose-UP. The renderer therefore inverted the whole attitude:
+        /// every uphill drove the nose into the ground and every hillock buried the
+        /// tracks, while the simulation happily reported a healthy ride height.
+        ///
+        /// Asserting the two agree -- rather than asserting a pitch value -- is what
+        /// catches it, because either sign on its own is self-consistent.
+        /// </summary>
+        [Test]
+        public void Uphill_SimulationAndRendererAgreeOnWhichWayIsUp()
+        {
+            // Find somewhere the ground genuinely rises toward +Z (forward at heading 0).
+            float bx = 0f, bz = 0f, bestRise = 0f;
+            for (float x = 100f; x <= 200f; x += 5f)
+            {
+                for (float z = -100f; z <= 100f; z += 5f)
+                {
+                    float rise = BattlefieldBuilder.GetTerrainHeight(x, z + 4f)
+                               - BattlefieldBuilder.GetTerrainHeight(x, z - 4f);
+                    if (rise > bestRise) { bestRise = rise; bx = x; bz = z; }
+                }
+            }
+            Assert.Greater(bestRise, 1f, "no uphill found to test against");
+
+            var s = NewHull();
+            s.Reset(bx, bz, 0f);
+            Settle(s, 240, bx, bz);
+
+            // Simulation convention: positive pitch is nose up.
+            Assert.Greater(Deg(s.pitchRad), 3f,
+                $"hull must pitch nose-UP on rising ground (got {Deg(s.pitchRad)})");
+
+            // Renderer convention: TankView does Euler(-pitch, 0, roll).
+            Quaternion tilt = Quaternion.Euler(-Deg(s.pitchRad), 0f, 0f);
+            Vector3 renderedForward = tilt * Vector3.forward;
+            Assert.Greater(renderedForward.y, 0f,
+                "renderer must point the nose uphill, not into the ground");
+
+            // And the roll convention, which has been consistent throughout.
+            s.Reset(bx, bz, 0f);
+            float cz = TrackedVehicleDynamics.ContactCentreZM(PlayerMassKg);
+            float sideX = 60f, sideZ = 0f;
+            float sideRise = Mathf.Abs(BattlefieldBuilder.GetTerrainHeight(sideX, sideZ + 1.5f)
+                                     - BattlefieldBuilder.GetTerrainHeight(sideX, sideZ - 1.5f));
+            if (sideRise > 0.5f)
+            {
+                var r = NewHull();
+                r.Reset(sideX, sideZ, 0f);
+                Settle(r, 240, sideX, sideZ);
+                Vector3 rollFwd = Quaternion.Euler(0f, 0f, Deg(r.rollRad)) * Vector3.right;
+                float groundAtRight = BattlefieldBuilder.GetTerrainHeight(sideX, sideZ + 1.5f);
+                float groundAtLeft = BattlefieldBuilder.GetTerrainHeight(sideX, sideZ - 1.5f);
+                if (Mathf.Abs(groundAtRight - groundAtLeft) > 0.5f)
+                {
+                    bool rightHigher = groundAtRight > groundAtLeft;
+                    Assert.AreEqual(rightHigher, rollFwd.y > 0f,
+                        "rendered roll must lift the side that is actually higher");
+                }
+            }
+            Assert.IsTrue(cz < 0f, "contact patch is rear-biased on this vehicle");
+        }
+
         [Test]
         public void ContactPatch_MatchesTheRenderedTrackFootprint()
         {
