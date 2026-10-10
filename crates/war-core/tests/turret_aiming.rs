@@ -3,8 +3,9 @@
 //! Kept as an integration test so it exercises only the public API, exactly as the
 //! NUnit suite did.
 
-use war_core::gameplay::BattleSim;
+use war_core::gameplay::{segment_hits_target, BattleSim};
 use war_core::math::{mathf, Vec3};
+use war_core::vehicle_dynamics;
 
 /// Long enough for the turret to complete its traverse.
 fn settled(aim: Vec3, throttle: f32, steer: f32) -> BattleSim {
@@ -82,6 +83,269 @@ fn turret_stops_at_its_traverse_limit_rather_than_passing_through() {
         yaw > BattleSim::MAX_TRAVERSE * 0.9,
         "it should be pressed against the limit, not short of it: {yaw}"
     );
+}
+
+/// Regression: the turret used to deadlock permanently once parked at a stop.
+///
+/// `turret_stops_at_its_traverse_limit_rather_than_passing_through` above drives the
+/// turret onto its stop and then STOPS, which is precisely the state this bug needed.
+/// The old slew took the short way round an unbounded circle while the state was
+/// clamped to +/-2.1 rad. Those stops are 4.2 rad apart — wider than pi — so a demand
+/// on the far side wrapped *through the back*, out of the arc, and the clamp pinned
+/// the turret where it was. It could never come back.
+#[test]
+fn the_turret_can_recover_from_its_traverse_stop() {
+    // Slam the turret onto the right-hand stop, exactly as the test above does.
+    let mut sim = BattleSim::new("t34-76", "pziv-h");
+    let astern = aim_from(sim.player_position(), 180.0, 60.0);
+    for _ in 0..600 {
+        sim.advance(1.0 / 60.0, 0.0, 0.0, 0.0, false, astern);
+    }
+    let parked = sim.player_turret_yaw_rad();
+    assert!(
+        parked.abs() > BattleSim::MAX_TRAVERSE * 0.9,
+        "precondition: the turret should be on its stop, was {parked}"
+    );
+
+    // Now demand a target on the OPPOSITE shoulder — the case that used to deadlock.
+    // The choice of bearing matters: it has to be far enough from the parked stop that
+    // a stuck turret cannot still score a passing dot product. Parked at -120.3 deg,
+    // a demand of +90 deg puts the gun 210 deg from a stuck barrel and dot = -1.
+    let player = sim.player_position();
+    let opposite = aim_from(player, 90.0, 60.0);
+    for _ in 0..600 {
+        sim.advance(1.0 / 60.0, 0.0, 0.0, 0.0, false, opposite);
+    }
+
+    let recovered = sim.player_turret_yaw_rad();
+    assert!(
+        recovered > parked + 1.0,
+        "the turret was still stuck at its stop: parked {parked:.3}, after demanding \
+         the far shoulder it is {recovered:.3}"
+    );
+    // And it must have arrived, not merely moved a little.
+    let dot = gun_to_aim_dot(&sim, opposite);
+    assert!(
+        dot > 0.9,
+        "the turret moved but did not reach the target: dot {dot:.3}"
+    );
+}
+
+/// Regression: steering saturated at 3.3% of stick.
+///
+/// The old code computed `clamp(demand * MAX_TURN_RATE_RAD, -max_step, max_step)` —
+/// the *rate* was never multiplied by dt, so dt only set the clamp bound. At 30 Hz
+/// that meant any demand above 0.033 hit the stop and full-locked the tank at
+/// 103 deg/s. Masked in play because the hull auto-align term dominates `demand`
+/// while driving, and the old test only asserted `> 0.01 rad`, which a 30x overshoot
+/// passes easily.
+#[test]
+fn steering_is_proportional_to_the_input_not_saturated_by_it() {
+    // Measure the achieved turn rate over a fixed window while driving, so the
+    // vehicle is actually moving and the differential has something to work with.
+    fn rate_for(steer: f32) -> f32 {
+        let mut sim = BattleSim::new("t34-76", "pziv-h");
+        let aim = Vec3::new(0.0, 0.0, 200.0);
+        // Spin up to a common speed first, so the comparison is between the two
+        // steering inputs at the same point on the speed curve.
+        for _ in 0..180 {
+            sim.advance(1.0 / 60.0, 1.0, 0.0, 0.0, false, aim);
+        }
+        let start = sim.player_heading_rad();
+        for _ in 0..60 {
+            sim.advance(1.0 / 60.0, 1.0, steer, 0.0, false, aim);
+        }
+        mathf::abs(wrap_pi(sim.player_heading_rad() - start)) / 1.0
+    }
+
+    let gentle = rate_for(0.01);
+    let firm = rate_for(1.0);
+
+    assert!(
+        gentle < firm * 0.5,
+        "steering is not proportional: 1% gave {gentle:.4} rad/s, 100% gave {firm:.4} rad/s"
+    );
+    assert!(gentle > 0.0 && firm > 0.0, "the vehicle failed to turn at all");
+}
+
+/// Regression: a skid-steered hull cannot turn faster than its tracks carry it.
+///
+/// A tracked vehicle turns by driving one track faster than the other, so its yaw
+/// rate is bounded by `|v| / gauge`. The old model applied a flat 1.8 rad/s at
+/// every speed including zero, so a parked tank snapped round as fast as one at
+/// full throttle.
+#[test]
+fn the_hull_cannot_outrun_its_own_tracks() {
+    let gauge = 3.4f32;
+    for speed in [0.0f32, 0.5, 2.0, 6.0, 12.0] {
+        let rate = mathf::abs(vehicle_dynamics::skid_steer_yaw_rate(speed, 1.0, gauge, 1.8, 4.5));
+        // The differential limit, plus the neutral-turn floor which is the one
+        // legitimate exception: scrubbing on the spot without moving.
+        let limit = f32::max(speed / gauge, vehicle_dynamics::MIN_NEUTRAL_TURN_RATE_RAD);
+        assert!(
+            rate <= limit + 1e-3,
+            "at {speed} m/s the hull turned at {rate:.3} rad/s, faster than its \
+             tracks could carry it ({limit:.3})"
+        );
+    }
+}
+
+/// The neutral turn must be slow and possible, not absent and not free.
+#[test]
+fn a_parked_tank_can_still_turn_slowly() {
+    let rate = mathf::abs(vehicle_dynamics::skid_steer_yaw_rate(0.0, 1.0, 3.4, 1.8, 4.5));
+    assert!(
+        rate > 0.05,
+        "a stationary vehicle should be able to pivot by scrubbing its tracks"
+    );
+    assert!(rate < 0.6, "a neutral turn should be slow, got {rate:.3} rad/s");
+}
+
+/// At low speed the yaw rate is differential-limited and therefore RISES with speed.
+///
+/// This is the opposite of a car's intuitive "turns better when slow", and it is
+/// the defining characteristic of a tracked vehicle: with the tracks at
+/// `v(1 +/- s*k)` the turn radius is `L / (2*s*k)`, independent of speed, so the
+/// RADIUS is roughly constant and the RATE grows with speed.
+#[test]
+fn yaw_rate_rises_with_speed_while_differential_limited() {
+    let slow = vehicle_dynamics::skid_steer_yaw_rate(1.0, 1.0, 3.4, 1.8, 4.5);
+    let quicker = vehicle_dynamics::skid_steer_yaw_rate(3.0, 1.0, 3.4, 1.8, 4.5);
+    assert!(
+        quicker > slow * 1.2,
+        "yaw rate should rise with speed while differential-limited: {slow:.3} rad/s \
+         at 1 m/s vs {quicker:.3} rad/s at 3 m/s"
+    );
+    assert!(quicker < 1.8, "and it must stay inside the maximum turn rate");
+}
+
+/// Regression: the vehicle must not be able to exceed its rated top speed.
+///
+/// Without a governor the terminal speed is simply
+/// `engine_accel / rolling_resistance`, which for the catalogue values works out
+/// near 98 km/h - more than double the fastest tank in the roster. Every range in
+/// the ballistics model would then be scaled wrongly.
+#[test]
+fn the_vehicle_stays_within_its_rated_top_speed() {
+    let mut sim = BattleSim::new("t34-76", "pziv-h");
+    let aim = Vec3::new(0.0, 0.0, 200.0);
+    let mut worst = 0.0f32;
+    for _ in 0..1800 {
+        sim.advance(1.0 / 60.0, 1.0, 0.0, 0.0, false, aim);
+        let kph = sim.player_speed_kph();
+        if kph > worst {
+            worst = kph;
+        }
+    }
+    // 12 m/s is 43.2 km/h. Allow a margin for a downhill run, but nothing like the
+    // 98 km/h an ungoverned model produces.
+    assert!(
+        worst < 60.0,
+        "the vehicle reached {worst:.1} km/h at full throttle; the rated top speed is 43.2"
+    );
+}
+/// Regression: gravity is part of the model.
+///
+/// The old slope handling multiplied displacement by a scalar and applied it ONLY
+/// uphill, so there was no gravity term at all: a tank on a downgrade accelerated at
+/// full engine rate downhill and could not be stopped. Physics says the tangential
+/// component of gravity along a slope is `-g * sin(theta)`, and that has to appear
+/// in the force budget.
+#[test]
+fn gravity_pulls_along_the_slope() {
+    // Along-slope gravity is -g*sin(theta): negative on a climb, positive on a
+    // descent, and symmetric about level ground.
+    let mut n = 0.0f32;
+    let (up, _) = vehicle_dynamics::gravity_on_ground_plane(10.0, 0.0, &mut n);
+    let (down, _) = vehicle_dynamics::gravity_on_ground_plane(-10.0, 0.0, &mut n);
+    assert!(up < 0.0, "gravity should resist a climb, got {up}");
+    assert!(down > 0.0, "gravity should pull down a descent, got {down}");
+    assert!(
+        (up + down).abs() < 1e-3,
+        "along-slope gravity should be symmetric about level ground: {up} vs {down}"
+    );
+
+    // A 15 degree slope should pull roughly g*sin(15) = 2.54 m/s^2.
+    let mut n = 0.0f32;
+    let (descent, _) = vehicle_dynamics::gravity_on_ground_plane(-15.0, 0.0, &mut n);
+    let expected = vehicle_dynamics::GRAVITY
+        * mathf::sin(15.0 * mathf::DEG2RAD);
+    assert!(
+        (descent - expected).abs() < 0.05,
+        "a 15 degree descent should pull about {expected:.3} m/s^2, got {descent:.3}"
+    );
+
+    // And it must unweight the tracks: the normal load falls as the slope steepens.
+    let mut flat = 0.0f32;
+    let _ = vehicle_dynamics::gravity_on_ground_plane(0.0, 0.0, &mut flat);
+    let mut steep = 0.0f32;
+    let _ = vehicle_dynamics::gravity_on_ground_plane(-30.0, 0.0, &mut steep);
+    assert!(
+        steep < flat && steep > 0.8,
+        "a 30 degree slope should still carry most of the weight: {steep} vs {flat}"
+    );
+}
+
+/// Regression: a side slope must pull the vehicle sideways.
+///
+/// The old model had no cross-slope term anywhere, so a tank contouring a hillside
+/// with zero forward slope read as flat ground, accelerated as if level, and had to
+/// be steered into the camber. Gravity's lateral component is what makes a vehicle
+/// on a slope want to slide toward the fall line.
+#[test]
+fn a_side_slope_pushes_the_vehicle_sideways() {
+    let mut n = 0.0f32;
+    let (_, right_falling) = vehicle_dynamics::gravity_on_ground_plane(0.0, -10.0, &mut n);
+    let (_, left_falling) = vehicle_dynamics::gravity_on_ground_plane(0.0, 10.0, &mut n);
+    assert!(
+        right_falling > 0.0 && left_falling < 0.0,
+        "a camber should push toward the fall line in both directions, got \
+         {right_falling} and {left_falling}"
+    );
+    assert!(
+        (right_falling + left_falling).abs() < 1e-3,
+        "the lateral pull should be symmetric: {right_falling} vs {left_falling}"
+    );
+}
+
+/// Regression: longitudinal and lateral demand compete for one friction budget.
+///
+/// The Kamm circle. Without it, traction is infinite in any direction at once and
+/// the vehicle feels like it is on rails: it can accelerate as hard as it likes
+/// while already sliding sideways at full speed.
+#[test]
+fn accelerating_while_sliding_costs_grip() {
+    let grip = 8.0f32;
+    let free = vehicle_dynamics::apply_friction_circle(8.0, 0.0, grip);
+    assert!((free - 8.0).abs() < 1e-3, "unloaded grip should be the full budget");
+
+    // Spending half the budget sideways must halve what is left forwards.
+    let half = grip * 0.5;
+    let shared = vehicle_dynamics::apply_friction_circle(8.0, half, grip);
+    let remaining = f32::sqrt(grip * grip - half * half);
+    assert!(
+        (shared - remaining).abs() < 1e-3,
+        "expected the circle to cap forward force at {remaining:.3}, got {shared:.3}"
+    );
+    assert!(shared < free, "sliding sideways must cost forward grip");
+
+    // Beyond the limit there is nothing left to give.
+    let exhausted = vehicle_dynamics::apply_friction_circle(8.0, grip, grip);
+    assert!(
+        exhausted.abs() < 1e-6,
+        "with the whole budget spent sideways there should be no forward force"
+    );
+}
+
+fn wrap_pi(a: f32) -> f32 {
+    let mut a = a;
+    while a > mathf::PI {
+        a -= mathf::PI * 2.0;
+    }
+    while a < -mathf::PI {
+        a += mathf::PI * 2.0;
+    }
+    a
 }
 
 #[test]
@@ -456,9 +720,29 @@ fn a_respawn_lands_inside_the_jitter_radius() {
     let mut kills_before = 0;
     let mut respawns = 0;
 
-    for _ in 0..4000 {
+    for _ in 0..8000 {
         let target = sim.enemy_position();
-        sim.advance(BattleSim::FIXED_DT, 1.0, 0.0, 0.0, true, target);
+
+        // Hold a standoff rather than driving at full throttle into the target.
+        //
+        // The AI throttles back inside 26 m, so a player at full throttle simply
+        // runs it down and ends up about 1.8 m away. At that range the turret has no
+        // meaningful traverse arc, the aim point is effectively inside the hull, and
+        // almost every round sails past -- the engagement never resolves and there
+        // is no kill to observe. Holding 40-70 m is both a more representative
+        // engagement and a deterministic one.
+        let dx = target.x - sim.player_position().x;
+        let dz = target.z - sim.player_position().z;
+        let dist = (dx * dx + dz * dz).sqrt();
+        let throttle = if dist > 70.0 {
+            1.0
+        } else if dist < 40.0 {
+            -0.4
+        } else {
+            0.0
+        };
+
+        sim.advance(BattleSim::FIXED_DT, throttle, 0.0, 0.0, true, target);
         if sim.kills() > kills_before {
             kills_before = sim.kills();
             respawns += 1;
@@ -622,6 +906,103 @@ fn both_vehicles_stay_inside_the_arena_under_sustained_input() {
             "step {step} went non-finite"
         );
     }
+}
+
+/// Regression: 85% of the arena could not be shot at.
+///
+/// The arena became a 440 m circle with analytic terrain, so a vehicle's `y` is now
+/// wherever the ground happens to be — 0 m in the central basin, up to ~74 m on the
+/// rim. The shell hit test compared the shell's height against an *absolute* 4.5 m,
+/// so any shot at a vehicle sitting above 4.5 m could never connect: the round flew
+/// to the target's XZ and passed straight under it.
+///
+/// The ceiling must therefore be measured relative to the target's own ground
+/// contact. Tested directly rather than through a scripted engagement, because the
+/// emergent version depends on where the AI happens to drive.
+#[test]
+fn the_hit_volume_follows_the_target_up_the_hills() {
+    // The rim of the arena, from the survey in the defect report.
+    for target_y in [0.0f32, 4.0, 4.5, 12.0, 40.0, 73.7] {
+        let target = Vec3::new(100.0, target_y, 100.0);
+
+        // A round arriving level with the hull must connect, at any elevation.
+        let hit = segment_hits_target(
+            Vec3::new(100.0 - 30.0, target_y, 100.0),
+            Vec3::new(100.0 + 30.0, target_y, 100.0),
+            target,
+        );
+        assert!(
+            hit,
+            "a round passing through a target at y={target_y} m was not a hit — \
+             the ceiling is still absolute"
+        );
+
+        // And a round passing well over the top of it must still miss.
+        let over = segment_hits_target(
+            Vec3::new(100.0 - 30.0, target_y + 20.0, 100.0),
+            Vec3::new(100.0 + 30.0, target_y + 20.0, 100.0),
+            target,
+        );
+        assert!(!over, "a round 20 m above a target at y={target_y} m was a hit");
+
+        // As must one passing well to the side.
+        let beside = segment_hits_target(
+            Vec3::new(100.0 + 30.0, target_y, 100.0 - 30.0),
+            Vec3::new(100.0 + 30.0, target_y, 100.0 + 30.0),
+            target,
+        );
+        assert!(
+            !beside,
+            "a round 30 m to the side of a target at y={target_y} m was a hit"
+        );
+    }
+}
+
+/// Regression: rounds tunnelled straight through their targets.
+///
+/// A round leaves the gun at ~0.42 * 800 m/s = 336 m/s. At the 30 Hz tick rate that
+/// is 11.2 m of travel per tick, against a hit cylinder only 6.4 m across. Sampling
+/// the shell's position once per tick therefore missed roughly 43% of shots that
+/// flew directly through the target — the round was inside the hull between two
+/// samples and never observed.
+#[test]
+fn a_round_faster_than_the_hit_cylinder_still_connects() {
+    let target = Vec3::new(0.0, 0.0, 0.0);
+
+    // One tick of flight at 336 m/s at 30 Hz: 11.2 m, nearly twice the cylinder width.
+    let step = 11.2f32;
+    assert!(
+        step > 2.0 * 3.2,
+        "precondition: the step should out-run the cylinder, it is {step} m"
+    );
+
+    // A segment exactly one tick long, straddling the target at z = 0.
+    let hit = segment_hits_target(
+        Vec3::new(0.0, 0.0, -step * 0.5),
+        Vec3::new(0.0, 0.0, step * 0.5),
+        target,
+    );
+    assert!(
+        hit,
+        "a round crossing the target in a single tick was not a hit — the test is \
+         still sampling the endpoint rather than sweeping the segment"
+    );
+
+    // The mirror case: the same segment, offset so it passes 30 m to the side.
+    let miss = segment_hits_target(
+        Vec3::new(30.0, 0.0, -step * 0.5),
+        Vec3::new(30.0, 0.0, step * 0.5),
+        target,
+    );
+    assert!(!miss, "a round passing 30 m to the side was a hit");
+
+    // And one that crosses at the right place but 20 m too high.
+    let high = segment_hits_target(
+        Vec3::new(0.0, 20.0, -step * 0.5),
+        Vec3::new(0.0, 20.0, step * 0.5),
+        target,
+    );
+    assert!(!high, "a round passing 20 m above the target was a hit");
 }
 
 #[test]

@@ -177,6 +177,12 @@ namespace WarArena.Interop
         /// <summary>
         /// Call once per frame until <see cref="IsReady"/>. Cheap after the first
         /// successful probe.
+        ///
+        /// On WebGL this is NOT optional. <see cref="BeginLoad"/> is fire-and-forget
+        /// there, and <c>TryFinalize</c> is reachable only from this method, so a game
+        /// that never polls leaves <see cref="IsReady"/> false for the whole session
+        /// and reports nothing at all when the .wasm is missing. Call this from
+        /// <c>Update</c>.
         /// </summary>
         public static void Poll()
         {
@@ -184,7 +190,13 @@ namespace WarArena.Interop
             {
                 return;
             }
-#if UNITY_WEBGL && !UNITY_EDITOR
+#if !(UNITY_WEBGL && !UNITY_EDITOR)
+            // Everywhere except a WebGL player the module is synchronous, so
+            // BeginLoad already called TryFinalize. Reaching here means that call
+            // failed to complete, and _reportedFailure is why. Retrying would only
+            // re-run a native probe that has already reported its verdict.
+            return;
+#else
             int state = war_core_ready();
             // 1 = ready, 2 = failed, bitwise-or'd.
             if ((state & 1) != 0)
@@ -259,7 +271,29 @@ namespace WarArena.Interop
 #if UNITY_WEBGL && !UNITY_EDITOR
             layoutSlots = (uint)war_core_state_layout_slots();
 #else
-            layoutSlots = wa_spike_state_layout_slots();
+            // This call must sit INSIDE the same guard as the two above. A plugin
+            // that exports wa_spike_abi_version but not wa_spike_state_layout_slots
+            // is exactly the "stale or partial build" case this whole method exists
+            // to diagnose, and letting EntryPointNotFoundException escape turns that
+            // into an unhandled exception out of WarArenaBootstrap.Awake() -- which
+            // aborts scene construction and leaves an entirely empty scene with one
+            // red console line, instead of a readable status message.
+            try
+            {
+                layoutSlots = wa_spike_state_layout_slots();
+            }
+            catch (EntryPointNotFoundException e)
+            {
+                Fail("war_core_ffi.dll does not export wa_spike_state_layout_slots(). " +
+                     "It is stale or partially built -- rebuild it. " + e.Message);
+                return;
+            }
+            catch (DllNotFoundException e)
+            {
+                Fail("war_core_ffi.dll was not found. Build it with " +
+                     "crates/tools/build-native.ps1, then restart the Editor. " + e.Message);
+                return;
+            }
 #endif
             if (layoutSlots == 0 || SlotWriteSentinel >= (int)layoutSlots)
             {
@@ -267,6 +301,16 @@ namespace WarArena.Interop
                      $"uses {layoutSlots}. The state layout is out of sync; rebuild both.");
                 return;
             }
+
+            // Force the native handle to be created and confirm it actually exists.
+            // NativeHandle reports its own failures through Fail(), so all this has to
+            // do is refuse to declare readiness when the handle is missing.
+#if !UNITY_WEBGL || UNITY_EDITOR
+            if (NativeHandle.Value == IntPtr.Zero)
+            {
+                return; // Fail() has already recorded the reason.
+            }
+#endif
 
             IsReady = true;
             Status = $"ready (abi {abi}, {slots} slots)";
@@ -500,13 +544,53 @@ if (!IsReady)
 
 #if !UNITY_WEBGL || UNITY_EDITOR
         /// <summary>
-        /// The native handle, created on first use. A <see cref="LazyInitializer"/>
-        /// rather than a static field initialiser because the DLL must be present
-        /// before this type is first touched.
+        /// The native handle, created on first use.
+        ///
+        /// This IS a static field initialiser, not a LazyInitializer as an earlier
+        /// version of this comment claimed -- which matters, because a static field
+        /// initialiser that throws poisons the whole type: once the CLR has failed to
+        /// initialise this class, *every* subsequent access to it throws
+        /// TypeInitializationException for the life of the process. The
+        /// <c>catch (DllNotFoundException)</c> in <see cref="TryFinalize"/> cannot
+        /// see that, because TryFinalize never touches this class.
+        ///
+        /// So the exception is caught here, at the one place it can be, and turned
+        /// into a readable status. Allocation failure is checked too: wa_spike_create
+        /// documents that it returns NULL on failure, and a NULL handle passes every
+        /// handle-free check in TryFinalize and only surfaces a frame later as a
+        /// silent zero-length read.
         /// </summary>
         private static class NativeHandle
         {
-            internal static readonly IntPtr Value = wa_spike_create();
+            internal static readonly IntPtr Value = CreateChecked();
+
+            private static IntPtr CreateChecked()
+            {
+                IntPtr handle;
+                try
+                {
+                    handle = wa_spike_create();
+                }
+                catch (DllNotFoundException e)
+                {
+                    Fail("war_core_ffi.dll was not found. Build it with " +
+                         "crates/tools/build-native.ps1, then restart the Editor. " + e.Message);
+                    return IntPtr.Zero;
+                }
+                catch (EntryPointNotFoundException e)
+                {
+                    Fail("war_core_ffi.dll does not export wa_spike_create(). " +
+                         "It is stale -- rebuild it. " + e.Message);
+                    return IntPtr.Zero;
+                }
+
+                if (handle == IntPtr.Zero)
+                {
+                    Fail("wa_spike_create() returned NULL -- the native simulation " +
+                         "could not be allocated.");
+                }
+                return handle;
+            }
         }
 #endif
     }

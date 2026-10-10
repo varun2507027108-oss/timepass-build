@@ -155,9 +155,27 @@ namespace WarArena.Tests
             Vector3 p = WarSimRuntime.PlayerPosition;
             Assert.IsTrue(float.IsFinite(p.x) && float.IsFinite(p.z),
                 $"position went non-finite: {p}");
-            Assert.LessOrEqual(Mathf.Abs(p.x), 90f + 0.001f, $"x escaped the arena: {p.x}");
-            Assert.LessOrEqual(Mathf.Abs(p.z), 90f + 0.001f, $"z escaped the arena: {p.z}");
+
+            // Read the arena size from production rather than restating it. This
+            // assertion used to hard-code 90f, which was the half-extent of the old
+            // 180 m SQUARE arena. The arena is now a 440 m CIRCLE, so the constant was
+            // wrong -- and the test still passed, purely because the loaded plugin was
+            // stale and clamping at the old radius. It would have failed the moment
+            // the plugin was correctly rebuilt.
+            //
+            // Asserting against a square bound also fails to test what clamp_to_arena
+            // actually enforces: a circle. Check the radius instead.
+            float r = Mathf.Sqrt(p.x * p.x + p.z * p.z);
+            Assert.LessOrEqual(r, ArenaRadius + 0.5f,
+                $"escaped the {ArenaRadius} m arena at radius {r}: {p}");
         }
+
+        /// <summary>
+        /// The arena constant, read from the simulation rather than restated. Kept in
+        /// one place so a future change to the arena cannot leave the tests pinning
+        /// the previous value.
+        /// </summary>
+        private const float ArenaRadius = WarArena.Gameplay.BattleSim.ArenaRadius;
 
         [Test]
         public void EveryUsedStateSlotStaysFiniteUnderAbuse()

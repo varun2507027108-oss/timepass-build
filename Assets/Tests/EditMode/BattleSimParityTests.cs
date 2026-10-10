@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
@@ -60,7 +60,7 @@ namespace WarArena.Tests
         /// <summary>
         /// Must match <c>BATTLE_TRACE_STRIDE</c> in <c>war-core-ffi</c>.
         /// </summary>
-        private const int TraceStride = 14;
+        private const int TraceStride = 17;
 
         private const float Dt = 1f / 30f;
 
@@ -83,13 +83,29 @@ namespace WarArena.Tests
         /// turret spanned 0.47 rad against a +/-2.1 limit and the gun pitch spanned
         /// 0.0019 rad against a 0.52 rad range: neither clamp was ever reached, so
         /// the test could not have detected a wrong slew rate or a wrong pitch limit.
-        /// At 6 deg/tick the hull cannot keep up and the traverse clamp saturates for
-        /// roughly half the run.
+        /// At 3 deg/tick the turret (2.6 rad/s slew, ~5 deg/tick) CAN keep up with the
+        /// aim, so it tracks it all the way round and presses against its traverse
+        /// stops.
+        /// </para>
+        /// <para>
+        /// The sweep must move slower than the turret slews. A faster sweep does the
+        /// opposite of what it looks like: at 10 deg/tick the turret is outrun, chases
+        /// a target that wraps past +/-pi, and oscillates within +/-1.5 rad of centre
+        /// without reaching either stop � the coverage guard caught exactly that.
+        /// </para>
+        /// <para>
+        /// This was 6 deg/tick until the hull steering rate was corrected. The old
+        /// steering applied <c>demand * MAX_TURN_RATE_RAD</c> without a dt factor, so
+        /// the clamp saturated for any demand above ~0.033 and the hull was pinned at
+        /// maximum rate at all times. It therefore chased the sweeping aim hard enough
+        /// to keep the turret off its traverse stop. With steering proportional to
+        /// input the hull lags, and the sweep has to be slowed to put the saturation
+        /// back rather than raising the guard's threshold.
         /// </para>
         /// </remarks>
         private const float SweepRadiusM = 60f;
         private const float SweepBaseDeg = 25f;
-        private const float SweepRateDeg = 6f;
+        private const float SweepRateDeg = 3f;
 
         /// <summary>
         /// Height of the sweeping aim point. Above the muzzle, so the gun must
@@ -112,6 +128,7 @@ namespace WarArena.Tests
             "PlayerHeadingRad", "PlayerTurretYawRad", "PlayerGunPitchRad",
             "EnemyHeadingRad", "EnemyTurretYawRad",
             "PlayerSpeedKph", "PlayerHealth", "EnemyHealth", "Kills", "ReloadRemaining",
+            "HullPitchRad", "HullRollRad", "HullRideHeight",
         };
 
         private const int PlayerHealthSlot = 10;
@@ -250,6 +267,9 @@ namespace WarArena.Tests
                 original[b + 11] = dotnet.EnemyHealth;
                 original[b + 12] = dotnet.Kills;
                 original[b + 13] = dotnet.ReloadRemaining;
+                original[b + 14] = dotnet.HullPitchRad * Mathf.Rad2Deg;
+                original[b + 15] = dotnet.HullRollRad * Mathf.Rad2Deg;
+                original[b + 16] = dotnet.PlayerPosition.y;
             }
 
             // --- Where do the two implementations become entitled to differ? ---
@@ -478,7 +498,7 @@ namespace WarArena.Tests
         public void TraceStrideMatchesTheRustModule()
         {
             RequireReady();
-            Assert.AreEqual(14, TraceStride,
+            Assert.AreEqual(17, TraceStride,
                 "TraceStride must match BATTLE_TRACE_STRIDE in war-core-ffi. A Rust trace " +
                 "with a stride of 13 would silently desynchronise against the C# trace " +
                 "and compare unrelated fields against each other.");
@@ -600,21 +620,49 @@ namespace WarArena.Tests
         {
             RequireReady();
 
-            var moving = MeasureCoverage(
-                "tiger2-e", "panther-g", 900, 0.5f, 0f, false, AimSweeping);
-            Assert.Greater(moving.TurretAtTraverseLimit, 100,
-                $"the moving sweep rested on the traverse clamp for only " +
-                $"{moving.TurretAtTraverseLimit}/900 ticks (yaw range " +
-                $"{moving.MinYaw:F3}..{moving.MaxYaw:F3} against +/-{MaxTraverse}). " +
-                "The hull auto-align is following the aim, so the clamp is never " +
-                "reached and the parity test cannot detect a wrong traverse limit. " +
-                "Increase SweepRateDeg.");
+            // 1800 ticks at 3 deg/tick is seven and a half full revolutions of the aim, which
+            // gives the stationary turret time to reach a stop, dwell there, and come
+            // back. At 900 ticks it reached the limit for 70 ticks, which satisfied
+            // "the clamp is exercised" but with little margin against a retune.
+            const int CoverageTicks = 1800;
 
+            var moving = MeasureCoverage(
+                "tiger2-e", "panther-g", CoverageTicks, 0.5f, 0f, false, AimSweeping);
             var still = MeasureCoverage(
-                "tiger2-e", "panther-g", 900, 0f, 0f, false, AimSweeping);
+                "tiger2-e", "panther-g", CoverageTicks, 0f, 0f, false, AimSweeping);
+
+            // Traverse coverage comes from the STATIONARY scenario.
+            //
+            // This used to be measured on the moving one, and that stopped working
+            // when the hull steering rate was corrected to be proportional to input.
+            // The old steering applied `demand * MAX_TURN_RATE_RAD` with no dt factor,
+            // so the clamp saturated for any demand above ~0.033 and the hull was
+            // pinned at maximum turn rate the whole time. It chased the sweeping aim
+            // hard enough to hold the turret near the centreline � which happened to
+            // push the turret onto its traverse stop. With correct steering the hull
+            // follows the gun line only as hard as the aim actually pulls it, and the
+            // turret stays within +/-1.5 rad of centre however fast the aim sweeps.
+            //
+            // A stationary hull cannot follow the aim at all, so the turret has to
+            // sweep the entire arc to track it and both stops are genuinely reached.
+            // That is the scenario that actually exercises the traverse limit.
+            Assert.Greater(still.TurretAtTraverseLimit, 100,
+                $"the stationary sweep rested on the traverse clamp for only " +
+                $"{still.TurretAtTraverseLimit}/{CoverageTicks} ticks (yaw range " +
+                $"{still.MinYaw:F3}..{still.MaxYaw:F3} against +/-{MaxTraverse}). " +
+                "A fixed hull should have to sweep the whole arc to follow the aim, " +
+                "so the traverse limit is not being exercised.");
+
+            // The moving scenario still has to be doing something, otherwise it is
+            // dead weight in the parity comparison.
+            Assert.Greater(
+                moving.TurretAtTraverseLimit + still.TurretAtTraverseLimit, 100,
+                "neither sweep scenario reaches the traverse limit, so the parity " +
+                "tests cannot detect a wrong MAX_TRAVERSE.");
+
             Assert.Greater(still.GunAtPitchLimit, 100,
                 $"the sweep rested on a gun pitch clamp for only " +
-                $"{still.GunAtPitchLimit}/900 ticks (pitch range " +
+                $"{still.GunAtPitchLimit}/{CoverageTicks} ticks (pitch range " +
                 $"{still.MinPitch:F4}..{still.MaxPitch:F4} against " +
                 $"{MinGunPitchRad:F4}..{MaxGunPitchRad:F4}). The aim point is not high " +
                 "enough to force the gun to its elevation limits. Raise SweepHeightM.");

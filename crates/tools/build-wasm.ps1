@@ -72,11 +72,35 @@ if (-not (Test-Path -LiteralPath $BuiltWasm)) {
 }
 
 Write-Host "`n==> verifying the module outside Unity (node)" -ForegroundColor Cyan
+
+# Check for node BEFORE the probe, and treat "not found" as fatal.
+#
+# This guard is load-bearing. $LASTEXITCODE is only updated when a command actually
+# runs. If `node` is not on PATH, PowerShell raises a non-terminating
+# CommandNotFoundException and leaves $LASTEXITCODE holding its previous value --
+# which is 0, from the successful cargo build above. The probe therefore "passes"
+# without ever having executed, and a broken or ABI-drifted .wasm is installed into
+# Assets/StreamingAssets and shipped. That is exactly what this step exists to
+# prevent.
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    throw @"
+node was not found on PATH, so the wasm interop probe cannot run.
+
+Refusing to install an UNVERIFIED artefact. Install Node.js, or pass
+-SkipInstall to build without verifying (not recommended: the probe is what
+catches an ABI mismatch here rather than inside a browser).
+"@
+}
+
 $ErrorActionPreference = 'Continue'
 & node (Join-Path $CratesDir 'tools\wasm-interop-probe.mjs') $BuiltWasm 2>&1 |
     ForEach-Object { Write-Host $_ }
 $probeExit = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
+
+if ($probeExit -eq $null) {
+    throw "the wasm interop probe did not report an exit code - treating as FAILED"
+}
 
 if ($probeExit -ne 0) {
     throw "wasm interop probe FAILED (exit $probeExit) - refusing to install a broken artefact"

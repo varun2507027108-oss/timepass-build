@@ -145,17 +145,26 @@ namespace WarArena.Tests
                 "the CC0 scan textures should be present under Resources/Artwork");
 
             GameObject root = Build();
-            Renderer ground = root.transform.Find("Runtime/Battlefield/Ground")
-                .GetComponent<Renderer>();
-            Material material = ground.sharedMaterial;
+            Terrain terrain = root.GetComponentInChildren<Terrain>();
+            if (terrain != null && terrain.terrainData != null && terrain.terrainData.terrainLayers.Length > 0)
+            {
+                Texture2D albedo = terrain.terrainData.terrainLayers[0].diffuseTexture;
+                Assert.IsNotNull(albedo, "the terrain layer must carry the scan texture when artwork is present");
+                Assert.GreaterOrEqual(albedo.width, 1024, $"expected at least a 1K scan, got {albedo.width}px");
+            }
+            else
+            {
+                Renderer ground = root.transform.Find("Runtime/Battlefield/Ground")?.GetComponent<Renderer>();
+                Assert.IsNotNull(ground, "either Terrain or Ground must exist");
+                Material material = ground.sharedMaterial;
+                Assert.IsNotNull(material.mainTexture,
+                    "the ground must carry the scan texture when the artwork is present");
 
-            Assert.IsNotNull(material.mainTexture,
-                "the ground must carry the scan texture when the artwork is present");
-
-            Texture2D albedo = material.mainTexture as Texture2D;
-            Assert.IsNotNull(albedo, "ground albedo should be a Texture2D");
-            Assert.GreaterOrEqual(albedo.width, 1024,
-                $"expected at least a 1K scan, got {albedo.width}px");
+                Texture2D albedo = material.mainTexture as Texture2D;
+                Assert.IsNotNull(albedo, "ground albedo should be a Texture2D");
+                Assert.GreaterOrEqual(albedo.width, 1024,
+                    $"expected at least a 1K scan, got {albedo.width}px");
+            }
         }
 
         [Test]
@@ -165,39 +174,65 @@ namespace WarArena.Tests
             // texture alone leaves the surface dead flat.
             GameObject root = Build();
 
-            Renderer ground = root.transform.Find("Runtime/Battlefield/Ground")
-                .GetComponent<Renderer>();
-            Material material = ground.sharedMaterial;
-
             if (!VisualMaterials.ArtworkPresent)
             {
                 Assert.Pass("artwork absent, bump mapping not applicable");
                 return;
             }
 
-            Assert.IsTrue(material.IsKeywordEnabled("_NORMALMAP"),
-                "the normal map keyword must be enabled or the bump map is ignored");
-            Assert.IsNotNull(material.GetTexture("_BumpMap"),
-                "the ground must have a normal map");
+            Terrain terrain = root.GetComponentInChildren<Terrain>();
+            if (terrain != null && terrain.terrainData != null && terrain.terrainData.terrainLayers.Length > 0)
+            {
+                Assert.IsNotNull(terrain.terrainData.terrainLayers[0].normalMapTexture,
+                    "the terrain layer must have a normal map");
+            }
+            else
+            {
+                Renderer ground = root.transform.Find("Runtime/Battlefield/Ground")?.GetComponent<Renderer>();
+                Assert.IsNotNull(ground);
+                Material material = ground.sharedMaterial;
+
+                Assert.IsTrue(material.IsKeywordEnabled("_NORMALMAP"),
+                    "the normal map keyword must be enabled or the bump map is ignored");
+                Assert.IsNotNull(material.GetTexture("_BumpMap"),
+                    "the ground must have a normal map");
+            }
         }
 
         [Test]
         public void TexturedSurfacesTileAndWrap()
         {
             GameObject root = Build();
-            Renderer ground = root.transform.Find("Runtime/Battlefield/Ground")
-                .GetComponent<Renderer>();
-            Material material = ground.sharedMaterial;
+            Terrain terrain = root.GetComponentInChildren<Terrain>();
+            if (terrain != null && terrain.terrainData != null && terrain.terrainData.terrainLayers.Length > 0)
+            {
+                TerrainLayer layer = terrain.terrainData.terrainLayers[0];
+                Texture2D albedo = layer.diffuseTexture;
+                if (albedo == null) { Assert.Pass("no albedo loaded"); return; }
 
-            Texture2D albedo = material.mainTexture as Texture2D;
-            if (albedo == null) { Assert.Pass("no albedo loaded"); return; }
+                Assert.AreEqual(TextureWrapMode.Repeat, albedo.wrapMode,
+                    "a clamped texture shows a hard edge where the plane ends");
+                Assert.GreaterOrEqual(albedo.anisoLevel, 4,
+                    "a ground plane seen at a grazing angle needs anisotropy");
+                Assert.Greater(layer.tileSize.x, 1f,
+                    "the terrain layer must tile rather than stretch over 140 m");
+            }
+            else
+            {
+                Renderer ground = root.transform.Find("Runtime/Battlefield/Ground")?.GetComponent<Renderer>();
+                Assert.IsNotNull(ground);
+                Material material = ground.sharedMaterial;
 
-            Assert.AreEqual(TextureWrapMode.Repeat, albedo.wrapMode,
-                "a clamped texture shows a hard edge where the plane ends");
-            Assert.GreaterOrEqual(albedo.anisoLevel, 4,
-                "a ground plane seen at a grazing angle needs anisotropy");
-            Assert.Greater(material.mainTextureScale.x, 1f,
-                "the ground texture must tile rather than stretch over 140 m");
+                Texture2D albedo = material.mainTexture as Texture2D;
+                if (albedo == null) { Assert.Pass("no albedo loaded"); return; }
+
+                Assert.AreEqual(TextureWrapMode.Repeat, albedo.wrapMode,
+                    "a clamped texture shows a hard edge where the plane ends");
+                Assert.GreaterOrEqual(albedo.anisoLevel, 4,
+                    "a ground plane seen at a grazing angle needs anisotropy");
+                Assert.Greater(material.mainTextureScale.x, 1f,
+                    "the ground texture must tile rather than stretch over 140 m");
+            }
         }
 
         [Test]
@@ -223,18 +258,31 @@ namespace WarArena.Tests
             // it up, and it must tile without a visible seam.
             GameObject root = Build();
 
-            Renderer ground = root.transform.Find("Runtime/Battlefield/Ground")
-                .GetComponent<Renderer>();
-            Material material = ground.sharedMaterial;
+            Terrain terrain = root.GetComponentInChildren<Terrain>();
+            if (terrain != null && terrain.terrainData != null && terrain.terrainData.terrainLayers.Length > 0)
+            {
+                Texture2D texture = terrain.terrainData.terrainLayers[0].diffuseTexture;
+                Assert.IsNotNull(texture, "the terrain layer must have a detail texture");
+                Assert.AreEqual(TextureWrapMode.Repeat, texture.wrapMode,
+                    "a clamp-wrapped ground texture shows a hard edge at the horizon");
+                Assert.Greater(terrain.terrainData.terrainLayers[0].tileSize.x, 1f,
+                    "the detail texture must tile rather than stretch across the plane");
+            }
+            else
+            {
+                Renderer ground = root.transform.Find("Runtime/Battlefield/Ground")?.GetComponent<Renderer>();
+                Assert.IsNotNull(ground);
+                Material material = ground.sharedMaterial;
 
-            Assert.IsNotNull(material.mainTexture, "the ground must have a detail texture");
+                Assert.IsNotNull(material.mainTexture, "the ground must have a detail texture");
 
-            Texture2D texture = material.mainTexture as Texture2D;
-            Assert.IsNotNull(texture, "the ground texture should be a Texture2D");
-            Assert.AreEqual(TextureWrapMode.Repeat, texture.wrapMode,
-                "a clamp-wrapped ground texture shows a hard edge at the horizon");
-            Assert.Greater(material.mainTextureScale.x, 1f,
-                "the detail texture must tile rather than stretch across the plane");
+                Texture2D texture = material.mainTexture as Texture2D;
+                Assert.IsNotNull(texture, "the ground texture should be a Texture2D");
+                Assert.AreEqual(TextureWrapMode.Repeat, texture.wrapMode,
+                    "a clamp-wrapped ground texture shows a hard edge at the horizon");
+                Assert.Greater(material.mainTextureScale.x, 1f,
+                    "the detail texture must tile rather than stretch across the plane");
+            }
         }
 
         [Test]

@@ -16,6 +16,13 @@
 /playmode-*.log
 /TestResults-*.xml
 /web-build.log
+# Unity test/bake output written straight to the repo root. These are
+# regenerated on every run and are pure noise in history.
+/bake-run.log
+/bake-*.log
+/editmode.log
+/playmode.log
+/test-run.log
 
 # --- Rust ---
 /target/

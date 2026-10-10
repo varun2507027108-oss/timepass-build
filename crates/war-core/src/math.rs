@@ -127,6 +127,14 @@ pub mod mathf {
         a + (b - a) * t
     }
 
+    /// Unity: `Mathf.SmoothStep`
+    #[inline]
+    pub fn smooth_step(from: f32, to: f32, t: f32) -> f32 {
+        let t = clamp01(t);
+        let t = -2.0 * t * t * t + 3.0 * t * t;
+        to * t + from * (1.0 - t)
+    }
+
     /// Unity: `if (Abs(target - current) <= maxDelta) return target;`
     #[inline]
     pub fn move_towards(current: f32, target: f32, max_delta: f32) -> f32 {

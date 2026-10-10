@@ -207,6 +207,9 @@ namespace WarArena.Gameplay
             _enemyView = BuildTank(root.transform, "Enemy", enemyDef, new Color(0.40f, 0.32f, 0.22f));
 
             _battle = new BattleSim(DefaultPlayerVehicle, DefaultEnemyVehicle);
+            var tvp = _playerView.gameObject.AddComponent<TrackedVehiclePhysics>();
+            _battle.PlayerPhysicsVehicle = tvp;
+            _battle.UsePhysicsMovement = false;
             _battle.OnPlayerFired += HandlePlayerFired;
             _input = InputReaderFactory();
 
@@ -353,6 +356,13 @@ namespace WarArena.Gameplay
 
         private void Update()
         {
+            // The Rust module is loaded asynchronously on WebGL, and WarSimRuntime.Poll
+            // is the only thing that notices when it lands. Without this the browser
+            // build never finalises, IsReady stays false for the whole session, and a
+            // missing or mis-served .wasm produces no managed diagnostic whatsoever.
+            // Cheap on every other platform: it returns immediately.
+            WarArena.Interop.WarSimRuntime.Poll();
+
             if (_battle == null || _air == null) return;
 
             float dt = Time.deltaTime;
@@ -394,8 +404,20 @@ namespace WarArena.Gameplay
             // which reads as a distinct judder rather than as a subtle lack of
             // smoothness.
             _playerView.Place(_battle.PlayerRenderPosition, _battle.PlayerRenderHeadingRad,
-                _battle.PlayerTurretYawRad, _battle.PlayerRenderGunPitchRad);
-            _playerView.SpinTracks((throttle - steer * 0.5f) * 12f, (throttle + steer * 0.5f) * 12f, dt);
+                _battle.PlayerTurretYawRad, _battle.PlayerRenderGunPitchRad,
+                _battle.HullPitchRad, _battle.HullRollRad);
+
+            // Drive the track animation from the SIMULATION, not from the raw inputs.
+            //
+            // It used to be `(throttle - steer*0.5) * 12`, which is the throttle
+            // command times a hard-coded top speed. That is wrong in three ways at
+            // once, all of them visible: the wheels turned at full rate on a 30 degree
+            // climb where the tank was barely moving, because the speed penalty never
+            // reached it; they ignored the acceleration ramp entirely, so they spun up
+            // before the vehicle moved; and they ignored gun recoil. Passing the real
+            // per-track ground speeds makes the wheels a readout of the physics rather
+            // than a decoration.
+            _playerView.SpinTracks(_battle.PlayerLeftTrackMps, _battle.PlayerRightTrackMps, dt);
 
             if (_cameraMode == CameraMode.FirstPerson)
             {
@@ -406,7 +428,7 @@ namespace WarArena.Gameplay
 
             _enemyView.Place(_battle.EnemyRenderPosition, _battle.EnemyHeadingRad,
                 _battle.EnemyTurretYawRad);
-            _enemyView.SpinTracks(6f, 6f, dt);
+            _enemyView.SpinTracks(_battle.EnemyLeftTrackMps, _battle.EnemyRightTrackMps, dt);
 
             if (_muzzleFlashTimer > 0f)
             {

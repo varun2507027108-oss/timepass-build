@@ -392,7 +392,7 @@ pub unsafe extern "C" fn wa_flight_trace(
 
 /// Number of `f32` values written per simulation tick by [`wa_battle_trace`].
 /// Mirrored by `BattleSimParityTests.TraceStride` on the C# side.
-pub const BATTLE_TRACE_STRIDE: u32 = 14;
+pub const BATTLE_TRACE_STRIDE: u32 = 17;
 
 /// Trace field indices, in write order. Kept explicit because the C# side indexes
 /// the same layout positionally and a silent reorder would compare nonsense.
@@ -411,6 +411,17 @@ pub mod battle_trace_field {
     pub const ENEMY_HEALTH: usize = 11;
     pub const KILLS: usize = 12;
     pub const RELOAD_REMAINING: usize = 13;
+    /// Hull pitch, degrees, nose-up positive.
+    ///
+    /// Carried so the parity harness actually exercises the suspension. Without
+    /// these three the two implementations could disagree completely about the
+    /// vehicle's attitude and every trace would still match, because attitude used
+    /// to be a pure function of the terrain slope and therefore redundant.
+    pub const HULL_PITCH: usize = 14;
+    /// Hull roll, degrees, right-side-up positive.
+    pub const HULL_ROLL: usize = 15;
+    /// Suspension ride height of the contact plane, metres.
+    pub const HULL_HEIGHT: usize = 16;
 }
 
 /// Radius of the scripted aim circle used by aim mode 0.
@@ -419,15 +430,26 @@ const SWEEP_RADIUS_M: f32 = 60.0;
 const SWEEP_BASE_DEG: f32 = 25.0;
 /// Bearing advance per tick for aim mode 0.
 ///
-/// **6 deg/tick is load-bearing, and was arrived at empirically.** The hull is
-/// pulled onto the gun's line while driving, so a slow aim sweep is simply followed
-/// by the hull and the turret never leaves the centreline. At 0.75 deg/tick this
-/// scenario left the turret spanning 0.47 rad against a 2.1 rad traverse limit, and
-/// the gun pitch spanning 0.0019 rad against a 0.52 rad range -- no clamp was ever
-/// reached, so the C# parity test could not have detected a wrong slew rate or a
-/// wrong pitch limit. It passed anyway. At 6 deg/tick the hull cannot keep up and
-/// the traverse clamp saturates for roughly half the run.
-const SWEEP_RATE_DEG: f32 = 6.0;
+/// **3 deg/tick is load-bearing, and was arrived at empirically.** The turret slews
+/// at TURRET_SLEW_RATE = 2.6 rad/s, which is about 5 deg/tick. For the scenario to
+/// exercise the traverse clamp the aim must move SLOWER than that, so the turret
+/// can actually track it all the way round and press against a stop. A faster sweep
+/// does the opposite of what it looks like: at 10 deg/tick the turret is outrun,
+/// chases a target that wraps past +/-pi, and oscillates within +/-1.5 rad of centre
+/// without ever reaching either stop — the coverage guard caught exactly this.
+///
+/// Two earlier values failed the same way for different reasons. 0.75 deg/tick let
+/// the hull follow the aim so closely that the turret spanned only 0.47 rad against
+/// a 2.1 rad limit. 6 deg/tick saturated only while the hull steering bug pinned
+/// the hull at maximum turn rate; once steering became proportional to input, the
+/// hull stopped chasing and the sweep had to be slowed instead.
+///
+/// MUST match `SweepRateDeg` in
+/// Assets/Tests/EditMode/BattleSimParityTests.cs. They are the same schedule
+/// expressed twice, and the parity comparison is meaningless if they drift: a
+/// mismatch shows up as a turret-yaw divergence rather than as an obvious
+/// configuration error.
+const SWEEP_RATE_DEG: f32 = 3.0;
 
 /// Height of the aim point for aim mode 0, metres.
 ///
@@ -554,6 +576,9 @@ pub unsafe extern "C" fn wa_battle_trace(
         trace[base + ENEMY_HEALTH] = sim.enemy_health() as f32;
         trace[base + KILLS] = sim.kills() as f32;
         trace[base + RELOAD_REMAINING] = sim.reload_remaining();
+        trace[base + HULL_PITCH] = sim.hull_pitch_deg();
+        trace[base + HULL_ROLL] = sim.hull_roll_deg();
+        trace[base + HULL_HEIGHT] = sim.player_position().y;
     }
 
     (ticks_to_run * stride) as u32

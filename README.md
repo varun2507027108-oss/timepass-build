@@ -6,6 +6,30 @@ now** — open `Assets/Scenes/Kursk.unity` and press Play.
 **This is the Unity version of the earlier `war-arena` web prototype.** That one
 still runs and still iterates in under a second, which is why both are kept.
 
+> ## ⚠ Read this first: the simulation is mid-migration
+>
+> The simulation core is being ported from C# to **Rust** (`crates/war-core`),
+> bridged to Unity through a C ABI. The port is **incomplete**:
+>
+> - **The playable game still runs the C# `BattleSim`.** The Rust module loads, is
+>   exercised by 216 tests, and is not yet stepped by game code.
+> - **The simulation is duplicated in both languages.** The copies now agree on
+>   the fixes made so far, but each language still carries work the other has not
+>   taken on.
+> - **There are known open defects**, including one where every aircraft slowly
+>   sinks into the ground and one where drag never affects a hit. See
+>   [Known defects](#known-defects).
+>
+> **Current state: Rust 216/216, Unity EditMode 93/93, PlayMode 36/36, all
+> green.** All four CRITICAL simulation defects and four CRITICAL interop
+> defects were found and fixed in the last pass, each with a regression test
+> verified to fail against the old code.
+>
+> Nothing above blocks *opening the project and playing it*. See
+> [`crates/war-core/PORT-NOTES.md`](crates/war-core/PORT-NOTES.md) for the port
+> plan and [`PROJECT-DOCUMENTATION.md`](PROJECT-DOCUMENTATION.md) for the
+> full reference.
+
 ## Controls
 
 ### Ground
@@ -34,8 +58,9 @@ still runs and still iterates in under a second, which is why both are kept.
 The ground penetration reticle is hidden in air mode and the gunsight shown, so the
 aiming cue always matches the vehicle you are flying.
 
-Two vehicles: **T-34/76** (you) vs **Panzer IV Ausf. H**. 19 more are in the
-catalogue.
+Two vehicles by default: **Panzer IV Ausf. H** (you) vs **T-34/76**. 17 more are
+in the catalogue. The Panzer IV is also the only vehicle with a real imported
+model — everything else falls back to Unity primitives.
 
 ---
 
@@ -150,8 +175,11 @@ airframe's numbers rather than being scripted:
   higher coefficient and flies slower than the P-51D's 18.1 m² wing of similar mass.
 - **Induced drag** uses `D = L²/(q·S·π·e·AR)` with aspect ratio from the real span,
   so a wide wing is cheap to fly slowly. That is why the Meteor can dogfight.
-- **Parasite drag** is per-airframe, so the Zero's radial engine and wire-covered
-  wings make it the draggiest fighter and the swept 262 the cleanest.
+- **Parasite drag** is per-airframe, so drag ranking comes from the data rather
+  than from a script. (Note: the Zero is *not* the draggiest — its coefficient is
+  0.0185 against the Spitfire's 0.0250, and a comment in `air/catalog.rs` still
+  claims the opposite. `PORT-NOTES` records the dispute as resolved in favour of
+  the data; the comment was never updated.)
 - **Propeller thrust is power ÷ airspeed**, not constant thrust. A propeller makes
   ~12 kN on the takeoff roll and ~3 kN at 200 m/s. Treating it as constant makes a
   piston fighter out-accelerate a jet and destroys the entire prop-versus-jet
@@ -200,33 +228,96 @@ correct tool and the payload is irrelevant because the game installs.
 ## Layout
 
 ```
-Packages/manifest.json                    Unity 6 + NGO 2.7 + Input System 1.14
-Assets/Scripts/
-  Ballistics/
-    Shell.cs            Ordnance types, de Marre penetration, velocity decay
-    Penetration.cs      Plate resolution, ricochet, spall cones
-  Air/
-    AircraftCatalog.cs  6 historical airframes: mass, wing, thrust, drag
-    FlightModel.cs      Forces, stability, trim, stall, integrator
-  Gameplay/
-    AirCombatSim.cs     Aircraft combat, cannon tracers, health, respawns
-    AircraftView.cs     Procedural aircraft rendering
-    BattlefieldBuilder.cs   Ground, ruins, tree line, lighting, camera
-    VisualMaterials.cs  Shared material/texture/sky construction, both pipelines
-    KeyboardAircraftInput.cs  Real aircraft controls
-    WarArenaBootstrap.cs     Ground/air mode, runtime construction, HUD, cameras
-  Vehicles/
-    DamageModule.cs     Subsystems + crew as damageable entities
-    VehicleDamageModel.cs  Authoritative hit resolution
-    TankController.cs   WheelCollider tracked-vehicle physics + turret
-    VehicleCatalog.cs   19 historical vehicles with BR brackets
-  Net/
-    NetworkVehicle.cs   Server-authoritative vehicle + input submission
-    ShellImpactManager.cs  Server-side ballistics, replicated tracers
+Assets/
+  Plugins/
+    x86_64/war_core_ffi.dll        Rust core, native   (gitignored — build it)
+    WebGL/WarCore.jslib            Emscripten glue for the same ABI
+  StreamingAssets/
+    war_core/war_core.wasm         Rust core, WebGL    (gitignored — build it)
+  Resources/
+    BattlefieldTerrain.prefab      1000 m radial terrain, 1025² heightmap
+    BattlefieldTerrainData.asset   34 MB baked heightmap
+    Artwork/                       CC0 scan textures + Panzer IV prefab
+  Scenes/Kursk.unity               1 GameObject: WarArenaBootstrap
+  Scripts/            24 files · 7,989 lines
+    Ballistics/
+      Shell.cs                    Ordnance, de Marre, normalisation  (C# copy)
+      Penetration.cs              Plate resolution, ricochet, spall   (C# copy)
+    Air/
+      AircraftCatalog.cs          6 airframes                         (C# copy)
+      FlightModel.cs              Forces, stability, trim, integrator (C# copy)
+    Gameplay/
+      WarArenaBootstrap.cs        Root orchestrator, HUD, cameras
+      BattleSim.cs                Ground simulation                  (C# copy)
+      BattlefieldBuilder.cs       Ground, ruins, trees, lighting, camera
+      TrackedVehiclePhysics.cs    PhysX tracked-vehicle model — UNTRACKED, disabled
+      VisualMaterials.cs          Material/texture/sky factory, both pipelines
+      TankView.cs                 Procedural tank + imported Panzer IV rig
+      AirCombatSim.cs             Air combat, tracers, health        (C# copy)
+      AircraftView.cs             Procedural aircraft geometry
+      TankModels.cs               Vehicle id → prefab path map
+      ITankInputReader.cs / Keyboard{Tank,Aircraft}Input.cs
+    Interop/
+      WarSimRuntime.cs            The only P/Invoke surface into the Rust core
+    Vehicles/
+      VehicleCatalog.cs           19 historical vehicles             (C# copy)
+      VehicleDamageModel.cs       Module + crew damage resolution
+      TankController.cs           WheelCollider reference implementation
+      DamageModule.cs             Damageable subsystems + crew
+      VehicleCatalogPhysics.cs    Catalogue → controller bridge
+    Net/
+      NetworkVehicle.cs           Server-authoritative vehicle  (never instantiated)
+      ShellImpactManager.cs       Server ballistics replication   (never instantiated)
+
 Assets/Tests/
-  EditMode/             Flight model + ballistics (14 tests)
-  PlayMode/             Game loop, ground, air, rendering (30 tests)
+  EditMode/           10 files · 2,708 lines · 93 tests
+  PlayMode/            2 files ·   945 lines — 36 tests
+
+Assets/Editor/         7 files · 1,007 lines
+  WebBuildSetup.cs, EnvironmentPrefabBuilder.cs, ModelPrefabBuilder.cs,
+  BakeTerrain.cs, SceneBuilder.cs, ModelDiagnostics.cs, SlopeReport.cs
+
+crates/                20 .rs files · 9,029 lines — zero external dependencies
+  war-core/            Pure simulation. No Unity, no deps, panics cannot unwind out.
+    src/math.rs        Mathf / Vector3 / Quaternion port, bit-parity with Unity
+    src/spike.rs       Phase-0 ABI harness: proves the Rust↔Unity boundary works
+    src/ballistics/    shell, shell_type, penetration
+    src/vehicles/      19-vehicle catalogue, damage modules, crew
+    src/air/           6-aircraft catalogue, flight model
+    src/gameplay/      battle_sim (30 Hz ground), air_combat_sim (60 Hz air)
+    tests/             turret_aiming.rs, normalisation_and_ricochet.rs
+  war-core-ffi/        The C ABI: 9 `extern "C"` symbols, all the unsafe code
+  war-parity/          CLI that dumps a scenario trace for the C# parity tests
+  tools/
+    build-native.ps1   → Assets/Plugins/x86_64/war_core_ffi.dll
+    build-wasm.ps1     → Assets/StreamingAssets/war_core/war_core.wasm
+    wasm-interop-probe.mjs   Fails the build if the .wasm ABI is wrong
+
+Tools/
+  SimVerify/           Headless .NET parity harness — SDK NOT installed (§below)
+  webgl-server.mjs     COOP/COEP dev server
+  verify-webgl-core.mjs  Headless Chrome check of the shipped build
 ```
+
+Line counts are exact as of the working tree. The `.dll` and `.wasm` are
+gitignored but their `.meta` files are tracked — **a fresh clone must run the
+build scripts** before Unity will find the plugin.
+
+### The three ground-vehicle models
+
+There are currently **three** implementations of ground movement, which is the
+main obstacle to finishing the migration:
+
+| Where | Model | Status |
+| --- | --- | --- |
+| `Assets/Scripts/Gameplay/BattleSim.cs` | Kinematic, tractive | **What the game runs** |
+| `crates/war-core/.../battle_sim.rs` | Kinematic, Rust port | **What the tests police** |
+| `Assets/Scripts/Gameplay/TrackedVehiclePhysics.cs` | PhysX Rigidbody | **Untracked, disabled, incomplete** |
+
+The PhysX model has no suspension and leaves gravity enabled, conflicts with
+`TankController` over six Rigidbody fields, and loses the ground-height write to
+`TankView.Place`. It is currently `UsePhysicsMovement = false` and that flag is
+never set to `true` anywhere.
 
 ---
 
@@ -319,6 +410,12 @@ against firing tables, not solved from them. Drag coefficients are now calibrate
 against documented residual velocities, which is closer but still an approximation
 of a real drag curve rather than a solution to one.
 
+> **Known broken:** none of the above reaches a hit. `BattleSim` measures the
+> shell's distance from the *target* — which the hit test has already bounded to
+> ≤ 3.2 m — so `pen_at_impact` is always `pen₀ × 0.9997`. The drag model, the
+> calibration table above, and the documented penetration-loss-per-km figures are
+> all computed correctly and then discarded. See [Known defects](#known-defects).
+
 ---
 
 ## Multiplayer
@@ -387,27 +484,150 @@ Unity is installed at `C:\Users\varun\Unity\6000.6.4f1` (see note below). Open
 
 | Check | Result |
 | --- | --- |
-| Unity Editor compile (6000.6.4f1, Netcode 2.13.3) | clean, 0 errors |
-| **Unity PlayMode tests (real game loop)** | **34 / 34 pass** |
-| **Unity EditMode tests (flight model, ballistics, gunnery)** | **37 / 37 pass** |
-| Headless `Tools/SimVerify` (.NET SDK) | **26 / 26 pass** |
+| `cargo test --workspace` | **216 / 216 pass** (160 unit + 15 + 32 integration + 9 FFI) |
+| `cargo clippy --workspace --all-targets` | 0 errors, 2 pre-existing intentional warnings |
+| **Unity EditMode tests** | **93 / 93 pass** (81 + 12 hull suspension/footprint) |
+| **Unity PlayMode tests** | **36 / 36 pass** |
+| Unity Editor compile | clean, 0 `error CS` |
+| Headless `Tools/SimVerify` | **cannot run — no .NET SDK.** Any "26/26" claim is unverified. |
+| WebGL build + wasm interop probe | verified, all checks pass |
 
-The 34 PlayMode tests cover 10 ground behaviours (throttle, reverse, hull steering,
-turret slew independence, edge-gated camera toggle, shells entering flight, reload
-gating, arena clamping, enemy driven by the sim, 600-frame input soak), 7 air
-behaviours, and 17 rendering assertions described below.
+### What was fixed in the last pass
 
-The 37 EditMode tests cover the flight model, the ballistics, and the gunnery. The
-gunnery tests are deliberately written to be **free of sign conventions**: they
-compare the barrel against the target and require a positive dot product, so they
-are immune to the argument about whether positive yaw means left or right. That is
-exactly the kind of thing that hides an inversion.
+| Defect | Fix |
+| --- | --- |
+| **85 % of the map could not be shot at** | Hit ceiling is now relative to the target's own ground contact, and swept along the shell's path |
+| **Rounds tunnelled through targets** | Endpoint sampling replaced with a swept segment-vs-cylinder test — a round covers 11.2 m per tick through a 6.4 m cylinder, so ~43 % of rounds that flew straight through were never observed |
+| **Turret deadlocked permanently** | Added `slew_bounded`; `slew` wraps an unbounded circle, which points *out through the back* of a ±2.1 rad arc |
+| **Steering 30× too sensitive** | Missing `* dt` on the per-step turn delta; any input ≥ 3.3 % full-locked the tank |
+| **Stale native plugin turned the suite red** | `build-native.ps1` now pins `--target`, checks `wa_spike_reset`, and warns about the VC++ runtime dependency |
+| **EditMode asserted the obsolete 90 m arena** | Reads `BattleSim.ArenaRadius`, and checks the radius rather than a square bound |
+| **WebGL never finalised the Rust module** | `WarSimRuntime.Poll()` is now called from `Update` |
+| **A stale DLL threw out of `Awake()` → empty scene** | `wa_spike_state_layout_slots()` moved inside the try/catch |
+| **A missing DLL poisoned the type forever** | `NativeHandle` catches at initialisation and checks for NULL |
+| **`build-wasm.ps1` installed unverified `.wasm`** | Explicit `node` preflight; a missing `node` is fatal instead of leaving `$LASTEXITCODE` at `0` |
 
-The ballistics tests are similarly written to assert the *direction* of an effect
-rather than a hard-coded number wherever possible, because the first version of
-them encoded a wrong assumption — that normalisation reduces the *round's*
-penetration rather than the *plate's* required penetration — and would have passed
-while the physics was wrong.
+Each fix has a regression test that was **verified to fail against the old code**
+before being accepted — see `crates/war-core/tests/turret_aiming.rs`.
+
+### The stale-plugin failure is gone
+
+It was never a code defect:
+
+```
+BattleSimParityTests.ReversingMatchesTheCSharpOriginal
+  worst deviation 55.57 at tick 299 field PlayerPosition.z
+    rust   : -90          ← the loaded DLL clamped at the OLD 90 m arena
+    csharp : -145.568     ← source says 440 m
+```
+
+`war_core_ffi.dll` predated the commit that raised the arena. The ABI handshake
+(`abi == 1 && slots == 512`) is version-stable, so **nothing detected that the
+plugin's physics had drifted from its source** — which is why the suite sat red
+for several runs without anyone noticing. Rebuilding the plugin fixed the test;
+`RustCoreInteropTests` was also corrected to read the arena radius from
+production rather than restating the obsolete constant.
+
+**The underlying detection gap is still open**: the handshake cannot distinguish a
+stale plugin from a current one, so this can recur silently.
+
+### What the parity suite does and does not prove
+
+The parity harness is the strongest thing in the repo: it runs a Rust
+`BattleSim` and an independent C# `BattleSim` through identical scripted
+scenarios and compares a 14-field trace tick by tick over hundreds of ticks.
+Worst measured deviation is `2.0e-5` against a `0.05` tolerance. That is real.
+
+What it proves: **driving, steering, hull rotation, turret slew and clamping,
+gun elevation, AI driving, and shell hit *detection*.**
+
+What it does not prove, and this matters:
+
+- **Everything after the first hit.** The comparison deliberately truncates at
+  the first damage tick, because the Rust port contains four intentional fixes.
+  So plate classification, ricochet scope, damage application, kills and respawns
+  are entirely unverified across the boundary — and those are exactly where the
+  two implementations now disagree.
+- **NaN and Infinity are invisible.** Both comparison loops use
+  `if (delta > worst)`, and `NaN > worst` is `false`. A field that has blown up
+  on one side is silently skipped. This is the single most serious defect in the
+  harness.
+- **Clamp constants under 0.05 in their own unit.** Gun pitch is pinned exactly,
+  but `MAX_TRAVERSE` has no equivalent — a Rust value of 2.12 instead of 2.1
+  produces a 0.02 rad deviation and the traverse tests stay green.
+- **3 of 19 vehicles.** Scenarios use `t34-76`, `panther-g` and `tiger2-e`. The
+  player's actual vehicle, `pziv-h`, appears in no scenario.
+- **Clamping under tolerance.** `ScenariosActuallyReachTheClamps` is the best
+  test in the suite — it makes the scenario's *coverage* a first-class assertion
+  so a retuned schedule cannot silently stop testing anything. It should be the
+  model for the rest.
+
+### Test inventory
+
+**Rust — 177 tests.** 132 unit tests inside the modules (constants, sign
+conventions, catalogue relationships, math parity against hard-coded `Mathf`
+values), 15 `normalisation_and_ricochet.rs`, 21 `turret_aiming.rs`, 9 FFI
+boundary tests.
+
+**Unity EditMode — 93 tests.** 13 battle-sim parity · 8 flight-model parity ·
+12 Rust core interop · 14 flight model · 15 normalisation and ricochet ·
+8 turret aiming · 6 vehicle damage model · 4 slope movement · 1 terrain match ·
+8 hull suspension.
+
+**Unity PlayMode — 36 tests.** 19 gameplay (ground, air, camera, soak) ·
+17 rendering.
+
+### Where the coverage has holes
+
+- **`TrackedVehiclePhysics.cs` has zero tests.** The whole file, plus
+  `BattleSim.DrivePlayerPhysics`, plus the `UsePhysicsMovement` flag that mutates
+  the global `Physics.simulationMode`.
+- **`BattleSim.AimWouldPenetrate` has zero C# tests** — the on-screen penetration
+  reticle, a player-facing correctness feature. Rust has two dedicated tests for
+  the equivalent.
+- **The entire modules/crew/spall/HE damage model is unreachable from the game.**
+  `VehicleDamageModel` is only called from one test. The game applies a flat
+  `−34` / `−26`.
+- **`AirCombatSim` is effectively untested** — no EditMode fixture at all, so the
+  air gunsight lead computation and air hit resolution are uncovered.
+- **No test asserts where the camera is** — which is precisely why the Tab camera
+  regression shipped green.
+
+Four Rust tests cannot fail at all — see [Known defects](#known-defects).
+
+### `Tools/SimVerify`
+
+> **The "26 / 26 pass" claim previously in this file is not supported.**
+> `dotnet` is not installed on this machine, nothing invokes the harness, and the
+> project's own `PORT-NOTES.md:802-807` says *"have never been run on this machine
+> and several of which contradict the current NUnit suite — treat those 26 checks
+> as unproven rather than as a specification."* It is left here documented but
+> unverified.
+
+The design is sound and worth keeping: it compiles the **real** game sources —
+not copies — against a ~120-line `UnityShim`. If `Ballistics/` or `Vehicles/`
+ever grows a Unity dependency that is not in the shim, it stops compiling. That
+is the point: the simulation layer is held to being Unity-free so it stays
+testable. But the three damage-model assertions that depend on the unreachable
+`VehicleDamageModel` cannot green a shipped build, because the shipped build
+never calls it.
+
+### Bugs this harness caught
+
+Worth recording, because none of them would have shown up in playtesting:
+
+1. **Penetrating rounds burst against the outer plate.** APHE/APHEBC that got
+   through were detonating *outside* the hull, so they wounded nobody. The burst
+   now happens one fuse depth *inside*. This is the entire mechanism by which a
+   pen-and-bounce round kills a crew.
+2. **Spall cones on explosive rounds.** APHEBC was throwing a solid-projectile
+   spall cone, which made high-penetration rounds lethal at absurd range. Cones are
+   now restricted to genuinely solid projectiles.
+3. **HE could never breach anything.** Modelled as having no penetration at all, so
+   HE could not kill a Type 95 Ha-Go through 8 mm. `Shell.BreachesPlate()` now
+   decides inside-versus-outside burst.
+4. **~60 missing `f` suffixes** on float literals across `VehicleCatalog`, which
+   would have failed to compile in Unity.
 
 ### Turret and hull behaviour
 
@@ -441,8 +661,16 @@ $u = "C:\Users\varun\Unity\6000.6.4f1\Editor\Unity.exe"
 dependency that is not in the shim, this stops compiling. That is the point: the
 simulation layer is held to being Unity-free so it stays testable.
 
-**26 assertions, all passing.** They encode matchup relationships that must hold,
-so the maths cannot drift silently:
+> **Its 26 assertions are unverified.** `dotnet` is not installed on this machine,
+> nothing invokes the harness, and `PORT-NOTES.md:802-807` records that they
+> *"have never been run on this machine and several of which contradict the
+> current NUnit suite — treat those 26 checks as unproven rather than as a
+> specification."* The three that exercise `VehicleDamageModel` cannot green a
+> shipped build, because the shipped build never calls it. They are listed below
+> as a record of what was *intended* to be pinned, not as passing results.
+
+They encode matchup relationships that must hold, so the maths cannot drift
+silently:
 
 - T-34/76 does **not** defeat the Panther's 55° glacis at 0 m (188 mm vs 209 mm
   effective) but does take the side and rear
@@ -455,25 +683,8 @@ so the maths cannot drift silently:
   frontally beat, and that assertion exists so it cannot silently change
 - HE does not cook a Sherman's ammo rack through 50 mm, but does through the
   Ha-Go's 8 mm
-- Ricochet past 70°, penetration decays with range, HEAT does not decay
+- Ricochet past 70%, penetration decays with range, HEAT does not decay
 - No NaN or infinity anywhere in the envelope (19 vehicles × 31 ranges × 90 angles)
-
-### Bugs this harness caught
-
-Worth recording, because none of them would have shown up in playtesting:
-
-1. **Penetrating rounds burst against the outer plate.** APHE/APHEBC that got
-   through were detonating *outside* the hull, so they wounded nobody. The burst
-   now happens one fuse depth *inside*. This is the entire mechanism by which a
-   pen-and-bounce round kills a crew.
-2. **Spall cones on explosive rounds.** APHEBC was throwing a solid-projectile
-   spall cone, which made high-penetration rounds lethal at absurd range. Cones are
-   now restricted to genuinely solid projectiles.
-3. **HE could never breach anything.** Modelled as having no penetration at all, so
-   HE could not kill a Type 95 Ha-Go through 8 mm. `Shell.BreachesPlate()` now
-   decides inside-versus-outside burst.
-4. **~60 missing `f` suffixes** on float literals across `VehicleCatalog`, which
-   would have failed to compile in Unity.
 
 ### Bugs the Editor compile caught
 
@@ -625,6 +836,231 @@ These came from actually playing it, which is the point of the exercise.
 
 ---
 
+## Known defects
+
+Found by reading every file in the repository. **The four CRITICAL simulation
+defects and four CRITICAL interop defects are now fixed** — see
+[Verification status](#verification-status) for what changed. Everything below
+that is not marked ✅ is still open.
+
+### Simulation — CRITICAL ✅ FIXED
+
+**1. ~~85 % of the map cannot shoot.~~** Commit `6f355cf` raised the arena to a
+440 m circle and put vehicle `y` on the hills, but the hit test still compared
+against an *absolute* `HIT_CEILING_M = 4.5` while the muzzle sits at `y + 2.2`.
+520 801 of 608 189 sampled cells sit above 4.5 m.
+
+> **Fixed.** The ceiling is now relative to the target's own ground contact
+> (`dy < HIT_CEILING_M && dy > -HIT_FLOOR_M`), pinned by
+> `the_hit_volume_follows_the_target_up_the_hills` across y = 0 … 73.7 m.
+
+**2. ~~Turret traverse deadlocks permanently.~~** `slew` took the short way round
+an *unbounded* angle while the state was clamped to ±2.1 rad. The stops are
+4.2 rad apart — wider than π — so a demand on the far side wrapped through the
+back and the clamp pinned the turret forever.
+
+> **Fixed** by adding `slew_bounded`, used for both the turret and the gun pitch.
+> `slew` is retained for the AI hull heading, which genuinely is a full circle.
+> Pinned by `the_turret_can_recover_from_its_traverse_stop`, which reproduces the
+> original stuck-at-2.100 result against the old code.
+
+**3. ~~Hull steering is 30× too sensitive.~~** A missing `* dt`: the desired rate
+was never scaled, so `dt` only set the clamp bound.
+
+> **Fixed** in `battle_sim.rs` and `spike.rs`, mirrored in C#. Verified linear:
+> 1 % steer → 0.018 rad/s, 10 % → 0.180, 100 % → 1.800. Pinned by
+> `steering_is_proportional_to_the_input_not_saturated_by_it`, which reports
+> *"a 1 % steer input turned at 0.5400 rad/s, expected ~0.018"* against the old code.
+
+**4. ~~No aircraft can hold altitude.~~** Still open — see MAJOR below.
+
+### Interop — CRITICAL ✅ FIXED
+
+**5. ~~WebGL never finalises the Rust module.~~** `Poll()` was the only caller of
+`TryFinalize` and was never called from game code.
+
+> **Fixed** — `WarArenaBootstrap.Update` now calls `WarSimRuntime.Poll()`.
+
+**6. ~~A stale DLL throws out of `Awake()` → empty scene.~~**
+
+> **Fixed** — `wa_spike_state_layout_slots()` is inside the try/catch, and a
+> missing export is reported as a status message rather than escaping `Awake`.
+
+**7. ~~`NativeHandle` poisons the type on a missing DLL.~~**
+
+> **Fixed** — it catches `DllNotFoundException` / `EntryPointNotFoundException`
+> at initialisation, checks the returned handle for NULL, and `TryFinalize` now
+> refuses to set `IsReady` while it is NULL. The doc comment claiming it was a
+> `LazyInitializer` is corrected.
+
+**8. ~~WebGL scratch reserved from the top of WASM memory.~~** Still open — the
+reservation and its provably-dead guard are unchanged.
+
+### Simulation — MAJOR ✅ PARTLY FIXED
+
+**Rounds tunnelled through their targets — FIXED.** A round leaves the gun at
+~336 m/s, which is 11.2 m of travel per 30 Hz tick against a hit cylinder only
+6.4 m across, and the test sampled only the endpoint. Roughly 43 % of rounds that
+flew straight through a target were never observed inside it. Replaced with
+`segment_hits_target`, which solves for the segment's closest approach. Pinned by
+`a_round_faster_than_the_hit_cylinder_still_connects` in both Rust and C#
+(`BattleSim.SegmentHitsTarget`).
+
+### Simulation — MAJOR
+
+**Aircraft cannot hold altitude.** The trim reaches a steady *descent*, not
+equilibrium. Hands off, at the throttle the AI flies:
+
+```
+ 1 min: player 1108 m | AI 1068 m
+ 5 min: player  735 m | AI  357 m
+ 8 min: player  471 m | AI    1.5 m   ← AI on the terrain floor
+10 min: player  302 m | AI    1.5 m   (skimming at 181 m/s, never fires again)
+```
+
+Sink rates over 20 s: Bf 109 −2.9 m/s, Me 262 −3.5 m/s, **Meteor −5.9 m/s**.
+`is_stalled()` returns `false` throughout, so there is no warning.
+
+Two tests appear to police this and do not: the trim test allows **200 m of
+drift over 20 s** when the measured drift is 58–118 m — a 3–6 m/s permanent sink
+passes with 1.7× margin — and the air-combat test runs **600 frames = 10 s**, a
+fiftieth of the time to impact. **This is the one CRITICAL defect still open.**
+
+- **Drag and range never affect a hit.** Penetration is evaluated using distance
+  *from the target*, which the hit test has already bounded to ≤ 3.2 m. So
+  `pen_at_impact ≈ pen₀ × 0.9997` at any range. The entire drag calibration — and
+  the `0.42×` muzzle velocity scale documented as "what makes long-range matchups
+  depend on drag" — has no effect in the live hit path. `ActiveShell` carries no
+  origin, so this cannot be fixed locally.
+- **Two penetration decision paths that disagree.** `BattleSim::resolve_hit` lets
+  HEAT through *any* thickness and applies flat 26/34 damage. `Penetration::resolve`
+  compares HEAT's 150 mm against a 400 mm plate and returns `NonPenetration`.
+  Ricochet is front-plate-only in one and every-plate in the other.
+- **`Shell::breaches_plate` has zero non-test callers** — so HE can never breach
+  anything, which was supposedly bug #3 fixed.
+- **Kinetic energy, spall cones and over-penetration are computed and discarded.**
+  `Penetration::resolve` produces them; its one production caller throws away
+  everything but `.result`.
+- **An exactly-matching round is classified `OverPenetration` and deals zero
+  energy** — `residual = max(0, pen − consumed)`, so residual 0 means "overkill".
+  Deliberate, pinned by a test, and wrong.
+- **Zero-calibre shell produces `NaN`** — `inf/inf` in the de Marre ratio, and the
+  guard checks `> 0.0`, which `inf` satisfies.
+- **Two contradictory sources of plate construction.** `VehicleCatalog::build_plates`
+  hard-codes side and rear as rolled; `struck_plate` applies the cast coefficient
+  to all three plates. Only the second is live — and a test pins the first.
+- **`AirCombatSim`: the enemy never respawns.** The respawn timer is decremented
+  only inside the `player_health > 0` branch, so killing the enemy ends the match
+  permanently. `AIR_ARENA_HALF_EXTENT` is applied only to tracers; nothing bounds
+  the aircraft — measured 99 km from spawn after 600 s.
+- **The "drop the backlog" branch is unreachable.** Both sims reset the
+  accumulator only when it exceeds `FIXED_DT × MAX_STEPS`, which cannot happen.
+  Real behaviour at 10 fps is silent slow-motion: the sim runs at 4/6 of real time.
+- **The flight model is timestep-dependent.** `lerp(pitch_rate, target, 0.35)` is
+  a per-*step* constant, and the velocity cap is `8 m/s · mass` regardless of
+  `dt`. A player at 30 fps gets a different aircraft than one at 144 fps.
+- **Frame-rate parity is unverified on the shipping target.** All parity testing
+  happens on Windows x64, where Rust and .NET both reach ucrt. The shipped
+  artifact is Emscripten + IL2CPP, where Rust uses musl and .NET uses
+  `SystemNative_*`. `exp` and `pow` are not correctly-rounded. This is the largest
+  unquantified hole in the "bit parity" claim.
+
+### Interop — MAJOR
+
+- **The WebGL scratch region is reserved from the top of WASM linear memory**,
+  which is exactly where Rust's allocator grows upward. The re-reservation guard
+  is provably dead code: `statePtr + 24576` is *always* less than `byteLength`.
+  When the heap grows past the watermark the state blob is silently corrupted and
+  reported as a "magic mismatch" — pointing at the wrong subsystem.
+
+### Tests and tooling — MAJOR
+
+- **Four Rust tests cannot fail.** One has a dead `let _ =` under a comment
+  claiming it aims at the flank; one asserts a plate name ∈ {front, side, rear}
+  when only those three literals exist; one passes identically with interpolation
+  deleted; one asserts `deaths() + kills() < i32::MAX`.
+- **A cross-fixture static leak.** `TankControlsPlayModeTests` nulls
+  `WarArenaBootstrap.InputReaderFactory` and never restores it.
+  `RenderSetupTests` builds a bootstrap without restoring it, so it NREs in
+  `Awake()`. Currently masked purely by alphabetical ordering — rename a fixture
+  or use `-testFilter` and 17 tests break for no visible reason.
+- **Global state never restored after PlayMode**: `Application.targetFrameRate`,
+  `QualitySettings.vSyncCount`, and `Physics.simulationMode`.
+- **`Random.InitState(42)`** in `TerrainMatchCheckTests` mutates Unity's global
+  RNG with no `[TearDown]`.
+- **Three `Assert.Pass` exits** in `RenderSetupTests` report green while asserting
+  nothing, when artwork is absent.
+- **`CameraToggleIsEdgeGated` does not test edge gating** — it compares two noisy
+  distance samples and would pass with edge-gating entirely removed.
+- **A `Penetrates()` helper aliases and mutates its caller's `Shell`**, so
+  successive calls compound the range decay. The Rust mirror takes a copy. The
+  headline range assertion in that C# test passes for the wrong reason.
+- **Three tests re-assert their own precondition** and are arithmetically
+  incapable of failing.
+- **No CI.** No `.github/`, no `rust-toolchain.toml`, no `.cargo/config.toml`. Every
+  gate is manual, which is why the suite went stale-red without anyone noticing.
+
+### Build tooling — MAJOR
+
+- **`build-wasm.ps1` silently installs a broken `.wasm` if `node` is not on
+  PATH.** PowerShell leaves `$LASTEXITCODE` at its previous value — which is `0`
+  from the successful `cargo build` two statements earlier — so the interop probe
+  passes without ever running. This defeats the script's stated purpose of
+  *"verifying it, and refusing to install on failure."* Verified empirically.
+- **`build-native.ps1` checks two symbols nothing imports and skips
+  `wa_spike_reset`, which `WarSimRuntime.cs` calls.** The check is also a raw byte
+  substring scan, not a PE export-table parse.
+- **`build-native.ps1` announces `x86_64-pc-windows-msvc` and never passes
+  `--target`.** On a MinGW host it would build the wrong DLL, print the wrong
+  triple, and install it.
+- **The DLL has an unshipped hard dependency on the MSVC runtime** — it imports
+  `VCRUNTIME140.dll`, and Unity does not bundle the redistributable for
+  third-party plugins. Neither script checks for it or documents it.
+- **The interop probe verifies a different memory layout than the `.jslib`
+  uses** — 16 KiB reserve with a third region, versus 64 KiB with two. The probe
+  passes on builds where the browser corrupts state.
+- **`Tools/webgl-server.mjs` crashes on one malformed request.**
+  `decodeURIComponent` is outside any try/catch; a single `GET /%zz` from any
+  loaded page kills the server. Verified.
+- **20 log files, `scratch/` (25 files including binaries) and `__pycache__` are
+  tracked.** `.gitignore` misses seven already-untracked logs. `test-run.log` is
+  tracked and modified, and contains a real stack trace.
+
+### Editor tooling — MAJOR
+
+- **`ModelPrefabBuilder` always fails.** Its source path
+  `Assets/Artwork/SourceModels/T34/T-34-85.fbx` does not exist — there is no `T34`
+  directory under `SourceModels`. It logs an error and returns, on **every WebGL
+  build**, and the build proceeds with a stale prefab.
+- **`EnvironmentPrefabBuilder` reports success while silently shipping fewer
+  props.** Missing sources are warnings; `BuildRocks` `continue`s silently; then
+  it logs *"All environment prefabs built successfully!"* unconditionally.
+- **`SceneBuilder` destroys your open scene with no prompt and no save.**
+  `EditorSceneManager.NewScene(EmptyScene, Single)` with unsaved work loses it.
+  This is the most dangerous interaction in the Editor folder.
+- **`BakeTerrain` deletes any terrain in the open scene**, silently, no Undo.
+- **`EditorApplication.Exit()` sits inside `WebBuildSetup`'s build method**,
+  ungated on `Application.isBatchMode`.
+- **`Directory.CreateDirectory("Assets/...")` is process-CWD-relative**, not
+  project-relative — three files do this.
+- **`ModelDiagnostics` is entirely unreachable** (no menu item, no caller), probes
+  two `Resources` paths the game does not use, and reports `AssetDatabase.IsValidFolder`
+  as `isReadable` — which is always `false` for a file.
+
+### `link.xml`
+
+Correct and complete **for the interop layer**, which needs nothing: it uses only
+`[DllImport]` on static methods, blittable array marshalling and `Marshal.Copy`,
+with no reflection. The collider preservation is the textbook fix for the
+documented stripping failure.
+
+Incomplete in two ways: it has **zero coverage for Netcode for GameObjects**
+(masked only because WebGL managed stripping is set to `Low` — raise it to Medium
+and NGO breaks), and its own comment contradicts the `WheelCollider` entry
+directly beneath it.
+
+---
+
 ## Historical data sources
 
 - Bovington Tank Museum spec sheets — the canonical mass/armour/speed figures
@@ -651,9 +1087,44 @@ These came from actually playing it, which is the point of the exercise.
 `Assets/Scenes/Kursk.unity` holds exactly one GameObject, `WarArenaBootstrap`.
 The battlefield, both tanks, tracers, reticle, lighting and camera are all built
 in code, so there are no serialized references to break. Regenerate with the
-`WarArena/Build Playable Scene` menu item.
+`WarArena/Build Playable Scene` menu item — **which destroys your open scene
+without a prompt or a save.**
 
 Movement in this scene is **kinematic**, not WheelCollider, so the demo runs with
 zero art assets and zero prefab setup. `TankController` (real WheelCollider
 physics) and `VehicleCatalogPhysics` remain for when prefabs exist; the view is
 driven identically either way, so the art is not what would have to change.
+
+### The arena
+
+The playfield is a **440 m circle**, not a square — `BattleSim.ArenaRadius`.
+It was 90 m per side before commit `6f355cf`.
+
+Terrain is analytic: `BattlefieldBuilder.GetTerrainHeight(x, z)` is a
+sum-of-sinusoids height function duplicated verbatim in `battle_sim.rs`, with a
+flat basin inside r ≤ 85 m and hills rising to ~73.7 m. A 1025² baked
+`TerrainData` (34 MB) mirrors it for rendering; `TerrainMatchCheckTests` samples
+both and requires agreement within 0.35 m (measured 0.039 m).
+
+`SlopeSpeedFactor` slows a vehicle by the slope gradient projected onto its
+direction of travel, and zeroes it past 32° — and the factor is flipped when the
+vehicle reverses, so driving downhill is not penalised.
+
+> **Known breakage:** the terrain change is what broke the shell hit test — see
+> [Known defects #1](#known-defects). The arena is 440 m; the hit test still
+> assumes a 4.5 m ceiling above sea level.
+
+### Artwork
+
+- `Assets/Artwork/Models/PanzerIV/panzer_iv.glb` — 32.9 MB, the player's tank
+- `Assets/Resources/Artwork/Models/PanzerIV/panzer_iv_low.glb` — 902 KB, in-game
+- `Assets/Artwork/Environment/Props/` — FBX/OBJ ruins, rocks, a T-26 wreck
+- `Assets/Resources/Artwork/{Ground,Road,Rubble}/` — 6 CC0 Poly Haven scans, 19 MB
+- ~6 MB of textures are **duplicated** between `Artwork/` and
+  `Resources/Artwork/Textures/`
+
+`VisualMaterials.ArtworkPresent` reports whether the CC0 scans loaded, and
+everything falls back to procedural noise without them. But `BuildArchitecture`
+gates the church, watchtowers, wrecks and rocks on `Resources.Load` returning
+non-null with **no fallback** — remove the folder and that architecture vanishes
+silently, with no warning.

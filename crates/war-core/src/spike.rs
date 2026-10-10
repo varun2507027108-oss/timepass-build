@@ -167,11 +167,10 @@ impl SpikeSim {
         );
 
         let demand = mathf::clamp(steer, -1.0, 1.0);
-        self.player_heading_rad += mathf::clamp(
-            demand * MAX_TURN_RAD,
-            -MAX_TURN_RAD * dt,
-            MAX_TURN_RAD * dt,
-        );
+        // MAX_TURN_RAD is a rate in rad/s, so the per-step delta needs the dt factor;
+        // without it the clamp saturates on any input and this is not a rate at all.
+        let max_step = MAX_TURN_RAD * dt;
+        self.player_heading_rad += mathf::clamp(demand * MAX_TURN_RAD * dt, -max_step, max_step);
         if self.player_heading_rad > mathf::PI {
             self.player_heading_rad -= 2.0 * mathf::PI;
         } else if self.player_heading_rad < -mathf::PI {

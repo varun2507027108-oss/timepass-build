@@ -24,6 +24,22 @@ namespace WarArena.Gameplay
         /// <summary>Compatibility alias for legacy tests and scripts.</summary>
         public const float ArenaHalfExtent = ArenaRadius;
 
+        /// <summary>Hit radius in the horizontal plane: hull footprint plus turret.</summary>
+        public const float HitRadiusM = 3.2f;
+        /// <summary>
+        /// How far above a vehicle's own ground contact a shell may pass and still
+        /// strike the hull, metres. RELATIVE to the target — never an absolute world
+        /// height, which makes every shot on the hills (0..74 m) a guaranteed miss.
+        /// Must match HIT_CEILING_M in crates/war-core/src/gameplay/battle_sim.rs.
+        /// </summary>
+        public const float HitCeilingM = 4.5f;
+        /// <summary>
+        /// How far below a vehicle's own ground contact a shell may pass and still
+        /// strike the hull, metres.
+        /// Must match HIT_FLOOR_M in crates/war-core/src/gameplay/battle_sim.rs.
+        /// </summary>
+        public const float HitFloorM = 1.0f;
+
         public static Vector2 ClampToArena(float x, float z)
         {
             float r = Mathf.Sqrt(x * x + z * z);
@@ -66,6 +82,71 @@ namespace WarArena.Gameplay
         private const float CoastDecelMps2 = 8.0f;
         private const float BrakingDecelMps2 = 45.0f;
 
+        // --- tracked-vehicle contact geometry ---------------------------------
+        // Defined once in TrackedVehicleDynamics and shared with the visual
+        // ground-contact solve, so the slope the player feels and the tilt they see
+        // are computed from the same four terrain samples.
+        private const float TrackGaugeM = TrackedVehicleDynamics.TrackGaugeM;
+        private const float TrackWidthM = TrackedVehicleDynamics.TrackWidthM;
+
+        // --- drivetrain / resistance ------------------------------------------
+        /// <summary>
+        /// Speed above which available acceleration becomes power-limited and starts
+        /// to fall off as 1/v, m/s. Real traction effort is roughly constant below
+        /// this and constant power above it.
+        /// </summary>
+        private const float PowerLimitedSpeedMps = 6f;
+        /// <summary>
+        /// Coefficient of rolling resistance on firm ground. The documented band for
+        /// tracked vehicles is 0.03-0.09; 0.055 is mid-range for a tank on packed
+        /// earth.
+        /// </summary>
+        private const float RollingResistanceCoeff = 0.055f;
+        /// <summary>
+        /// Friction coefficient resisting sideways motion. Much higher than rolling
+        /// resistance: tracks do not skid sideways easily, which is why a tank holds a
+        /// line across a camber.
+        /// </summary>
+        private const float LateralFrictionCoeff = 0.85f;
+        /// <summary>Total friction budget available from the tracks, m/s^2.</summary>
+        private const float TrackedGripAccelMps2 = 9.81f * 0.85f;
+        /// <summary>Lateral slip stiffness, see TrackedVehicleDynamics.</summary>
+        private const float LateralSlipStiffness = TrackedVehicleDynamics.LateralSlipStiffnessPerMps;
+        /// <summary>Deceleration when the throttle opposes the direction of travel.</summary>
+        private const float BrakeAccelMps2 = 12.0f;
+        /// <summary>
+        /// Impulse of gun recoil as a change in forward speed, m/s.
+        ///
+        /// Applied as a CAP rather than a subtraction. A 120 mm gun firing on a
+        /// stationary tank used to drive it backwards at 1.2 m/s, where it then rolled
+        /// away on its own forever; a tank's tracks and the ground hold it.
+        /// </summary>
+        private const float RecoilDeltaSpeedMps = -1.2f;
+        /// <summary>
+        /// Height of the muzzle above the hull's ground-contact datum, metres.
+        ///
+        /// The turret ring sits 2.1 m up and the trunnion a little above that. This
+        /// used to be a hand-fitted 2.2 m, which happens to look right in a
+        /// screenshot and is wrong by a metre, so every commanded gun elevation was
+        /// depressed by roughly atan2(error, range) -- about a degree at 100 m and
+        /// four at 28 m.
+        /// </summary>
+        public const float MuzzleHeightM = 2.25f;
+        /// <summary>
+        /// Speed at which full steering input still produces the full turn rate,
+        /// m/s. Above this the differential has to push harder for the same radius.
+        /// </summary>
+        private const float SpeedAtMaxYawMps = 4.5f;
+        /// <summary>
+        /// How far the two track speeds separate under full steering input, as a
+        /// fraction of the vehicle's own speed. A skid-steered vehicle turns by
+        /// driving one track faster than the other, so this is the physical meaning
+        /// of the steering axis: at full lock the inside track runs at
+        /// (1 - DifferentialSkew) of the vehicle speed and the outside at
+        /// (1 + DifferentialSkew).
+        /// </summary>
+        public const float DifferentialSkew = 0.5f;
+
         /// <summary>
         /// How strongly the hull is pulled onto the gun's line while driving.
         ///
@@ -98,11 +179,42 @@ namespace WarArena.Gameplay
         public float ReloadRemaining { get; private set; }
         public bool ReloadComplete => ReloadRemaining <= 0f;
 
+        private bool _usePhysicsMovement = false;
+
+        /// <summary>
+        /// When enabled, player movement is simulated using PhysX TrackedVehiclePhysics
+        /// instead of the kinematic BattleSim traction integration.
+        /// Defaults to false to preserve deterministic parity tests.
+        /// </summary>
+        public bool UsePhysicsMovement
+        {
+            get => _usePhysicsMovement;
+            set
+            {
+                _usePhysicsMovement = value;
+                if (PlayerPhysicsVehicle != null)
+                {
+                    PlayerPhysicsVehicle.SetActive(value);
+                }
+                Physics.simulationMode = value ? SimulationMode.Script : SimulationMode.FixedUpdate;
+            }
+        }
+
+        public TrackedVehiclePhysics PlayerPhysicsVehicle;
+
         public event System.Action OnPlayerFired;
 
         public readonly List<string> Feed = new List<string>();
         private readonly List<ActiveShell> _inFlight = new List<ActiveShell>();
         private float _enemyReload;
+
+        /// <summary>
+        /// Enemy forward and sideways velocity in its hull frame, m/s. Held as state
+        /// so the AI obeys the same terrain forces, rolling resistance and friction
+        /// circle as the player instead of teleporting along a fixed ground speed.
+        /// </summary>
+        private float _enemySpeedMps;
+        private float _enemyLatSpeedMps;
         private float _respawnTimer;
         private int _tick;
 
@@ -255,7 +367,14 @@ namespace WarArena.Gameplay
 
             if (PlayerHealth > 0)
             {
-                DrivePlayer(dt, throttle, steer);
+                if (UsePhysicsMovement && PlayerPhysicsVehicle != null && PlayerPhysicsVehicle.rb != null)
+                {
+                    DrivePlayerPhysics(dt, throttle, steer);
+                }
+                else
+                {
+                    DrivePlayer(dt, throttle, steer);
+                }
                 AimTurret(dt, turretTrim, aimPoint);
 
                 if (fire && ReloadComplete) FirePlayer();
@@ -269,23 +388,161 @@ namespace WarArena.Gameplay
             AdvanceShells(dt);
         }
 
+        private void DrivePlayerPhysics(float dt, float throttle, float steer)
+        {
+            float moving = Mathf.Abs(throttle) > 0.01f ? 1f : 0f;
+            float gunWorldHeading = WrapAngle(PlayerHeadingRad + PlayerTurretYawRad);
+            float toGunLine = WrapAngle(gunWorldHeading - PlayerHeadingRad);
+
+            float demand = (toGunLine * HullAutoAlignStrength * moving) + steer;
+            demand = Mathf.Clamp(demand, -1f, 1f);
+
+            PlayerPhysicsVehicle.throttle = throttle;
+            PlayerPhysicsVehicle.steer = demand;
+            PlayerPhysicsVehicle.maxSpeed = MaxSpeedMps;
+
+            PlayerPhysicsVehicle.ApplyForces();
+            Physics.simulationMode = SimulationMode.Script;
+            Physics.Simulate(dt);
+
+            Vector3 rbPos = PlayerPhysicsVehicle.rb.position;
+            Vector2 clamped = ClampToArena(rbPos.x, rbPos.z);
+            if (!Mathf.Approximately(clamped.x, rbPos.x) || !Mathf.Approximately(clamped.y, rbPos.z))
+            {
+                rbPos.x = clamped.x;
+                rbPos.z = clamped.y;
+                PlayerPhysicsVehicle.rb.position = rbPos;
+            }
+
+            PlayerPosition = rbPos;
+            PlayerHeadingRad = WrapAngle(PlayerPhysicsVehicle.rb.rotation.eulerAngles.y * Mathf.Deg2Rad);
+            PlayerSpeedKph = PlayerPhysicsVehicle.rb.linearVelocity.magnitude * 3.6f;
+        }
+
         private float _playerCurrentSpeedMps;
+
+        /// <summary>
+        /// Sideways velocity in the hull's frame, m/s. Non-zero only when the
+        /// tracks are sliding — over a side slope, or while skidding out of a turn.
+        /// This is what makes a vehicle on a camber slide toward the fall line
+        /// instead of driving wherever it happens to be pointed.
+        /// </summary>
+        private float _playerLatSpeedMps;
+
+        /// <summary>
+        /// Per-contact hull suspension. Owns pitch, roll and ride height as real
+        /// degrees of freedom driven by four spring-dampers, so weight transfer and
+        /// cross-slope settling are emergent rather than cosmetic.
+        /// </summary>
+        private HullSuspension _playerSuspension;
+
+        /// <summary>
+        /// Longitudinal acceleration last computed in <see cref="DrivePlayer"/>,
+        /// m/s^2. Fed to the suspension to produce weight transfer.
+        /// </summary>
+        private float _playerAccelLong;
+
+        /// <inheritdoc cref="_playerAccelLong"/>
+        private float _playerAccelLat;
+
+        /// <summary>
+        /// Ground speed of each track, m/s, positive forwards. This is what the track
+        /// animation is driven from, so the wheels are a readout of the simulation
+        /// instead of a decoration replaying the input.
+        /// </summary>
+        public float PlayerLeftTrackMps { get; private set; }
+        /// <inheritdoc cref="PlayerLeftTrackMps"/>
+        public float PlayerRightTrackMps { get; private set; }
+        /// <inheritdoc cref="PlayerLeftTrackMps"/>
+        public float EnemyLeftTrackMps { get; private set; }
+        /// <inheritdoc cref="PlayerLeftTrackMps"/>
+        public float EnemyRightTrackMps { get; private set; }
+
+        /// <summary>
+        /// Hull pitch and roll, radians, from the suspension. Positive pitch is nose
+        /// up; positive roll is right side up. These are real degrees of freedom, not
+        /// a cosmetic fit to the terrain.
+        /// </summary>
+        public float HullPitchRad { get; private set; }
+        /// <inheritdoc cref="HullPitchRad"/>
+        public float HullRollRad { get; private set; }
+
+        /// <summary>
+        /// Slope of the terrain under the hull, in the hull's frame, degrees.
+        /// Positive longitudinal means climbing; positive lateral means the ground
+        /// falls away to the right.
+        /// </summary>
+        public float SlopeForwardDeg { get; private set; }
+        /// <inheritdoc cref="SlopeForwardDeg"/>
+        public float SlopeLateralDeg { get; private set; }
 
         private void DrivePlayer(float dt, float throttle, float steer)
         {
-            float targetSpeed = throttle * MaxSpeedMps;
-            float rate = AccelerationMps2;
+            throttle = Mathf.Clamp(throttle, -1f, 1f);
+            steer = Mathf.Clamp(steer, -1f, 1f);
+
+            Vector3 fwd3 = new Vector3(Mathf.Sin(PlayerHeadingRad), 0f, Mathf.Cos(PlayerHeadingRad));
+            Vector2 fwd = new Vector2(fwd3.x, fwd3.z);
+            Vector2 right = new Vector2(fwd3.z, -fwd3.x);
+
+            // --- terrain frame -------------------------------------------------
+            // Half-dimensions: these are the fore/aft and lateral probe offsets from
+            // the centre of the hull, not the overall wheelbase and track width.
+            float slopeFwdDeg, slopeLatDeg;
+            TrackedVehicleDynamics.SampleSlopes(
+                PlayerPosition.x, PlayerPosition.z, fwd, right,
+                TrackedVehicleDynamics.HalfGaugeM, TrackedVehicleDynamics.HalfTrackWidthM,
+                out slopeFwdDeg, out slopeLatDeg);
+
+            float normalLoadG;
+            Vector2 gravity = TrackedVehicleDynamics.GravityOnGroundPlane(
+                fwd, right, slopeFwdDeg, slopeLatDeg, out normalLoadG);
+
+            // --- longitudinal forces ------------------------------------------
+            float aEngine = TrackedVehicleDynamics.EngineAcceleration(
+                throttle, _playerCurrentSpeedMps, AccelerationMps2, PowerLimitedSpeedMps, MaxSpeedMps);
+            float aRoll = TrackedVehicleDynamics.RollingResistance(
+                _playerCurrentSpeedMps, normalLoadG, RollingResistanceCoeff);
+
+            float desiredLong = aEngine + gravity.x + aRoll;
+
+            // Braking. A tank's tracks are its brakes: holding the throttle against
+            // the direction of travel locks them, which is a far larger deceleration
+            // than the engine can ever produce in reverse.
+            if (throttle * _playerCurrentSpeedMps < -0.02f)
+            {
+                desiredLong = -Mathf.Sign(_playerCurrentSpeedMps) * BrakeAccelMps2;
+            }
+
+            // --- lateral: tracks resist sideways motion strongly -------------
+            float aLatGrip = TrackedVehicleDynamics.LateralGripAccel(
+                _playerLatSpeedMps, normalLoadG, LateralFrictionCoeff, LateralSlipStiffness);
+
+            // Friction circle: whatever the tracks are already spending sideways is
+            // unavailable for acceleration. Without this, traction is infinite in any
+            // direction at once.
+            float aLong = TrackedVehicleDynamics.ApplyFrictionCircle(
+                desiredLong, aLatGrip, TrackedGripAccelMps2);
+
+            _playerCurrentSpeedMps += aLong * dt;
+            _playerLatSpeedMps += aLatGrip * dt;
+
+            // Scrub loss while skidding to turn.
+            _playerCurrentSpeedMps += TrackedVehicleDynamics.SkidScrubSpeedLoss(steer, _playerCurrentSpeedMps) * dt;
+
+            // Coasting drag: a tank with the throttle closed still slows, because the
+            // engine is dragging and the transmission is in neutral.
             if (Mathf.Abs(throttle) < 0.01f)
             {
-                rate = CoastDecelMps2;
+                _playerCurrentSpeedMps = Mathf.MoveTowards(_playerCurrentSpeedMps, 0f, CoastDecelMps2 * dt);
             }
-            else if ((_playerCurrentSpeedMps > 0.1f && throttle < -0.01f) || (_playerCurrentSpeedMps < -0.1f && throttle > 0.01f))
-            {
-                rate = BrakingDecelMps2;
-            }
-            _playerCurrentSpeedMps = Mathf.MoveTowards(_playerCurrentSpeedMps, targetSpeed, rate * dt);
-            float speed = _playerCurrentSpeedMps;
 
+            // Numerical floor: on a slope the gravity term can very nearly cancel the
+            // engine. Let it settle rather than jitter.
+            if (Mathf.Abs(_playerCurrentSpeedMps) < 1e-3f) _playerCurrentSpeedMps = 0f;
+            if (Mathf.Abs(_playerLatSpeedMps) < 1e-3f) _playerLatSpeedMps = 0f;
+
+            // --- steering ------------------------------------------------------
             // The hull steers onto the gun's line while driving.
             //
             // Without this the tank and its turret always disagree: the gun tracks
@@ -296,31 +553,131 @@ namespace WarArena.Gameplay
             // exactly this -- the hull is what rotates, and driving straight lines the
             // vehicle up with where the gun is pointing.
             //
-            // Only while actually moving. A stationary tank needs to be able to hold
-            // its traverse for aiming, and it cannot steer anyway.
+            // `toGunLine` is an ANGLE in radians, so it is scaled into the same
+            // normalised [-1,1] domain as the steering input. The previous code added
+            // raw radians to a normalised demand, which meant the "0.35 strength" was
+            // really 73% of full lock at full traverse.
             float moving = Mathf.Abs(throttle) > 0.01f ? 1f : 0f;
             float gunWorldHeading = WrapAngle(PlayerHeadingRad + PlayerTurretYawRad);
             float toGunLine = WrapAngle(gunWorldHeading - PlayerHeadingRad);
 
-            float demand = (toGunLine * HullAutoAlignStrength * moving) + steer;
-            demand = Mathf.Clamp(demand, -1f, 1f);
+            float align = Mathf.Clamp(toGunLine / MaxTraverse, -1f, 1f) * HullAutoAlignStrength * moving;
+            float demand = Mathf.Clamp(align + steer, -1f, 1f);
 
-            float maxStep = MaxTurnRateRad * dt;
-            PlayerHeadingRad = WrapAngle(
-                PlayerHeadingRad + Mathf.Clamp(demand * MaxTurnRateRad, -maxStep, maxStep));
+            float yawRate = TrackedVehicleDynamics.SkidSteerYawRate(
+                _playerCurrentSpeedMps, demand, TrackGaugeM, MaxTurnRateRad, SpeedAtMaxYawMps);
 
-            Vector3 forward = new Vector3(Mathf.Sin(PlayerHeadingRad), 0f, Mathf.Cos(PlayerHeadingRad));
-            Vector2 forward2D = new Vector2(forward.x, forward.z);
-            Vector2 moveDir = speed < -0.01f ? -forward2D : forward2D;
+            // A side slope takes some of the steering authority away before the
+            // differential is even used, because the tracks are already sliding.
+            yawRate *= TrackedVehicleDynamics.LateralSlopeSteeringScale(slopeLatDeg);
 
-            float slopeFactor = Mathf.Abs(speed) > 0.01f ? SlopeSpeedFactor(PlayerPosition.x, PlayerPosition.z, moveDir) : 1f;
-            float moveDist = speed * slopeFactor * dt;
-            Vector3 next = PlayerPosition + forward * moveDist;
+            PlayerHeadingRad = WrapAngle(PlayerHeadingRad + yawRate * dt);
 
-            Vector2 clamped = ClampToArena(next.x, next.z);
+            // --- integrate position --------------------------------------------
+            // The velocity components live in the HULL frame, and the hull has just
+            // rotated, so carry them round with it. Rebuilding the components from
+            // the new axes without re-projecting would silently re-aim any sideways
+            // slide by the amount the hull turned.
+            float c = Mathf.Cos(yawRate * dt);
+            float s = Mathf.Sin(yawRate * dt);
+            float vLongNew = _playerCurrentSpeedMps * c + _playerLatSpeedMps * s;
+            float vLatNew = -_playerCurrentSpeedMps * s + _playerLatSpeedMps * c;
+            _playerCurrentSpeedMps = vLongNew;
+            _playerLatSpeedMps = vLatNew;
+
+            // Motion follows the velocity vector, not the hull axis, so a tank
+            // sliding sideways down a camber genuinely moves sideways.
+            Vector3 fwdNow = new Vector3(Mathf.Sin(PlayerHeadingRad), 0f, Mathf.Cos(PlayerHeadingRad));
+            Vector2 rightNow = new Vector2(fwdNow.z, -fwdNow.x);
+            // NOTE: build the horizontal forward vector explicitly. Unity's implicit
+            // Vector3 -> Vector2 conversion keeps (x, y) and DISCARDS z, so passing a
+            // Vector3 here silently yields (sin h, 0) and every projection against it
+            // collapses to zero.
+            Vector2 fwdNow2D = new Vector2(fwdNow.x, fwdNow.z);
+            Vector2 velocity = fwdNow2D * _playerCurrentSpeedMps + rightNow * _playerLatSpeedMps;
+
+            // NOTE: the reciprocal is computed once and multiplied through.
+            // Dividing by dt is a different floating-point expression and diverges
+            // from the Rust mirror by more than the parity tolerance once the force
+            // model is in play.
+            float invDt = 1f / Mathf.Max(dt, 1e-5f);
+            Vector2 from = new Vector2(PlayerPosition.x, PlayerPosition.z);
+            Vector2 next = from + velocity * dt;
+
+            Vector2 clamped = ClampToArena(next.x, next.y);
             float posY = BattlefieldBuilder.GetTerrainHeight(clamped.x, clamped.y);
             PlayerPosition = new Vector3(clamped.x, posY, clamped.y);
-            PlayerSpeedKph = Mathf.Abs(speed) * 3.6f;
+
+            // Weight transfer: the acceleration the hull is actually experiencing in
+            // its own frame. Fed to the suspension, which turns it into pitch and
+            // roll moments because the centre of gravity sits above the track plane.
+            _playerAccelLong = aLong;
+            _playerAccelLat = aLatGrip;
+
+            StepSuspension(dt);
+
+            // Cancel the velocity component driven into the boundary, so the vehicle
+            // slides along the edge instead of pressing into it and snapping back.
+            Vector2 actual = clamped - from;
+            float along = Vector2.Dot(actual, fwdNow2D);
+            _playerCurrentSpeedMps = along * invDt;
+            _playerLatSpeedMps = Vector2.Dot(actual, rightNow) * invDt;
+
+            // Ground speed is what the driver feels and what the HUD should show.
+            // Using |longitudinal| alone would report full speed while the vehicle is
+            // barely moving because it is sliding sideways on a 30 degree slope.
+            PlayerSpeedKph = actual.magnitude * invDt * 3.6f;
+
+            // Differential steering: the tracks run at different speeds, and that
+            // difference is what actually turns the vehicle. Exposing it means the
+            // track animation shows a real skid turn -- the outside track visibly
+            // outrunning the inside one -- rather than two wheels turning together.
+            // The RIGHT track is the outside of a right-hand turn, so it runs faster.
+            // Positive yaw rate turns toward +X, which is the local right axis.
+            float half = _playerCurrentSpeedMps * DifferentialSkew;
+            PlayerRightTrackMps = _playerCurrentSpeedMps + half;
+            PlayerLeftTrackMps = _playerCurrentSpeedMps - half;
+
+            SlopeForwardDeg = slopeFwdDeg;
+            SlopeLateralDeg = slopeLatDeg;
+        }
+
+        /// <summary>
+        private void StepSuspension(float dt)
+        {
+            if (_playerSuspension == null)
+            {
+                float massKg = _playerDef != null ? Mathf.Max(_playerDef.MassKg, 1000f) : 25000f;
+
+                // Footprint measured from the RENDERED vehicle, at the same scale
+                // the bootstrap applies to the rig. Using the generic track
+                // constants here instead put the contacts at +/-1.7 m on a 9 m
+                // tank, so the rear third of the tracks drove on no physics at all.
+                _playerSuspension = new HullSuspension(massKg,
+                    TrackedVehicleDynamics.ContactHalfLengthM(massKg),
+                    TrackedVehicleDynamics.ContactHalfWidthM(massKg),
+                    TrackedVehicleDynamics.ContactCentreZM(massKg));
+                _playerSuspension.Reset(PlayerPosition.x, PlayerPosition.z, PlayerHeadingRad);
+            }
+
+            _playerSuspension.Step(dt, PlayerPosition.x, PlayerPosition.z,
+                PlayerHeadingRad, _playerAccelLong, _playerAccelLat);
+
+            // The hull's Y now comes from its own ride height rather than from the
+            // terrain height under the centre. Those differ whenever the hull is
+            // tilted or bridging a dip, and taking the centre value alone was one of
+            // the reasons it looked like it was skating over the ground.
+            PlayerPosition = new Vector3(
+                PlayerPosition.x,
+                _playerSuspension.height,
+                PlayerPosition.z);
+
+            HullPitchRad = _playerSuspension.pitchRad;
+            HullRollRad = _playerSuspension.rollRad;
+            SlopeForwardDeg = Mathf.Asin(Mathf.Clamp(
+                Mathf.Sin(_playerSuspension.pitchRad), -1f, 1f)) * Mathf.Rad2Deg;
+            SlopeLateralDeg = Mathf.Asin(Mathf.Clamp(
+                Mathf.Sin(_playerSuspension.rollRad), -1f, 1f)) * Mathf.Rad2Deg;
         }
 
         /// <summary>
@@ -342,7 +699,7 @@ namespace WarArena.Gameplay
                 float dy = delta.y - 0.15f;
                 float wantedPitch = Mathf.Atan2(dy, horizontalDist);
                 wantedPitch = Mathf.Clamp(wantedPitch, MinGunPitchRad, MaxGunPitchRad);
-                PlayerGunPitchRad = Slew(PlayerGunPitchRad, wantedPitch, GunElevationSlewRate * dt);
+                PlayerGunPitchRad = SlewBounded(PlayerGunPitchRad, wantedPitch, GunElevationSlewRate * dt);
                 PlayerGunPitchRad = Mathf.Clamp(PlayerGunPitchRad, MinGunPitchRad, MaxGunPitchRad);
             }
 
@@ -359,7 +716,7 @@ namespace WarArena.Gameplay
             // way before it caught itself.
             wanted = Mathf.Clamp(wanted, -MaxTraverse, MaxTraverse);
 
-            PlayerTurretYawRad = Slew(PlayerTurretYawRad, wanted, TurretSlewRate * dt);
+            PlayerTurretYawRad = SlewBounded(PlayerTurretYawRad, wanted, TurretSlewRate * dt);
 
             // Belt and braces: the state is clamped too, so no combination of inputs
             // can ever leave the barrel outside its arc. An out-of-arc turret looks
@@ -386,6 +743,11 @@ namespace WarArena.Gameplay
             // driven only by the tick counter, so replays are identical.
             float phase = _tick * 0.02f;
             Vector3 toPlayer = PlayerPosition - EnemyPosition;
+
+            // Horizontal distance only. Using the 3D magnitude made a target on a hill
+            // read as kilometres away, so the AI would refuse to fire at or close on
+            // anything that was not on the same contour.
+            toPlayer.y = 0f;
             float dist = toPlayer.magnitude;
 
             float throttle = 0.45f;
@@ -398,18 +760,60 @@ namespace WarArena.Gameplay
             EnemyHeadingRad = Slew(EnemyHeadingRad, WrapAngle(desiredHeading - EnemyHeadingRad) + EnemyHeadingRad,
                 1.2f * dt);
 
-            float speed = throttle * MaxSpeedMps * 0.8f;
-            Vector3 forward = new Vector3(Mathf.Sin(EnemyHeadingRad), 0f, Mathf.Cos(EnemyHeadingRad));
-            Vector2 forward2D = new Vector2(forward.x, forward.z);
-            float slopeFactor = SlopeSpeedFactor(EnemyPosition.x, EnemyPosition.z, forward2D);
-            float moveDist = speed * slopeFactor * dt;
-            Vector3 next = EnemyPosition + forward * moveDist;
+            // The AI drives through the same terrain-aware force model as the player.
+            // It previously moved at a constant `throttle * MaxSpeedMps * 0.8` with no
+            // inertia, no braking and no slope response at all, so it climbed hills at
+            // full speed and could not be out-driven.
+            Vector3 fwd3 = new Vector3(Mathf.Sin(EnemyHeadingRad), 0f, Mathf.Cos(EnemyHeadingRad));
+            Vector2 fwd = new Vector2(fwd3.x, fwd3.z);
+            Vector2 right = new Vector2(fwd3.z, -fwd3.x);
 
-            Vector2 clamped = ClampToArena(next.x, next.z);
+            float slopeFwdDeg, slopeLatDeg;
+            TrackedVehicleDynamics.SampleSlopes(
+                EnemyPosition.x, EnemyPosition.z, fwd, right,
+                TrackedVehicleDynamics.HalfGaugeM, TrackedVehicleDynamics.HalfTrackWidthM,
+                out slopeFwdDeg, out slopeLatDeg);
+
+            float normalLoadG;
+            Vector2 gravity = TrackedVehicleDynamics.GravityOnGroundPlane(
+                fwd, right, slopeFwdDeg, slopeLatDeg, out normalLoadG);
+
+            float aEngine = TrackedVehicleDynamics.EngineAcceleration(
+                throttle, _enemySpeedMps, AccelerationMps2 * 0.8f, PowerLimitedSpeedMps, MaxSpeedMps);
+            float aRoll = TrackedVehicleDynamics.RollingResistance(
+                _enemySpeedMps, normalLoadG, RollingResistanceCoeff);
+
+            float aLatGrip = TrackedVehicleDynamics.LateralGripAccel(
+                _enemyLatSpeedMps, normalLoadG, LateralFrictionCoeff, LateralSlipStiffness);
+            float aLong = TrackedVehicleDynamics.ApplyFrictionCircle(
+                aEngine + gravity.x + aRoll, aLatGrip, TrackedGripAccelMps2);
+
+            _enemySpeedMps += aLong * dt;
+            _enemyLatSpeedMps += aLatGrip * dt;
+            if (Mathf.Abs(_enemySpeedMps) < 1e-3f) _enemySpeedMps = 0f;
+            if (Mathf.Abs(_enemyLatSpeedMps) < 1e-3f) _enemyLatSpeedMps = 0f;
+
+            Vector2 velocity = fwd * _enemySpeedMps + right * _enemyLatSpeedMps;
+
+            Vector2 from = new Vector2(EnemyPosition.x, EnemyPosition.z);
+            Vector2 next = from + velocity * dt;
+            Vector2 clamped = ClampToArena(next.x, next.y);
             float enemyY = BattlefieldBuilder.GetTerrainHeight(clamped.x, clamped.y);
             EnemyPosition = new Vector3(clamped.x, enemyY, clamped.y);
+            Vector2 actual = clamped - from;
+            float eInvDt = 1f / Mathf.Max(dt, 1e-5f);
+            _enemySpeedMps = Vector2.Dot(actual, fwd) * eInvDt;
+            _enemyLatSpeedMps = Vector2.Dot(actual, right) * eInvDt;
 
-            EnemyTurretYawRad = WrapAngle(Mathf.Atan2(-toPlayer.x, -toPlayer.z) - EnemyHeadingRad);
+            float eHalf = _enemySpeedMps * DifferentialSkew * 0.5f;
+            EnemyRightTrackMps = _enemySpeedMps + eHalf;
+            EnemyLeftTrackMps = _enemySpeedMps - eHalf;
+
+            // The AI turret slews at a finite rate like the player's, rather than
+            // snapping, so leading a target on a turn is a real skill.
+            float wantedYaw = WrapAngle(Mathf.Atan2(-toPlayer.x, -toPlayer.z) - EnemyHeadingRad);
+            wantedYaw = Mathf.Clamp(wantedYaw, -MaxTraverse, MaxTraverse);
+            EnemyTurretYawRad = SlewBounded(EnemyTurretYawRad, wantedYaw, TurretSlewRate * 0.7f * dt);
             EnemyTurretYawRad = Mathf.Clamp(EnemyTurretYawRad, -MaxTraverse, MaxTraverse);
 
             if (_enemyReload <= 0f && dist < 60f)
@@ -425,14 +829,31 @@ namespace WarArena.Gameplay
         {
             ReloadRemaining = _playerDef.ReloadSeconds;
 
-            Vector3 origin = PlayerPosition + new Vector3(0f, 2.2f, 0f);
+            Vector3 origin = PlayerPosition + new Vector3(0f, MuzzleHeightM, 0f);
             float absoluteYaw = PlayerHeadingRad + PlayerTurretYawRad;
             float cosPitch = Mathf.Cos(PlayerGunPitchRad);
             float sinPitch = Mathf.Sin(PlayerGunPitchRad);
-            Vector3 direction = new Vector3(Mathf.Sin(absoluteYaw) * cosPitch, sinPitch, Mathf.Cos(absoluteYaw) * cosPitch);
+
+            // The barrel's world direction, including the hull's own pitch and roll.
+            //
+            // This used to be computed as if the hull were level, while the renderer
+            // rotated the whole vehicle onto the terrain. On a 20 degree nose-up
+            // slope the muzzle flash appeared 20 degrees above the tracer, so the
+            // player watched the shell leave somewhere the gun was not pointing. The
+            // aim solve and the visual tilt now share one attitude.
+            Vector3 hullUp = new Vector3(0f, 1f, 0f);
+            Quaternion hullTilt = Quaternion.Euler(-HullPitchRad * Mathf.Rad2Deg, 0f, HullRollRad * Mathf.Rad2Deg);
+            Vector3 upTilted = hullTilt * hullUp;
+
+            Vector3 levelDir = new Vector3(Mathf.Sin(absoluteYaw) * cosPitch, sinPitch, Mathf.Cos(absoluteYaw) * cosPitch);
+            Vector3 direction = Quaternion.FromToRotation(Vector3.up, upTilted) * levelDir;
+            direction = direction.normalized;
 
             // Cannon recoil impulse pushes the vehicle slightly backwards
-            _playerCurrentSpeedMps -= 1.2f;
+            // Cannon recoil impulse pushes the vehicle slightly backwards. A real gun also
+            // shoves the hull a little sideways as it settles on its trunnions, which
+            // matters on a slope where the vehicle is already sliding.
+            _playerCurrentSpeedMps = Mathf.Min(_playerCurrentSpeedMps, RecoilDeltaSpeedMps);
 
             SpawnShell(origin, direction, true, VehicleCatalog.BuildShell(_playerDef));
             OnPlayerFired?.Invoke();
@@ -456,15 +877,21 @@ namespace WarArena.Gameplay
             {
                 ActiveShell s = _inFlight[i];
                 s.Life -= dt;
+                Vector3 previous = s.Position;
                 s.Position += s.Velocity * dt;
 
                 Vector3 target = s.FromPlayer ? EnemyPosition : PlayerPosition;
                 bool targetAlive = s.FromPlayer ? EnemyHealth > 0 : PlayerHealth > 0;
 
-                // Hit volume is roughly the hull footprint plus the turret.
-                bool hit = targetAlive
-                    && new Vector2(s.Position.x - target.x, s.Position.z - target.z).sqrMagnitude < 3.2f * 3.2f
-                    && Mathf.Abs(s.Position.y - (target.y + 1.2f)) < 2.2f;
+                // Hit volume is the hull footprint plus the turret, measured RELATIVE
+                // to the target's own ground contact — see HitCeilingM. The test is
+                // SWEPT along the segment travelled this tick: a round leaves the gun
+                // at ~0.42 * 800 m/s = 336 m/s, which at the 30 Hz tick rate is
+                // 11.2 m of travel against a cylinder only 6.4 m across. Sampling
+                // the endpoint alone missed roughly 43% of rounds that flew straight
+                // through the target. Must mirror segment_hits_target in
+                // crates/war-core/src/gameplay/battle_sim.rs.
+                bool hit = targetAlive && SegmentHitsTarget(previous, s.Position, target);
 
                 if (hit)
                 {
@@ -483,6 +910,52 @@ namespace WarArena.Gameplay
 
                 _inFlight[i] = s;
             }
+        }
+
+        /// <summary>
+        /// Whether the segment travelled by a shell this tick passes through the
+        /// target's hit volume: a vertical cylinder of <see cref="HitRadiusM"/> about
+        /// the target's ground contact, spanning -<see cref="HitFloorM"/> to
+        /// <see cref="HitCeilingM"/> relative to it.
+        ///
+        /// Solves for the closest approach of the SEGMENT rather than sampling its end
+        /// point, so a round moving further than the cylinder is wide in one tick
+        /// cannot pass through the target unseen.
+        ///
+        /// Must stay in step with <c>segment_hits_target</c> in
+        /// crates/war-core/src/gameplay/battle_sim.rs — the parity harness compares
+        /// the two implementations tick for tick.
+        /// </summary>
+        internal static bool SegmentHitsTarget(Vector3 from, Vector3 to, Vector3 target)
+        {
+            float dx = to.x - from.x;
+            float dz = to.z - from.z;
+            float lenSq = dx * dx + dz * dz;
+
+            // Parameter along the segment at which the horizontal distance to the
+            // target is smallest. A shell fired straight up (lenSq ~ 0) keeps t at
+            // its start value, which is the correct limit.
+            float t = 0f;
+            if (lenSq > 1e-12f)
+            {
+                float px = from.x - target.x;
+                float pz = from.z - target.z;
+                t = Mathf.Clamp01(-(px * dx + pz * dz) / lenSq);
+            }
+
+            float cx = from.x + dx * t;
+            float cz = from.z + dz * t;
+            float ox = cx - target.x;
+            float oz = cz - target.z;
+            if (ox * ox + oz * oz >= HitRadiusM * HitRadiusM)
+            {
+                return false;
+            }
+
+            // Height is interpolated at the same parameter, so a descending round is
+            // judged where it actually crosses the target.
+            float dy = (from.y + (to.y - from.y) * t) - target.y;
+            return dy < HitCeilingM && dy > -HitFloorM;
         }
 
         /// <summary>
@@ -617,6 +1090,26 @@ namespace WarArena.Gameplay
             float delta = WrapAngle(target - current);
             if (Mathf.Abs(delta) <= maxStep) return WrapAngle(target);
             return WrapAngle(current + Mathf.Sign(delta) * maxStep);
+        }
+
+        /// <summary>
+        /// Slew toward a target confined to the same bounded interval, WITHOUT wrapping.
+        ///
+        /// <see cref="Slew"/> takes the short way round an unbounded circle and is only
+        /// correct for a genuinely unbounded quantity — the AI's hull heading. For a
+        /// quantity confined to an arc it deadlocks: the two traverse stops are 2 *
+        /// MaxTraverse = 4.2 rad apart, wider than pi, so a demand on the far side
+        /// wraps *through the back* of the arc and the clamp pins the turret at its
+        /// stop forever.
+        ///
+        /// Must stay in step with `slew_bounded` in
+        /// crates/war-core/src/gameplay/battle_sim.rs.
+        /// </summary>
+        private static float SlewBounded(float current, float target, float maxStep)
+        {
+            float delta = target - current;
+            if (Mathf.Abs(delta) <= maxStep) return target;
+            return current + Mathf.Sign(delta) * maxStep;
         }
 
         /// <summary>

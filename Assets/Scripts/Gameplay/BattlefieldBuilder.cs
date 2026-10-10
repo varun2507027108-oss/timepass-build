@@ -46,24 +46,40 @@ namespace WarArena.Gameplay
 
         private static void BuildGround(Transform parent)
         {
-            // Inner combat floor plane, exactly matching RenderSetupTests requirements
-            GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.name = "Ground";
-            ground.transform.SetParent(parent, false);
-            ground.transform.localScale = new Vector3(18f, 1f, 18f);
+            GameObject terrainPrefab = Resources.Load<GameObject>("BattlefieldTerrain");
+            if (terrainPrefab != null)
+            {
+                GameObject terrainGo = Object.Instantiate(terrainPrefab, parent, false);
+                terrainGo.name = "BattlefieldTerrain";
+                terrainGo.transform.position = new Vector3(-500f, 0f, -500f);
+                Terrain terrain = terrainGo.GetComponent<Terrain>();
+                if (terrain != null)
+                {
+                    terrain.heightmapPixelError = 8f;
+                    terrain.drawInstanced = true;
+                    terrain.basemapDistance = 200f;
+                }
+            }
+            else
+            {
+                // Fallback inner combat floor plane if prefab not present
+                GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                ground.name = "Ground";
+                ground.transform.SetParent(parent, false);
+                ground.transform.localScale = new Vector3(18f, 1f, 18f);
 
-            // Churned earth from the CC0 scan set.
-            Material groundMat = VisualMaterials.Textured(
-                new Color(0.85f, 0.82f, 0.78f), "Ground", 34f, 0.06f);
-            ground.GetComponent<Renderer>().sharedMaterial = groundMat;
-            ground.isStatic = true;
+                Material groundMat = VisualMaterials.Textured(
+                    new Color(0.85f, 0.82f, 0.78f), "Ground", 34f, 0.06f);
+                ground.GetComponent<Renderer>().sharedMaterial = groundMat;
+                ground.isStatic = true;
+            }
 
             // Main supply road running north-south through the warzone
             GameObject road = GameObject.CreatePrimitive(PrimitiveType.Plane);
             road.name = "Road";
             road.transform.SetParent(parent, false);
             road.transform.localScale = new Vector3(0.6f, 1f, 18f);
-            road.transform.localPosition = new Vector3(0f, 0.01f, 0f);
+            road.transform.localPosition = new Vector3(0f, 0.02f, 0f);
 
             // Compacted gravel road with subtle sheen
             road.GetComponent<Renderer>().sharedMaterial =
@@ -75,83 +91,10 @@ namespace WarArena.Gameplay
             branchRoad.name = "VillageRoad";
             branchRoad.transform.SetParent(parent, false);
             branchRoad.transform.localScale = new Vector3(0.45f, 1f, 6.5f);
-            branchRoad.transform.localPosition = new Vector3(-30f, 0.012f, 12f);
+            branchRoad.transform.localPosition = new Vector3(-30f, 0.022f, 12f);
             branchRoad.transform.localRotation = Quaternion.Euler(0f, 75f, 0f);
             branchRoad.GetComponent<Renderer>().sharedMaterial = road.GetComponent<Renderer>().sharedMaterial;
             branchRoad.isStatic = true;
-
-            // Procedural 3D outer terrain mesh connecting smoothly to the inner floor
-            BuildOuterTerrain(parent, groundMat);
-        }
-
-        private static void BuildOuterTerrain(Transform parent, Material groundMat)
-        {
-            var go = new GameObject("OuterTerrain");
-            go.transform.SetParent(parent, false);
-
-            var mesh = new Mesh { name = "BattlefieldOuterTerrain" };
-            int radialSegments = 54;
-            int ringCount = 22;
-
-            var verts = new Vector3[(ringCount + 1) * radialSegments];
-            var uvs = new Vector2[verts.Length];
-            var tris = new int[ringCount * radialSegments * 6];
-
-            for (int j = 0; j <= ringCount; j++)
-            {
-                float ringFrac = (float)j / ringCount;
-                float r = Mathf.Lerp(84f, 480f, Mathf.Pow(ringFrac, 1.25f));
-
-                for (int i = 0; i < radialSegments; i++)
-                {
-                    float a = (float)i / radialSegments * Mathf.PI * 2f;
-                    float x = Mathf.Cos(a) * r;
-                    float z = Mathf.Sin(a) * r;
-                    float y = GetTerrainHeight(x, z);
-
-                    int idx = j * radialSegments + i;
-                    verts[idx] = new Vector3(x, y, z);
-                    // Seamless UV coordinate mapping identical to central ground plane
-                    uvs[idx] = new Vector2(x / 140f, z / 140f);
-                }
-            }
-
-            int triIdx = 0;
-            for (int j = 0; j < ringCount; j++)
-            {
-                for (int i = 0; i < radialSegments; i++)
-                {
-                    int nextI = (i + 1) % radialSegments;
-                    int current = j * radialSegments + i;
-                    int currentNext = j * radialSegments + nextI;
-                    int nextRing = (j + 1) * radialSegments + i;
-                    int nextRingNext = (j + 1) * radialSegments + nextI;
-
-                    tris[triIdx++] = current;
-                    tris[triIdx++] = currentNext;
-                    tris[triIdx++] = nextRing;
-
-                    tris[triIdx++] = currentNext;
-                    tris[triIdx++] = nextRingNext;
-                    tris[triIdx++] = nextRing;
-                }
-            }
-
-            mesh.vertices = verts;
-            mesh.uv = uvs;
-            mesh.triangles = tris;
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-
-            var mf = go.AddComponent<MeshFilter>();
-            mf.sharedMesh = mesh;
-
-            var mc = go.AddComponent<MeshCollider>();
-            mc.sharedMesh = mesh;
-
-            var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = groundMat;
-            go.isStatic = true;
         }
 
         private static void BuildArchitecture(Transform parent)

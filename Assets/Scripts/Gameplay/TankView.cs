@@ -50,6 +50,22 @@ namespace WarArena.Gameplay
         private float _leftSpin;
         private float _rightSpin;
 
+        /// <summary>
+        /// Smoothed hull pitch and roll, degrees. A tank sits on its suspension: the
+        /// hull rolls into a camber over a moment and settles back when the ground
+        /// flattens, rather than snapping to the instantaneous terrain normal.
+        /// Recomputing the tilt from scratch every frame from a 30 Hz simulation made
+        /// the vehicle judder on any curvature.
+        /// </summary>
+        private float _smoothedPitch;
+        private float _smoothedRoll;
+
+        /// <summary>
+        /// True once the tilt has been seeded from the terrain, so a tank that spawns
+        /// on a slope does not visibly roll into it from level over the first second.
+        /// </summary>
+        private bool _tiltSeeded;
+
         public void Build(Color bodyColor, Color trackColor, float scale)
         {
             Root = transform;
@@ -322,38 +338,81 @@ namespace WarArena.Gameplay
         /// wherever the mouse is removes the entire skill of leading a moving
         /// target.
         /// </summary>
-        public void Place(Vector3 worldPosition, float headingRad, float turretLocalYawRad, float gunPitchRad = 0f)
+                /// <summary>
+        /// Place the vehicle.
+        ///
+        /// The hull attitude comes from the SIMULATION, which integrates four
+        /// independent spring-dampers and therefore knows the vehicle's pitch, roll
+        /// and ride height as real degrees of freedom. It is not recomputed here.
+        ///
+        /// This method used to derive its own tilt from four terrain samples using
+        /// the MAXIMUM corner height. That is rigid-body resting behaviour: a slab
+        /// sits on whichever corner is highest, so the hull visibly perched on one
+        /// corner, floated clear of the ground on anything but a dead-flat plane, and
+        /// rolled to match a slope its suspension would have absorbed.
+        /// </summary>
+        public void Place(Vector3 worldPosition, float headingRad, float turretLocalYawRad,
+            float gunPitchRad = 0f, float hullPitchRad = 0f, float hullRollRad = 0f)
         {
             float headingDeg = headingRad * Mathf.Rad2Deg;
-            Vector3 fwd = new Vector3(Mathf.Sin(headingRad), 0f, Mathf.Cos(headingRad));
-            Vector3 right = new Vector3(fwd.z, 0f, -fwd.x);
+            float pitchAngle = hullPitchRad * Mathf.Rad2Deg;
+            float rollAngle = hullRollRad * Mathf.Rad2Deg;
 
-            // Sample terrain under 4 track contact points (wheelbase ~ 3.4m, track width ~ 2.4m)
-            Vector3 fl = worldPosition + fwd * 1.7f - right * 1.2f;
-            Vector3 fr = worldPosition + fwd * 1.7f + right * 1.2f;
-            Vector3 rl = worldPosition - fwd * 1.7f - right * 1.2f;
-            Vector3 rr = worldPosition - fwd * 1.7f + right * 1.2f;
+            // First-order lag toward the simulated attitude. The simulation runs at a
+            // fixed 30 Hz while this is called from the render loop, and the
+            // suspension is a spring-mass system that is under-damped at the
+            // timestep it is integrated with.
+            if (!_tiltSeeded)
+            {
+                _smoothedPitch = pitchAngle;
+                _smoothedRoll = rollAngle;
+                _tiltSeeded = true;
+            }
+            else
+            {
+                const float TiltResponse = 18f;
+                float k = 1f - Mathf.Exp(-TiltResponse * Mathf.Max(Time.deltaTime, 1e-4f));
+                _smoothedPitch = Mathf.Lerp(_smoothedPitch, pitchAngle, k);
+                _smoothedRoll = Mathf.Lerp(_smoothedRoll, rollAngle, k);
+                pitchAngle = _smoothedPitch;
+                rollAngle = _smoothedRoll;
+            }
 
-            float yFL = BattlefieldBuilder.GetTerrainHeight(fl.x, fl.z);
-            float yFR = BattlefieldBuilder.GetTerrainHeight(fr.x, fr.z);
-            float yRL = BattlefieldBuilder.GetTerrainHeight(rl.x, rl.z);
-            float yRR = BattlefieldBuilder.GetTerrainHeight(rr.x, rr.z);
+            // SIGN CONVENTION, and this is where the old code was wrong as well as
+            // rigid. Unity's Euler(x, y, z) composes Z first, then X, then Y.
+            //   * Positive rotation about +X moves the nose (+Z) DOWN, so raising the
+            //     front requires a NEGATIVE X rotation.
+            //   * Positive rotation about +Z moves the right flank (+X) UP, so
+            //     raising the right side requires a POSITIVE Z rotation.
+            //
+            // The roll term used to be negative, which rolled the tank the opposite
+            // way on every side slope: on a right-high camber the hull visibly leaned
+            // left, driving the left track into the ground and lifting the right one
+            // clear, while the contact solve underneath was still using the correct
+            // corner heights. Solve and orientation disagreed.
+            Quaternion tiltRot = Quaternion.Euler(-pitchAngle, 0f, rollAngle);
 
-            float avgGroundY = (yFL + yFR + yRL + yRR) * 0.25f;
-            Vector3 pos = worldPosition;
-            pos.y = Mathf.Max(pos.y, avgGroundY);
-
-            // Pitch angle (positive when front is higher than rear)
-            float pitchAngle = Mathf.Atan2(((yFL + yFR) * 0.5f) - ((yRL + yRR) * 0.5f), 3.4f) * Mathf.Rad2Deg;
-            // Roll angle (positive when right is higher than left)
-            float rollAngle = Mathf.Atan2(((yFR + yRR) * 0.5f) - ((yFL + yRL) * 0.5f), 2.4f) * Mathf.Rad2Deg;
-
-            Root.position = pos;
-            Root.rotation = Quaternion.Euler(0f, headingDeg, 0f) * Quaternion.Euler(-pitchAngle, 0f, -rollAngle);
+            Root.position = worldPosition;
+            Root.rotation = Quaternion.Euler(0f, headingDeg, 0f) * tiltRot;
             Turret.localRotation = Quaternion.Euler(0f, turretLocalYawRad * Mathf.Rad2Deg, 0f) * _turretBaseRotation;
             if (GunPivot != null)
             {
-                GunPivot.localRotation = Quaternion.Euler(-gunPitchRad * Mathf.Rad2Deg, 0f, 0f) * _gunBaseRotation;
+                // Hold the gun at the WORLD elevation the simulation commanded,
+                // rather than letting the hull tilt carry it.
+                //
+                // The compensation has to be measured along the GUN's own axis.
+                // Sampling the turret instead folds the turret ring's height into the
+                // answer, and any base pitch baked into the imported model was being
+                // subtracted at the wrong pivot -- a constant elevation error on every
+                // model-based vehicle.
+                //
+                // GunPivot.forward is read before its rotation is reassigned below, so
+                // this corrects last frame's world tilt. That one-frame lag converges
+                // and is stable, whereas correcting within the same frame would feed
+                // the correction back into itself.
+                float gunTiltDeg = Mathf.Asin(Mathf.Clamp(GunPivot.forward.y, -1f, 1f)) * Mathf.Rad2Deg;
+                float localPitchDeg = (gunPitchRad * Mathf.Rad2Deg) - gunTiltDeg;
+                GunPivot.localRotation = Quaternion.Euler(-localPitchDeg, 0f, 0f) * _gunBaseRotation;
             }
         }
 

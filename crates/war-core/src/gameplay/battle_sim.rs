@@ -1,18 +1,68 @@
-﻿//! The ground battle: two vehicles driving a fixed-step arena, shells as
+//! The ground battle: two vehicles driving a fixed-step arena, shells as
 //! travelling projectiles, and hit resolution through the real armour model.
 //!
 //! Ported from `Assets/Scripts/Gameplay/BattleSim.cs`.
 
 use crate::ballistics::{ArmourPlate, ImpactResult, Penetration, Shell, ShellType};
 use crate::math::{mathf, Vec3};
+use crate::vehicle_dynamics;
 use crate::vehicles::{VehicleCatalog, VehicleDefinition};
 
 /// Simulation rate. 30 Hz is plenty for a 40 km/h vehicle.
 pub const TICK_HZ: f32 = 30.0;
 pub const FIXED_DT: f32 = 1.0 / TICK_HZ;
 
-/// Half-extent of the playable arena, metres.
-pub const ARENA_HALF_EXTENT: f32 = 90.0;
+/// Radius of the circular playable arena, metres.
+pub const ARENA_RADIUS: f32 = 440.0;
+/// Compatibility alias for legacy tests and scripts.
+pub const ARENA_HALF_EXTENT: f32 = ARENA_RADIUS;
+
+pub fn clamp_to_arena(x: f32, z: f32) -> (f32, f32) {
+    let r = mathf::sqrt(x * x + z * z);
+    if r <= ARENA_RADIUS {
+        return (x, z);
+    }
+    if r < 1e-4 {
+        return (0.0, 0.0);
+    }
+    let k = ARENA_RADIUS / r;
+    (x * k, z * k)
+}
+
+pub fn get_terrain_height(x: f32, z: f32) -> f32 {
+    let r = mathf::sqrt(x * x + z * z);
+    if r <= 85.0 {
+        return 0.0;
+    }
+
+    let t = mathf::clamp01((r - 85.0) / (450.0 - 85.0));
+    let w = mathf::smooth_step(0.0, 1.0, t * 2.2);
+
+    let h1 = mathf::sin(x * 0.016 + 1.2) * mathf::cos(z * 0.014 + 0.7) * 16.0;
+    let h2 = mathf::cos(x * 0.030 - z * 0.026) * 9.0;
+    let ridge = mathf::abs(mathf::sin(x * 0.011 + z * 0.009 + 0.5)) * 14.0;
+    let outer_rim = mathf::pow(t, 1.8) * 44.0;
+
+    mathf::max(0.0, w * (h1 + h2 + ridge + outer_rim))
+}
+
+pub fn slope_speed_factor(x: f32, z: f32, move_dir_x: f32, move_dir_z: f32) -> f32 {
+    const D: f32 = 1.5;
+    let ahead = get_terrain_height(x + move_dir_x * D, z + move_dir_z * D);
+    let behind = get_terrain_height(x - move_dir_x * D, z - move_dir_z * D);
+    let deg = mathf::atan2(ahead - behind, 2.0 * D) * mathf::RAD2DEG;
+
+    if deg <= 0.0 {
+        return 1.0;
+    }
+    if deg >= 32.0 {
+        return 0.0;
+    }
+    if deg <= 20.0 {
+        return mathf::lerp(1.0, 0.6, deg / 20.0);
+    }
+    mathf::lerp(0.6, 0.25, (deg - 20.0) / 12.0)
+}
 
 /// Hard ceiling on catch-up ticks so a stalled tab cannot teleport units.
 const MAX_STEPS_PER_FRAME: i32 = 4;
@@ -34,7 +84,36 @@ const MAX_SPEED_MPS: f32 = 12.0;
 const MAX_TURN_RATE_RAD: f32 = 1.8;
 const ACCELERATION_MPS2: f32 = 12.0;
 const COAST_DECEL_MPS2: f32 = 8.0;
-const BRAKING_DECEL_MPS2: f32 = 45.0;
+
+/// Speed above which available acceleration becomes power-limited and falls off as
+/// 1/v. Real traction effort is roughly constant below this and constant power
+/// above it.
+const POWER_LIMITED_SPEED_MPS: f32 = 6.0;
+
+/// Coefficient of rolling resistance on firm ground. The documented band for
+/// tracked vehicles is 0.03-0.09 (DTIC TR-06-6); 0.055 is mid-range for a tank on
+/// packed earth.
+const ROLLING_RESISTANCE_COEFF: f32 = 0.055;
+
+/// Friction coefficient resisting sideways motion. Much higher than rolling
+/// resistance: tracks do not skid sideways easily, which is why a tank holds a line
+/// across a camber.
+const LATERAL_FRICTION_COEFF: f32 = 0.85;
+
+/// Total friction budget available from the tracks, m/s^2.
+const TRACKED_GRIP_ACCEL_MPS2: f32 = 9.81 * 0.85;
+
+/// Deceleration when the throttle opposes the direction of travel.
+const BRAKE_ACCEL_MPS2: f32 = 12.0;
+
+/// Speed at which full steering input still produces the full turn rate, m/s.
+/// Above this the differential must push harder for the same radius.
+const SPEED_AT_MAX_YAW_MPS: f32 = 4.5;
+
+/// How far the two track speeds separate under full steering, as a fraction of the
+/// vehicle's own speed. This is the physical meaning of the steering axis: a
+/// skid-steered vehicle turns by driving one track faster than the other.
+pub const DIFFERENTIAL_SKEW: f32 = 0.5;
 
 /// How strongly the hull is pulled onto the gun's line while driving.
 ///
@@ -70,10 +149,19 @@ const SHELL_LIFE_S: f32 = 4.0;
 /// Hit radius in the horizontal plane, metres: roughly the hull footprint plus the
 /// turret.
 const HIT_RADIUS_M: f32 = 3.2;
-/// Highest shell position that can still hit a hull, metres.
+/// How far above a vehicle's own ground contact a shell may pass and still strike
+/// the hull, metres.
+///
+/// This is a RELATIVE ceiling, measured from the target's position. It must never be
+/// compared against an absolute world height: since the arena became a 440 m circle
+/// with analytic terrain, vehicles sit anywhere from 0 m to ~74 m above sea level,
+/// and an absolute ceiling silently makes every shot on high ground miss.
 const HIT_CEILING_M: f32 = 4.5;
+/// How far below a vehicle's own ground contact a shell may pass and still strike
+/// the hull, metres. Guards against a shell arriving from a downhill position.
+const HIT_FLOOR_M: f32 = 1.0;
 /// How far outside the arena a shell may travel before being discarded.
-const SHELL_CULL_MARGIN_M: f32 = 40.0;
+const SHELL_CULL_MARGIN_M: f32 = 60.0;
 
 /// Damage a penetrating player shell does.
 const PLAYER_SHELL_DAMAGE: i32 = 34;
@@ -92,9 +180,7 @@ const AI_THROTTLE: f32 = 0.45;
 /// The AI's throttle when close.
 const AI_THROTTLE_CLOSE: f32 = 0.1;
 /// The AI is slower than the player, by design.
-const AI_SPEED_SCALE: f32 = 0.8;
 /// How hard the AI slews its hull, radians per second.
-const AI_SLEW_RATE_RAD_PER_S: f32 = 1.2;
 /// Half-angle of the frontal arc: a round arriving within this of head-on (or of
 /// dead astern) strikes the front (or rear) plate rather than the side.
 pub const FRONT_PLATE_CONE_DEG: f32 = 45.0;
@@ -138,6 +224,10 @@ pub struct BattleSim {
 
     enemy_position: Vec3,
     enemy_heading_rad: f32,
+    /// Enemy forward and sideways velocity in its hull frame, m/s. Held as state so
+    /// the AI obeys the same terrain forces and friction circle as the player.
+    enemy_speed_mps: f32,
+    enemy_lat_speed_mps: f32,
     enemy_turret_yaw_rad: f32,
 
     player_health: i32,
@@ -165,6 +255,34 @@ pub struct BattleSim {
     respawn_timer: f32,
     tick: i32,
     player_current_speed_mps: f32,
+    /// Sideways velocity in the hull's frame, m/s. Non-zero only when the tracks
+    /// are sliding - over a side slope, or while skidding out of a turn.
+    player_lat_speed_mps: f32,
+    /// Ground speed of each track, m/s, positive forwards. Drives the track
+    /// animation so the wheels read out the simulation rather than replaying input.
+    player_left_track_mps: f32,
+    player_right_track_mps: f32,
+    enemy_left_track_mps: f32,
+    enemy_right_track_mps: f32,
+    /// Hull pitch and roll at the last tick, degrees. Positive pitch is nose up,
+    /// positive roll is right side up.
+    ///
+    /// Owned by [`crate::hull_suspension`] rather than derived from the terrain
+    /// slope: the vehicle's attitude is an emergent property of four independent
+    /// spring-dampers, so it survives a slope the suspension would have absorbed
+    /// and it dips under braking.
+    hull_pitch_deg: f32,
+    hull_roll_deg: f32,
+    /// Terrain slope under the hull in the hull's frame, degrees.
+    slope_forward_deg: f32,
+    slope_lateral_deg: f32,
+    /// Four independent spring-dampers driving heave, pitch and roll.
+    player_suspension: crate::hull_suspension::HullSuspension,
+    /// Acceleration the hull is experiencing in its own frame, m/s^2. Fed to the
+    /// suspension, which turns it into pitch and roll moments because the centre of
+    /// gravity sits above the track plane.
+    player_accel_long: f32,
+    player_accel_lat: f32,
     in_flight: Vec<ActiveShell>,
     feed: Vec<String>,
     respawn_counter: u32,
@@ -183,6 +301,7 @@ impl BattleSim {
     // read them as properties of the sim rather than as free-floating values.
     pub const TICK_HZ: f32 = TICK_HZ;
     pub const FIXED_DT: f32 = FIXED_DT;
+    pub const ARENA_RADIUS: f32 = ARENA_RADIUS;
     pub const ARENA_HALF_EXTENT: f32 = ARENA_HALF_EXTENT;
     pub const TURRET_SLEW_RATE: f32 = TURRET_SLEW_RATE;
     pub const MAX_TRAVERSE: f32 = MAX_TRAVERSE;
@@ -204,6 +323,19 @@ impl BattleSim {
         let player_position = Vec3::new(0.0, 0.0, -35.0);
         let enemy_position = Vec3::new(0.0, 0.0, 35.0);
 
+        let player_mass = f32::max(player.mass_kg, 1000.0);
+        // Footprint measured from the RENDERED vehicle, at the same scale the
+        // bootstrap applies to the rig. Using the generic track constants here instead
+        // put the contacts at +/-1.7 m on a 9 m tank, so the rear third of the tracks
+        // drove on no physics at all.
+        let mut player_suspension = crate::hull_suspension::HullSuspension::new(
+            player_mass,
+            vehicle_dynamics::contact_half_length_m(player_mass),
+            vehicle_dynamics::contact_half_width_m(player_mass),
+            vehicle_dynamics::contact_centre_z_m(player_mass),
+        );
+        player_suspension.reset(player_position.x, player_position.z, 0.0);
+
         BattleSim {
             player_def: player,
             enemy_def: enemy,
@@ -216,6 +348,8 @@ impl BattleSim {
 
             enemy_position,
             enemy_heading_rad: mathf::PI,
+            enemy_speed_mps: 0.0,
+            enemy_lat_speed_mps: 0.0,
             enemy_turret_yaw_rad: 0.0,
 
             player_health: 100,
@@ -238,6 +372,18 @@ impl BattleSim {
             respawn_timer: 0.0,
             tick: 0,
             player_current_speed_mps: 0.0,
+            player_lat_speed_mps: 0.0,
+            player_left_track_mps: 0.0,
+            player_right_track_mps: 0.0,
+            enemy_left_track_mps: 0.0,
+            enemy_right_track_mps: 0.0,
+            hull_pitch_deg: 0.0,
+            hull_roll_deg: 0.0,
+            slope_forward_deg: 0.0,
+            slope_lateral_deg: 0.0,
+            player_suspension,
+            player_accel_long: 0.0,
+            player_accel_lat: 0.0,
             in_flight: Vec::new(),
             feed: Vec::with_capacity(FEED_CAPACITY),
             respawn_counter: 0,
@@ -275,6 +421,41 @@ impl BattleSim {
 
     pub fn player_speed_kph(&self) -> f32 {
         self.player_speed_kph
+    }
+
+    /// Hull pitch, degrees, nose-up positive. Emergent from the four-contact
+    /// suspension rather than copied from the terrain slope.
+    pub fn hull_pitch_deg(&self) -> f32 {
+        self.hull_pitch_deg
+    }
+
+    /// Hull roll, degrees, right-side-up positive.
+    pub fn hull_roll_deg(&self) -> f32 {
+        self.hull_roll_deg
+    }
+
+    /// Ground speed of the left track, m/s, positive forwards. The two tracks
+    /// diverge under steering, which is the whole mechanism by which a tracked
+    /// vehicle turns.
+    pub fn player_left_track_mps(&self) -> f32 {
+        self.player_left_track_mps
+    }
+    /// Ground speed of the right track, m/s, positive forwards.
+    pub fn player_right_track_mps(&self) -> f32 {
+        self.player_right_track_mps
+    }
+    /// Terrain slope under the hull along its heading, degrees. Positive is uphill.
+    pub fn slope_forward_deg(&self) -> f32 {
+        self.slope_forward_deg
+    }
+    /// Terrain slope across the hull, degrees. Positive means the ground falls away
+    /// to the right.
+    pub fn slope_lateral_deg(&self) -> f32 {
+        self.slope_lateral_deg
+    }
+    /// Longitudinal speed in the hull frame, m/s. Negative when reversing.
+    pub fn player_forward_speed_mps(&self) -> f32 {
+        self.player_current_speed_mps
     }
 
     pub fn enemy_heading_rad(&self) -> f32 {
@@ -477,60 +658,195 @@ impl BattleSim {
     }
 
     fn drive_player(&mut self, dt: f32, throttle: f32, steer: f32) {
-        let target_speed = throttle * MAX_SPEED_MPS;
-        let mut rate = ACCELERATION_MPS2;
-        if mathf::abs(throttle) < 0.01 {
-            rate = COAST_DECEL_MPS2;
-        } else if (self.player_current_speed_mps > 0.1 && throttle < -0.01)
-            || (self.player_current_speed_mps < -0.1 && throttle > 0.01)
-        {
-            rate = BRAKING_DECEL_MPS2;
-        }
-        self.player_current_speed_mps =
-            mathf::move_towards(self.player_current_speed_mps, target_speed, rate * dt);
-        let speed = self.player_current_speed_mps;
+        let throttle = mathf::clamp(throttle, -1.0, 1.0);
+        let steer = mathf::clamp(steer, -1.0, 1.0);
 
-        // The hull steers onto the gun's line while driving.
-        //
-        // Without this the tank and its turret always disagree: the gun tracks the
-        // mouse in world space while the hull keeps whatever heading the driver
-        // chose, so the turret visibly swings the opposite way to the tank every
-        // time the hull turns. It reads as an inverted control even though the gun
-        // is in fact pointing at the target. Real tracked vehicles do exactly this.
-        //
-        // Only while actually moving: a stationary tank needs to be able to hold
-        // its traverse for aiming, and it cannot steer anyway.
-        let moving = if mathf::abs(throttle) > 0.01 {
-            1.0
-        } else {
-            0.0
-        };
+        let fx = mathf::sin(self.player_heading_rad);
+        let fz = mathf::cos(self.player_heading_rad);
+        let rx = fz;
+        let rz = -fx;
+
+        // --- terrain frame -------------------------------------------------
+        let slope_fwd_deg = vehicle_dynamics::slope_along_terrain(
+            self.player_position.x,
+            self.player_position.z,
+            (fx, fz),
+            vehicle_dynamics::HALF_GAUGE_M,
+        );
+        let slope_lat_deg = vehicle_dynamics::slope_along_terrain(
+            self.player_position.x,
+            self.player_position.z,
+            (rx, rz),
+            vehicle_dynamics::HALF_TRACK_WIDTH_M,
+        );
+
+        let mut normal_load_g = 1.0f32;
+        let (g_along, g_across) =
+            vehicle_dynamics::gravity_on_ground_plane(slope_fwd_deg, slope_lat_deg, &mut normal_load_g);
+        let _ = g_across;
+
+        // --- longitudinal forces ------------------------------------------
+        let a_engine = vehicle_dynamics::engine_acceleration(
+            throttle,
+            self.player_current_speed_mps,
+            ACCELERATION_MPS2,
+            POWER_LIMITED_SPEED_MPS,
+            MAX_SPEED_MPS,
+        );
+        let a_roll = vehicle_dynamics::rolling_resistance(
+            self.player_current_speed_mps,
+            normal_load_g,
+            ROLLING_RESISTANCE_COEFF,
+        );
+
+        let mut desired_long = a_engine + g_along + a_roll;
+
+        // Braking: the tracks are the brakes.
+        if throttle * self.player_current_speed_mps < -0.02 {
+            desired_long = -mathf::sign(self.player_current_speed_mps) * BRAKE_ACCEL_MPS2;
+        }
+
+        // --- lateral: tracks resist sideways motion strongly -------------
+        let a_lat_grip = vehicle_dynamics::lateral_grip_accel(
+            self.player_lat_speed_mps,
+            normal_load_g,
+            LATERAL_FRICTION_COEFF,
+            vehicle_dynamics::LATERAL_SLIP_STIFFNESS_PER_MPS,
+        );
+
+        // Friction circle: whatever the tracks spend sideways is unavailable for
+        // acceleration.
+        let a_long =
+            vehicle_dynamics::apply_friction_circle(desired_long, a_lat_grip, TRACKED_GRIP_ACCEL_MPS2);
+
+        self.player_current_speed_mps += a_long * dt;
+        self.player_lat_speed_mps += a_lat_grip * dt;
+
+        // Scrub loss while skidding to turn.
+        self.player_current_speed_mps +=
+            vehicle_dynamics::skid_scrub_speed_loss(steer, self.player_current_speed_mps) * dt;
+
+        if mathf::abs(throttle) < 0.01 {
+            self.player_current_speed_mps =
+                mathf::move_towards(self.player_current_speed_mps, 0.0, COAST_DECEL_MPS2 * dt);
+        }
+
+        if mathf::abs(self.player_current_speed_mps) < 1e-3 {
+            self.player_current_speed_mps = 0.0;
+        }
+        if mathf::abs(self.player_lat_speed_mps) < 1e-3 {
+            self.player_lat_speed_mps = 0.0;
+        }
+
+        // --- steering ------------------------------------------------------
+        // `to_gun_line` is an ANGLE in radians, so it is scaled into the same
+        // normalised [-1,1] domain as the steering input. Adding raw radians to a
+        // normalised demand meant the "0.35 strength" was really 73% of full lock at
+        // full traverse, and any hard steering input suppressed alignment entirely.
+        let moving = if mathf::abs(throttle) > 0.01 { 1.0 } else { 0.0 };
         let gun_world_heading = wrap_angle(self.player_heading_rad + self.player_turret_yaw_rad);
         let to_gun_line = wrap_angle(gun_world_heading - self.player_heading_rad);
 
-        let mut demand = (to_gun_line * HULL_AUTO_ALIGN_STRENGTH * moving) + steer;
-        demand = mathf::clamp(demand, -1.0, 1.0);
+        let align =
+            mathf::clamp(to_gun_line / MAX_TRAVERSE, -1.0, 1.0) * HULL_AUTO_ALIGN_STRENGTH * moving;
+        let demand = mathf::clamp(align + steer, -1.0, 1.0);
 
-        let max_step = MAX_TURN_RATE_RAD * dt;
-        self.player_heading_rad = wrap_angle(
-            self.player_heading_rad + mathf::clamp(demand * MAX_TURN_RATE_RAD, -max_step, max_step),
+        let mut yaw_rate = vehicle_dynamics::skid_steer_yaw_rate(
+            self.player_current_speed_mps,
+            demand,
+            vehicle_dynamics::TRACK_GAUGE_M,
+            MAX_TURN_RATE_RAD,
+            SPEED_AT_MAX_YAW_MPS,
         );
+        yaw_rate *= vehicle_dynamics::lateral_slope_steering_scale(slope_lat_deg);
 
-        let forward = Vec3::new(
-            mathf::sin(self.player_heading_rad),
-            0.0,
-            mathf::cos(self.player_heading_rad),
-        );
-        let next = self.player_position + forward * (speed * dt);
+        self.player_heading_rad = wrap_angle(self.player_heading_rad + yaw_rate * dt);
 
-        self.player_position = Vec3::new(
-            mathf::clamp(next.x, -ARENA_HALF_EXTENT, ARENA_HALF_EXTENT),
-            0.0,
-            mathf::clamp(next.z, -ARENA_HALF_EXTENT, ARENA_HALF_EXTENT),
-        );
-        self.player_speed_kph = mathf::abs(speed) * 3.6;
+        // The velocity components live in the HULL frame and the hull has just
+        // rotated, so carry them round with it.
+        let (vs, vc) = (mathf::sin(yaw_rate * dt), mathf::cos(yaw_rate * dt));
+        let v_long_new = self.player_current_speed_mps * vc + self.player_lat_speed_mps * vs;
+        let v_lat_new = -self.player_current_speed_mps * vs + self.player_lat_speed_mps * vc;
+        self.player_current_speed_mps = v_long_new;
+        self.player_lat_speed_mps = v_lat_new;
+
+        // --- integrate position --------------------------------------------
+        let fx = mathf::sin(self.player_heading_rad);
+        let fz = mathf::cos(self.player_heading_rad);
+        let rx = fz;
+        let rz = -fx;
+
+        let vx = fx * self.player_current_speed_mps + rx * self.player_lat_speed_mps;
+        let vz = fz * self.player_current_speed_mps + rz * self.player_lat_speed_mps;
+
+        let from_x = self.player_position.x;
+        let from_z = self.player_position.z;
+        let (clamped_x, clamped_z) = clamp_to_arena(from_x + vx * dt, from_z + vz * dt);
+        let pos_y = get_terrain_height(clamped_x, clamped_z);
+
+        self.player_position = Vec3::new(clamped_x, pos_y, clamped_z);
+
+        // Weight transfer: the acceleration the hull is actually experiencing in its
+        // own frame. Fed to the suspension, which turns it into pitch and roll
+        // moments because the centre of gravity sits above the track plane.
+        self.player_accel_long = a_long;
+        self.player_accel_lat = a_lat_grip;
+
+        self.step_suspension(dt);
+
+        // Cancel velocity driven into the boundary so the vehicle slides along the
+        // edge instead of pressing into it and snapping.
+        let inv_dt = 1.0 / f32::max(dt, 1e-5);
+        let ax = clamped_x - from_x;
+        let az = clamped_z - from_z;
+        self.player_current_speed_mps = (ax * fx + az * fz) * inv_dt;
+        self.player_lat_speed_mps = (ax * rx + az * rz) * inv_dt;
+
+        // Ground speed, not |longitudinal|.
+        self.player_speed_kph = (ax * ax + az * az).sqrt() * inv_dt * 3.6;
+
+        // Differential steering, exposed for the track animation.
+        // The RIGHT track is the outside of a right-hand turn, so it runs faster.
+        // Positive yaw rate turns toward +X, which is the local right axis.
+        let half = self.player_current_speed_mps * DIFFERENTIAL_SKEW;
+        self.player_right_track_mps = self.player_current_speed_mps + half;
+        self.player_left_track_mps = self.player_current_speed_mps - half;
+
+        self.slope_forward_deg = slope_fwd_deg;
+        self.slope_lateral_deg = slope_lat_deg;
     }
 
+    /// Advance the four-contact suspension and take the hull's attitude and ride
+    /// height from it.
+    ///
+    /// This is what replaces the old `hull_pitch_deg = slope_fwd_deg`. Copying the
+    /// terrain slope into the hull attitude makes the tank rigid: it cannot absorb a
+    /// camber, it cannot squat under power or dive under braking, and it heaves over
+    /// every undulation. Worse, it disagrees with the renderer's own corner solve,
+    /// so the hull visibly rolled away from the ground it was standing on.
+    fn step_suspension(&mut self, dt: f32) {
+        let (px, pz) = (self.player_position.x, self.player_position.z);
+
+        self.player_suspension.step(
+            dt,
+            px,
+            pz,
+            self.player_heading_rad,
+            self.player_accel_long,
+            self.player_accel_lat,
+        );
+
+        // The hull's Y now comes from its own ride height rather than from the terrain
+        // height under the centre. Those differ whenever the hull is tilted or
+        // bridging a dip, and taking the centre value alone was one of the reasons it
+        // looked like it was skating over the ground.
+        self.player_position.y = self.player_suspension.height;
+
+        self.hull_pitch_deg = self.player_suspension.pitch_rad * 180.0 / mathf::PI;
+        self.hull_roll_deg = self.player_suspension.roll_rad * 180.0 / mathf::PI;
+        self.slope_forward_deg = mathf::asin(mathf::clamp(mathf::sin(self.player_suspension.pitch_rad), -1.0, 1.0)) * 180.0 / mathf::PI;
+        self.slope_lateral_deg = mathf::asin(mathf::clamp(mathf::sin(self.player_suspension.roll_rad), -1.0, 1.0)) * 180.0 / mathf::PI;
+    }
     /// Turret follows the aim point, clamped to a realistic traverse arc and slewed
     /// at a finite rate.
     fn aim_turret(&mut self, dt: f32, trim: f32, aim_point: Vec3) {
@@ -546,7 +862,7 @@ impl BattleSim {
             let dy = delta.y - AIM_EYE_HEIGHT_M;
             let mut wanted_pitch = mathf::atan2(dy, horizontal_dist);
             wanted_pitch = mathf::clamp(wanted_pitch, MIN_GUN_PITCH_RAD, MAX_GUN_PITCH_RAD);
-            self.player_gun_pitch_rad = slew(
+            self.player_gun_pitch_rad = slew_bounded(
                 self.player_gun_pitch_rad,
                 wanted_pitch,
                 GUN_ELEVATION_SLEW_RATE * dt,
@@ -573,7 +889,7 @@ impl BattleSim {
         wanted = mathf::clamp(wanted, -MAX_TRAVERSE, MAX_TRAVERSE);
 
         self.player_turret_yaw_rad =
-            slew(self.player_turret_yaw_rad, wanted, TURRET_SLEW_RATE * dt);
+            slew_bounded(self.player_turret_yaw_rad, wanted, TURRET_SLEW_RATE * dt);
 
         // Belt and braces: the state is clamped too, so no combination of inputs can
         // leave the barrel outside its arc. An out-of-arc turret looks exactly like an
@@ -588,7 +904,13 @@ impl BattleSim {
         // only by the tick counter, so replays are identical.
         let phase = self.tick as f32 * AI_WEAVE_PHASE;
         let to_player = self.player_position - self.enemy_position;
-        let dist = to_player.magnitude();
+
+        // Horizontal distance only. Using the 3D magnitude made a target on a hill
+        // read as kilometres away, so the AI would refuse to fire at, or close on,
+        // anything not on the same contour.
+        let to_player_x = to_player.x;
+        let to_player_z = to_player.z;
+        let dist = (to_player_x * to_player_x + to_player_z * to_player_z).sqrt();
 
         let throttle = if dist < AI_CLOSE_RANGE_M {
             AI_THROTTLE_CLOSE
@@ -597,7 +919,7 @@ impl BattleSim {
         };
 
         let desired_heading = if dist > 0.1 {
-            mathf::atan2(to_player.x, to_player.z) + mathf::sin(phase) * AI_WEAVE_RAD
+            mathf::atan2(to_player_x, to_player_z) + mathf::sin(phase) * AI_WEAVE_RAD
         } else {
             self.enemy_heading_rad
         };
@@ -605,27 +927,95 @@ impl BattleSim {
         self.enemy_heading_rad = slew(
             self.enemy_heading_rad,
             wrap_angle(desired_heading - self.enemy_heading_rad) + self.enemy_heading_rad,
-            AI_SLEW_RATE_RAD_PER_S * dt,
+            1.2 * dt,
         );
 
-        let speed = throttle * MAX_SPEED_MPS * AI_SPEED_SCALE;
-        let forward = Vec3::new(
-            mathf::sin(self.enemy_heading_rad),
-            0.0,
-            mathf::cos(self.enemy_heading_rad),
-        );
-        let next = self.enemy_position + forward * (speed * dt);
+        // The AI drives through the same terrain-aware force model as the player.
+        // It previously moved at a constant `throttle * MAX_SPEED_MPS * 0.8` with no
+        // inertia, no braking and no slope response, so it climbed hills at full
+        // speed and could not be out-driven.
+        let fx = mathf::sin(self.enemy_heading_rad);
+        let fz = mathf::cos(self.enemy_heading_rad);
+        let rx = fz;
+        let rz = -fx;
 
-        self.enemy_position = Vec3::new(
-            mathf::clamp(next.x, -ARENA_HALF_EXTENT, ARENA_HALF_EXTENT),
-            0.0,
-            mathf::clamp(next.z, -ARENA_HALF_EXTENT, ARENA_HALF_EXTENT),
+        let slope_fwd_deg = vehicle_dynamics::slope_along_terrain(
+            self.enemy_position.x,
+            self.enemy_position.z,
+            (fx, fz),
+            vehicle_dynamics::HALF_GAUGE_M,
+        );
+        let slope_lat_deg = vehicle_dynamics::slope_along_terrain(
+            self.enemy_position.x,
+            self.enemy_position.z,
+            (rx, rz),
+            vehicle_dynamics::HALF_TRACK_WIDTH_M,
         );
 
-        self.enemy_turret_yaw_rad =
-            wrap_angle(mathf::atan2(-to_player.x, -to_player.z) - self.enemy_heading_rad);
-        self.enemy_turret_yaw_rad =
-            mathf::clamp(self.enemy_turret_yaw_rad, -MAX_TRAVERSE, MAX_TRAVERSE);
+        let mut normal_load_g = 1.0f32;
+        let (g_along, _g_across) =
+            vehicle_dynamics::gravity_on_ground_plane(slope_fwd_deg, slope_lat_deg, &mut normal_load_g);
+
+        let a_engine = vehicle_dynamics::engine_acceleration(
+            throttle,
+            self.enemy_speed_mps,
+            ACCELERATION_MPS2 * 0.8,
+            POWER_LIMITED_SPEED_MPS,
+            MAX_SPEED_MPS,
+        );
+        let a_roll = vehicle_dynamics::rolling_resistance(
+            self.enemy_speed_mps,
+            normal_load_g,
+            ROLLING_RESISTANCE_COEFF,
+        );
+        let a_lat_grip = vehicle_dynamics::lateral_grip_accel(
+            self.enemy_lat_speed_mps,
+            normal_load_g,
+            LATERAL_FRICTION_COEFF,
+            vehicle_dynamics::LATERAL_SLIP_STIFFNESS_PER_MPS,
+        );
+        let a_long =
+            vehicle_dynamics::apply_friction_circle(a_engine + g_along + a_roll, a_lat_grip, TRACKED_GRIP_ACCEL_MPS2);
+
+        self.enemy_speed_mps += a_long * dt;
+        self.enemy_lat_speed_mps += a_lat_grip * dt;
+        if mathf::abs(self.enemy_speed_mps) < 1e-3 {
+            self.enemy_speed_mps = 0.0;
+        }
+        if mathf::abs(self.enemy_lat_speed_mps) < 1e-3 {
+            self.enemy_lat_speed_mps = 0.0;
+        }
+
+        let vx = fx * self.enemy_speed_mps + rx * self.enemy_lat_speed_mps;
+        let vz = fz * self.enemy_speed_mps + rz * self.enemy_lat_speed_mps;
+
+        let from_x = self.enemy_position.x;
+        let from_z = self.enemy_position.z;
+        let (clamped_x, clamped_z) = clamp_to_arena(from_x + vx * dt, from_z + vz * dt);
+        let enemy_y = get_terrain_height(clamped_x, clamped_z);
+        self.enemy_position = Vec3::new(clamped_x, enemy_y, clamped_z);
+
+        let inv_dt = 1.0 / f32::max(dt, 1e-5);
+        let ax = clamped_x - from_x;
+        let az = clamped_z - from_z;
+        self.enemy_speed_mps = (ax * fx + az * fz) * inv_dt;
+        self.enemy_lat_speed_mps = (ax * rx + az * rz) * inv_dt;
+
+        let e_half = self.enemy_speed_mps * DIFFERENTIAL_SKEW * 0.5;
+        self.enemy_right_track_mps = self.enemy_speed_mps + e_half;
+        self.enemy_left_track_mps = self.enemy_speed_mps - e_half;
+
+        // The AI turret slews at a finite rate like the player's, rather than
+        // snapping, so leading a target on a turn is a real skill.
+        let wanted_yaw =
+            wrap_angle(mathf::atan2(-to_player_x, -to_player_z) - self.enemy_heading_rad);
+        let wanted_yaw = mathf::clamp(wanted_yaw, -MAX_TRAVERSE, MAX_TRAVERSE);
+        self.enemy_turret_yaw_rad = slew_bounded(
+            self.enemy_turret_yaw_rad,
+            wanted_yaw,
+            TURRET_SLEW_RATE * 0.7 * dt,
+        );
+        self.enemy_turret_yaw_rad = mathf::clamp(self.enemy_turret_yaw_rad, -MAX_TRAVERSE, MAX_TRAVERSE);
 
         if self.enemy_reload <= 0.0 && dist < ENEMY_FIRE_RANGE_M {
             self.enemy_reload = self.enemy_def.reload_seconds + ENEMY_RELOAD_HANDICAP_S;
@@ -640,7 +1030,6 @@ impl BattleSim {
             );
         }
     }
-
     fn fire_player(&mut self) {
         self.reload_remaining = self.player_def.reload_seconds;
 
@@ -655,7 +1044,11 @@ impl BattleSim {
         );
 
         // Cannon recoil impulse pushes the vehicle slightly backwards.
-        self.player_current_speed_mps -= RECOIL_IMPULSE_MPS;
+        //
+        // Applied as a CAP rather than a subtraction. A 120 mm gun firing on a
+        // stationary tank used to drive it backwards at 1.2 m/s, where it then rolled
+        // away on its own forever; a tank's tracks and the ground hold it.
+        self.player_current_speed_mps = f32::min(self.player_current_speed_mps, -RECOIL_IMPULSE_MPS);
 
         self.spawn_shell(
             origin,
@@ -682,6 +1075,7 @@ impl BattleSim {
             let i = index as usize;
             let mut shell = self.in_flight[i];
             shell.life -= dt;
+            let previous = shell.position;
             shell.position += shell.velocity * dt;
 
             let target = if shell.from_player {
@@ -695,24 +1089,29 @@ impl BattleSim {
                 self.player_health > 0
             };
 
-            // Hit volume is roughly the hull footprint plus the turret.
-            let dx = shell.position.x - target.x;
-            let dz = shell.position.z - target.z;
-            let hit = target_alive
-                && (dx * dx + dz * dz) < HIT_RADIUS_M * HIT_RADIUS_M
-                && shell.position.y < HIT_CEILING_M;
+            // Hit volume is the hull footprint plus the turret, measured RELATIVE to
+            // the target's own ground contact. Comparing against an absolute world
+            // height made every shot on the hills (0..74 m) a guaranteed miss.
+            //
+            // The test is SWEPT along the segment travelled this tick, not sampled at
+            // the endpoint. A round leaves the gun at ~0.42 * 800 m/s = 336 m/s, which
+            // at the 30 Hz tick rate is 11.2 m of travel per tick, against a hit
+            // cylinder only 6.4 m across. Sampling the endpoint alone therefore missed
+            // roughly 43% of shots that flew straight through the target.
+            let hit = target_alive && segment_hits_target(previous, shell.position, target);
 
             if hit {
-                self.resolve_hit(&shell);
+                let mut at_impact = shell;
+                at_impact.position = shell.position;
+                self.resolve_hit(&at_impact);
                 self.in_flight.remove(i);
                 index -= 1;
                 continue;
             }
 
-            if shell.life <= 0.0
-                || mathf::abs(shell.position.x) > ARENA_HALF_EXTENT + SHELL_CULL_MARGIN_M
-                || mathf::abs(shell.position.z) > ARENA_HALF_EXTENT + SHELL_CULL_MARGIN_M
-            {
+            let r_sq = shell.position.x * shell.position.x + shell.position.z * shell.position.z;
+            let max_shell_r = ARENA_RADIUS + SHELL_CULL_MARGIN_M;
+            if shell.life <= 0.0 || r_sq > max_shell_r * max_shell_r {
                 self.in_flight.remove(i);
                 index -= 1;
                 continue;
@@ -801,7 +1200,9 @@ impl BattleSim {
                 self.kills += 1;
                 self.respawn_timer = RESPAWN_DELAY_S;
                 self.push(format!("DESTROYED - {}", target_def.display_name));
-                self.enemy_position = Vec3::new(self.randomize(45.0), 0.0, self.randomize(45.0));
+                let rx = self.randomize(45.0);
+                let rz = self.randomize(45.0);
+                self.enemy_position = Vec3::new(rx, get_terrain_height(rx, rz), rz);
             }
         } else {
             self.player_health = (self.player_health - ENEMY_SHELL_DAMAGE).max(0);
@@ -970,11 +1371,70 @@ fn wrap_angle(a: f32) -> f32 {
     a
 }
 
+/// Whether the segment travelled by a shell this tick passes through the target's
+/// hit volume.
+///
+/// The volume is a vertical cylinder of radius [`HIT_RADIUS_M`] about the target's
+/// ground contact, spanning `-HIT_FLOOR_M .. HIT_CEILING_M` relative to it. This
+/// solves for the closest approach of the *segment* rather than sampling its end
+/// point, so a round moving further than the cylinder is wide in a single tick
+/// cannot pass straight through the target unseen.
+pub fn segment_hits_target(from: Vec3, to: Vec3, target: Vec3) -> bool {
+    let dx = to.x - from.x;
+    let dz = to.z - from.z;
+    let len_sq = dx * dx + dz * dz;
+
+    // Parameter along the segment at which the horizontal distance to the target is
+    // smallest. A shell fired straight up (len_sq ~ 0) keeps t at its start value,
+    // which is the correct limit.
+    let t = if len_sq > 1e-12 {
+        let px = from.x - target.x;
+        let pz = from.z - target.z;
+        mathf::clamp01(-(px * dx + pz * dz) / len_sq)
+    } else {
+        0.0
+    };
+
+    let cx = from.x + dx * t;
+    let cz = from.z + dz * t;
+    let horiz_sq = (cx - target.x) * (cx - target.x) + (cz - target.z) * (cz - target.z);
+    if horiz_sq >= HIT_RADIUS_M * HIT_RADIUS_M {
+        return false;
+    }
+
+    // Height is interpolated at the same parameter, so a descending round is judged
+    // where it actually crosses the target rather than where the tick ended.
+    let cy = from.y + (to.y - from.y) * t;
+    let dy = cy - target.y;
+    dy < HIT_CEILING_M && dy > -HIT_FLOOR_M
+}
+
 /// Slew `current` toward `target` by at most `max_step`, taking the short way round.
+///
+/// Only correct for a quantity that is genuinely unbounded over a full circle — the
+/// AI's hull heading. For a quantity confined to an arc, use [`slew_bounded`].
 fn slew(current: f32, target: f32, max_step: f32) -> f32 {
     let delta = wrap_angle(target - current);
     if mathf::abs(delta) <= max_step {
         return wrap_angle(target);
     }
     wrap_angle(current + mathf::sign(delta) * max_step)
+}
+
+/// Slew `current` toward `target` by at most `max_step`, without wrapping.
+///
+/// Both operands are already confined to the same bounded interval, so the direct
+/// difference is the meaningful one. [`slew`] must NOT be used here: it takes the
+/// short way round an unbounded circle, and when the two traverse stops are further
+/// apart than pi (2 * MAX_TRAVERSE = 4.2 rad > pi) the short way round can point
+/// *out through the back* of the arc, leaving the clamp to pin the turret at its
+/// stop forever. With the turret parked at the right-hand stop and a target
+/// demanded over the left shoulder, every step pushed it further out and it could
+/// never return.
+fn slew_bounded(current: f32, target: f32, max_step: f32) -> f32 {
+    let delta = target - current;
+    if mathf::abs(delta) <= max_step {
+        return target;
+    }
+    current + mathf::sign(delta) * max_step
 }
