@@ -41,6 +41,10 @@ public static class WebBuildSetup
         "Standard",
         "Unlit/Color",
         "Skybox/Procedural",
+        "Nature/Terrain/Standard",
+        "Nature/Terrain/Diffuse",
+        "Hidden/TerrainEngine/Splatmap/Standard-AddPass",
+        "Hidden/TerrainEngine/Splatmap/Diffuse-AddPass",
     };
 
     /// <summary>
@@ -53,6 +57,7 @@ public static class WebBuildSetup
 
         WarArena.Editor.EnvironmentPrefabBuilder.BuildAll();
         ModelPrefabBuilder.Build();
+        WarArena.Editor.BakeTerrain.Bake();
 
         RegisterPlayableScene(report);
         IncludeRuntimeShaders(report);

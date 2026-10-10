@@ -19,8 +19,32 @@ namespace WarArena.Gameplay
         public const float TickHz = 30f;
         public const float FixedDt = 1f / TickHz;
 
-        /// <summary>Half-extent of the playable arena, metres.</summary>
-        public const float ArenaHalfExtent = 90f;
+        /// <summary>Radius of the circular playable arena, metres.</summary>
+        public const float ArenaRadius = 440f;
+        /// <summary>Compatibility alias for legacy tests and scripts.</summary>
+        public const float ArenaHalfExtent = ArenaRadius;
+
+        public static Vector2 ClampToArena(float x, float z)
+        {
+            float r = Mathf.Sqrt(x * x + z * z);
+            if (r <= ArenaRadius) return new Vector2(x, z);
+            if (r < 1e-4f) return Vector2.zero;
+            float k = ArenaRadius / r;
+            return new Vector2(x * k, z * k);
+        }
+
+        public static float SlopeSpeedFactor(float x, float z, Vector2 moveDir)
+        {
+            const float d = 1.5f;
+            float ahead  = BattlefieldBuilder.GetTerrainHeight(x + moveDir.x * d, z + moveDir.y * d);
+            float behind = BattlefieldBuilder.GetTerrainHeight(x - moveDir.x * d, z - moveDir.y * d);
+            float deg = Mathf.Atan2(ahead - behind, 2f * d) * Mathf.Rad2Deg; // positive = climbing
+
+            if (deg <= 0f)  return 1f;                                // flat or downhill: no penalty
+            if (deg >= 32f) return 0f;                                // too steep to climb
+            if (deg <= 20f) return Mathf.Lerp(1f, 0.6f, deg / 20f);
+            return Mathf.Lerp(0.6f, 0.25f, (deg - 20f) / 12f);
+        }
 
         /// <summary>Hard ceiling on catch-up ticks so a stalled tab cannot teleport units.</summary>
         private const int MaxStepsPerFrame = 4;
@@ -286,12 +310,16 @@ namespace WarArena.Gameplay
                 PlayerHeadingRad + Mathf.Clamp(demand * MaxTurnRateRad, -maxStep, maxStep));
 
             Vector3 forward = new Vector3(Mathf.Sin(PlayerHeadingRad), 0f, Mathf.Cos(PlayerHeadingRad));
-            Vector3 next = PlayerPosition + forward * speed * dt;
+            Vector2 forward2D = new Vector2(forward.x, forward.z);
+            Vector2 moveDir = speed < -0.01f ? -forward2D : forward2D;
 
-            float clampedX = Mathf.Clamp(next.x, -ArenaHalfExtent, ArenaHalfExtent);
-            float clampedZ = Mathf.Clamp(next.z, -ArenaHalfExtent, ArenaHalfExtent);
-            float posY = BattlefieldBuilder.GetTerrainHeight(clampedX, clampedZ);
-            PlayerPosition = new Vector3(clampedX, posY, clampedZ);
+            float slopeFactor = Mathf.Abs(speed) > 0.01f ? SlopeSpeedFactor(PlayerPosition.x, PlayerPosition.z, moveDir) : 1f;
+            float moveDist = speed * slopeFactor * dt;
+            Vector3 next = PlayerPosition + forward * moveDist;
+
+            Vector2 clamped = ClampToArena(next.x, next.z);
+            float posY = BattlefieldBuilder.GetTerrainHeight(clamped.x, clamped.y);
+            PlayerPosition = new Vector3(clamped.x, posY, clamped.y);
             PlayerSpeedKph = Mathf.Abs(speed) * 3.6f;
         }
 
@@ -372,12 +400,14 @@ namespace WarArena.Gameplay
 
             float speed = throttle * MaxSpeedMps * 0.8f;
             Vector3 forward = new Vector3(Mathf.Sin(EnemyHeadingRad), 0f, Mathf.Cos(EnemyHeadingRad));
-            Vector3 next = EnemyPosition + forward * speed * dt;
+            Vector2 forward2D = new Vector2(forward.x, forward.z);
+            float slopeFactor = SlopeSpeedFactor(EnemyPosition.x, EnemyPosition.z, forward2D);
+            float moveDist = speed * slopeFactor * dt;
+            Vector3 next = EnemyPosition + forward * moveDist;
 
-            float enemyX = Mathf.Clamp(next.x, -ArenaHalfExtent, ArenaHalfExtent);
-            float enemyZ = Mathf.Clamp(next.z, -ArenaHalfExtent, ArenaHalfExtent);
-            float enemyY = BattlefieldBuilder.GetTerrainHeight(enemyX, enemyZ);
-            EnemyPosition = new Vector3(enemyX, enemyY, enemyZ);
+            Vector2 clamped = ClampToArena(next.x, next.z);
+            float enemyY = BattlefieldBuilder.GetTerrainHeight(clamped.x, clamped.y);
+            EnemyPosition = new Vector3(clamped.x, enemyY, clamped.y);
 
             EnemyTurretYawRad = WrapAngle(Mathf.Atan2(-toPlayer.x, -toPlayer.z) - EnemyHeadingRad);
             EnemyTurretYawRad = Mathf.Clamp(EnemyTurretYawRad, -MaxTraverse, MaxTraverse);
@@ -443,8 +473,9 @@ namespace WarArena.Gameplay
                     continue;
                 }
 
-                if (s.Life <= 0f || Mathf.Abs(s.Position.x) > ArenaHalfExtent + 40f
-                    || Mathf.Abs(s.Position.z) > ArenaHalfExtent + 40f)
+                float rSq = s.Position.x * s.Position.x + s.Position.z * s.Position.z;
+                float maxShellR = ArenaRadius + 60f;
+                if (s.Life <= 0f || rSq > maxShellR * maxShellR)
                 {
                     _inFlight.RemoveAt(i);
                     continue;

@@ -523,12 +523,10 @@ namespace WarArena.Gameplay
         private Vector3 GroundPointUnderMouse()
         {
             Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit, 500f))
+            if (Physics.Raycast(ray, out RaycastHit hit, 600f))
             {
-                return new Vector3(
-                    Mathf.Clamp(hit.point.x, -BattleSim.ArenaHalfExtent, BattleSim.ArenaHalfExtent),
-                    hit.point.y,
-                    Mathf.Clamp(hit.point.z, -BattleSim.ArenaHalfExtent, BattleSim.ArenaHalfExtent));
+                Vector2 c = BattleSim.ClampToArena(hit.point.x, hit.point.z);
+                return new Vector3(c.x, hit.point.y, c.y);
             }
             if (Mathf.Abs(ray.direction.y) < 1e-4f)
             {
@@ -540,9 +538,8 @@ namespace WarArena.Gameplay
                 return _battle.PlayerPosition + Vector3.forward * 40f;
             }
             Vector3 point = ray.origin + ray.direction * distance;
-            return new Vector3(
-                Mathf.Clamp(point.x, -BattleSim.ArenaHalfExtent, BattleSim.ArenaHalfExtent), 0f,
-                Mathf.Clamp(point.z, -BattleSim.ArenaHalfExtent, BattleSim.ArenaHalfExtent));
+            Vector2 cp = BattleSim.ClampToArena(point.x, point.z);
+            return new Vector3(cp.x, 0f, cp.y);
         }
 
         private void HandlePlayerFired()
@@ -613,6 +610,10 @@ namespace WarArena.Gameplay
             {
                 target = _battle.PlayerRenderPosition + new Vector3(0f, 34f, -26f);
             }
+
+            // Keep chase camera safely above the terrain on slopes
+            float groundH = BattlefieldBuilder.GetTerrainHeight(target.x, target.z);
+            target.y = Mathf.Max(target.y, groundH + 2.5f);
 
             // Frame-rate independent smoothing. Lerping by a fixed fraction per frame
             // would move faster at high frame rates, which is its own kind of jitter.
