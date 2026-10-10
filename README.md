@@ -12,7 +12,7 @@ still runs and still iterates in under a second, which is why both are kept.
 > bridged to Unity through a C ABI. The port is **incomplete**:
 >
 > - **The playable game still runs the C# `BattleSim`.** The Rust module loads, is
->   exercised by 216 tests, and is not yet stepped by game code.
+>   exercised by 223 tests, and is not yet stepped by game code.
 > - **The simulation is duplicated in both languages.** The copies now agree on
 >   the fixes made so far, but each language still carries work the other has not
 >   taken on.
@@ -20,7 +20,7 @@ still runs and still iterates in under a second, which is why both are kept.
 >   sinks into the ground and one where drag never affects a hit. See
 >   [Known defects](#known-defects).
 >
-> **Current state: Rust 216/216, Unity EditMode 93/93, PlayMode 36/36, all
+> **Current state: Rust 223/223, Unity EditMode 98/98, PlayMode 36/36, all
 > green.** All four CRITICAL simulation defects and four CRITICAL interop
 > defects were found and fixed in the last pass, each with a regression test
 > verified to fail against the old code.
@@ -270,7 +270,7 @@ Assets/
       ShellImpactManager.cs       Server ballistics replication   (never instantiated)
 
 Assets/Tests/
-  EditMode/           10 files · 2,708 lines · 91 tests
+  EditMode/           10 files · 2,708 lines · 98 tests
   PlayMode/            2 files ·   945 lines — 36 tests
 
 Assets/Editor/         7 files · 1,007 lines
@@ -484,9 +484,9 @@ Unity is installed at `C:\Users\varun\Unity\6000.6.4f1` (see note below). Open
 
 | Check | Result |
 | --- | --- |
-| `cargo test --workspace` | **216 / 216 pass** (160 unit + 15 + 32 integration + 9 FFI) |
+| `cargo test --workspace` | **223 / 223 pass** (167 unit + 15 + 32 integration + 9 FFI) |
 | `cargo clippy --workspace --all-targets` | 0 errors, 2 pre-existing intentional warnings |
-| **Unity EditMode tests** | **91 / 91 pass** (81 + 10 hull suspension/footprint) |
+| **Unity EditMode tests** | **98 / 98 pass** (81 + 17 suspension/footprint/obstacles) |
 | **Unity PlayMode tests** | **36 / 36 pass** |
 | Unity Editor compile | clean, 0 `error CS` |
 | Headless `Tools/SimVerify` | **cannot run — no .NET SDK.** Any "26/26" claim is unverified. |
@@ -569,7 +569,7 @@ conventions, catalogue relationships, math parity against hard-coded `Mathf`
 values), 15 `normalisation_and_ricochet.rs`, 21 `turret_aiming.rs`, 9 FFI
 boundary tests.
 
-**Unity EditMode — 91 tests.** 13 battle-sim parity · 8 flight-model parity ·
+**Unity EditMode — 98 tests.** 13 battle-sim parity · 8 flight-model parity ·
 12 Rust core interop · 14 flight model · 15 normalisation and ricochet ·
 8 turret aiming · 6 vehicle damage model · 4 slope movement · 1 terrain match ·
 8 hull suspension.

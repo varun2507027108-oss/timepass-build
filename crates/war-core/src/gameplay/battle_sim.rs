@@ -283,6 +283,11 @@ pub struct BattleSim {
     /// gravity sits above the track plane.
     player_accel_long: f32,
     player_accel_lat: f32,
+    /// Solid obstacles the vehicles collide against. Regenerated once at construction
+    /// so it is never rebuilt per tick.
+    obstacles: Vec<crate::battlefield::Obstacle>,
+    /// True when the player touched an obstacle on the most recent step.
+    did_collide_with_obstacle: bool,
     in_flight: Vec<ActiveShell>,
     feed: Vec<String>,
     respawn_counter: u32,
@@ -383,6 +388,8 @@ impl BattleSim {
             slope_lateral_deg: 0.0,
             player_suspension,
             player_accel_long: 0.0,
+            obstacles: crate::battlefield::build(),
+            did_collide_with_obstacle: false,
             player_accel_lat: 0.0,
             in_flight: Vec::new(),
             feed: Vec::with_capacity(FEED_CAPACITY),
@@ -417,6 +424,12 @@ impl BattleSim {
 
     pub fn player_gun_pitch_rad(&self) -> f32 {
         self.player_gun_pitch_rad
+    }
+
+    /// True when the player touched an obstacle on the most recent step.
+    /// Mirrors BattleSim.DidCollideWithObstacle.
+    pub fn did_collide_with_obstacle(&self) -> bool {
+        self.did_collide_with_obstacle
     }
 
     pub fn player_speed_kph(&self) -> f32 {
@@ -782,6 +795,18 @@ impl BattleSim {
         let from_x = self.player_position.x;
         let from_z = self.player_position.z;
         let (clamped_x, clamped_z) = clamp_to_arena(from_x + vx * dt, from_z + vz * dt);
+        let mut resolved = (clamped_x, clamped_z);
+
+        // Solid obstacles. Terrain height and obstacle collision are different
+        // problems: the suspension keeps the hull at the right height while the vehicle
+        // still drives straight through a tree trunk.
+        self.did_collide_with_obstacle = crate::battlefield::resolve(
+            &self.obstacles,
+            &mut resolved,
+            crate::battlefield::VEHICLE_COLLISION_RADIUS_M,
+        );
+
+        let (clamped_x, clamped_z) = resolved;
         let pos_y = get_terrain_height(clamped_x, clamped_z);
 
         self.player_position = Vec3::new(clamped_x, pos_y, clamped_z);
@@ -992,6 +1017,13 @@ impl BattleSim {
         let from_x = self.enemy_position.x;
         let from_z = self.enemy_position.z;
         let (clamped_x, clamped_z) = clamp_to_arena(from_x + vx * dt, from_z + vz * dt);
+        let mut resolved = (clamped_x, clamped_z);
+        crate::battlefield::resolve(
+            &self.obstacles,
+            &mut resolved,
+            crate::battlefield::VEHICLE_COLLISION_RADIUS_M,
+        );
+        let (clamped_x, clamped_z) = resolved;
         let enemy_y = get_terrain_height(clamped_x, clamped_z);
         self.enemy_position = Vec3::new(clamped_x, enemy_y, clamped_z);
 

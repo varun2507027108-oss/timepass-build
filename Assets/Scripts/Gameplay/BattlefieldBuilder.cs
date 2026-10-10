@@ -308,17 +308,18 @@ namespace WarArena.Gameplay
 
             // 1. Multi-tiered 3D Conifer / Pine Trees
             // Perimeter forest belt surrounding the battlefield
+            // Positions come from the SHARED obstacle table, not from a local copy of
+            // the formula. BattlefieldObstacles is the same source the simulation
+            // collides against, so a tree cannot be drawn in one place and collided
+            // in another.
             int treeCount = 68;
             for (int i = 0; i < treeCount; i++)
             {
-                float a = (float)i / treeCount * Mathf.PI * 2f;
-                // Clustered bands at varying radii from 88m to 220m
-                float r = 90f + (i % 5) * 26f + Mathf.Sin(i * 3.7f) * 14f;
-                float x = Mathf.Cos(a) * r;
-                float z = Mathf.Sin(a) * r;
+                float x = BattlefieldObstacles.PerimeterTreeX(i);
+                float z = BattlefieldObstacles.PerimeterTreeZ(i);
                 float y = GetTerrainHeight(x, z);
 
-                float scale = 0.85f + (i % 7) * 0.12f;
+                float scale = BattlefieldObstacles.PerimeterTreeScale(i);
                 CreatePineTree(vegGroup.transform, new Vector3(x, y, z), scale);
             }
 

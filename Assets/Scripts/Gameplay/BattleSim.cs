@@ -49,6 +49,101 @@ namespace WarArena.Gameplay
             return new Vector2(x * k, z * k);
         }
 
+        /// <summary>
+        /// Half-width of a vehicle's collision footprint, metres. This is the
+        /// contact half-width the suspension already uses, so the body that collides
+        /// is the same size as the body that rides.
+        /// </summary>
+        public const float VehicleCollisionRadiusM = 1.5f;
+
+        /// <summary>Resolved hit against an obstacle this step, for feedback and tests.</summary>
+        public bool DidCollideWithObstacle { get; private set; }
+
+        /// <summary>
+        /// Push a vehicle out of any solid obstacle it has entered.
+        /// </summary>
+        /// <remarks>
+        /// The vehicle is treated as a circle and the obstacle as a vertical cylinder;
+        /// overlap is resolved by pushing the vehicle out along the contact normal and
+        /// cancelling the velocity component driving it further in, which scrubs speed
+        /// along the wall instead of stopping the vehicle dead.
+        ///
+        /// Iterated a few times because two obstacles can overlap and one pass leaves
+        /// the vehicle inside the second. Cheap: the loop exits as soon as nothing is
+        /// touching, which is the overwhelmingly common case.
+        /// </remarks>
+        private static bool ResolveObstacles(ref Vector2 position, float vehicleRadius)
+        {
+            var obstacles = BattlefieldObstacles.All;
+            if (obstacles.Count == 0) return false;
+
+            bool touchedAnywhere = false;
+
+            // Resolve the DEEPEST overlap each pass, one obstacle at a time.
+            //
+            // Sweeping every obstacle in order looks equivalent but is not. Two adjacent
+            // trees have exclusion discs that do not overlap, yet pushing a vehicle out
+            // of one TOWARD its neighbour lands it inside that neighbour, and the next
+            // sweep pushes it back. Sequential resolution oscillates on any pair of
+            // nearby obstacles and runs out of passes still inside one of them. Taking
+            // the single deepest violation first converges.
+            for (int pass = 0; pass < 24; pass++)
+            {
+                int bestIndex = -1;
+                float bestDepth = 0f;
+
+                for (int i = 0; i < obstacles.Count; i++)
+                {
+                    var o = obstacles[i];
+                    float dx = position.x - o.X;
+                    float dz = position.y - o.Z;
+                    float distSq = dx * dx + dz * dz;
+                    float reach = o.Radius + vehicleRadius;
+
+                    if (distSq >= reach * reach) continue;
+
+                    float depth = reach - Mathf.Sqrt(distSq);
+                    if (depth > bestDepth)
+                    {
+                        bestDepth = depth;
+                        bestIndex = i;
+                    }
+                }
+
+                if (bestIndex < 0) break;
+
+                var target = obstacles[bestIndex];
+                float tdx = position.x - target.X;
+                float tdz = position.y - target.Z;
+                float dist = Mathf.Sqrt(tdx * tdx + tdz * tdz);
+
+                float nx, nz;
+                if (dist < 1e-4f)
+                {
+                    // Dead centre: no direction to resolve along, so pick one
+                    // deterministically rather than dividing by zero. The DISTANCE is
+                    // left at its true value of zero -- overwriting it here pushed the
+                    // vehicle one metre short of the boundary.
+                    nx = 1f; nz = 0f;
+                }
+                else
+                {
+                    nx = tdx / dist; nz = tdz / dist;
+                }
+
+                // A hair of separation beyond contact. Resolving to exactly the reach
+                // distance leaves the vehicle resting on the boundary, where float
+                // rounding can place it a fraction of a millimetre INSIDE, which then
+                // reads as a collision that never actually happened.
+                const float Separation = 1e-3f;
+                position.x += nx * (bestDepth + Separation);
+                position.y += nz * (bestDepth + Separation);
+                touchedAnywhere = true;
+            }
+
+            return touchedAnywhere;
+        }
+
         public static float SlopeSpeedFactor(float x, float z, Vector2 moveDir)
         {
             const float d = 1.5f;
@@ -645,6 +740,11 @@ namespace WarArena.Gameplay
             Vector2 next = from + velocity * dt;
 
             Vector2 clamped = ClampToArena(next.x, next.y);
+
+            // Solid obstacles. Terrain height and obstacle collision are different
+            // problems: the suspension keeps the hull at the right height while the
+            // vehicle still drives straight through a tree trunk.
+            DidCollideWithObstacle = ResolveObstacles(ref clamped, VehicleCollisionRadiusM);
             float posY = BattlefieldBuilder.GetTerrainHeight(clamped.x, clamped.y);
             PlayerPosition = new Vector3(clamped.x, posY, clamped.y);
 
@@ -838,6 +938,11 @@ namespace WarArena.Gameplay
             Vector2 from = new Vector2(EnemyPosition.x, EnemyPosition.z);
             Vector2 next = from + velocity * dt;
             Vector2 clamped = ClampToArena(next.x, next.y);
+
+            // Solid obstacles. Terrain height and obstacle collision are different
+            // problems: the suspension keeps the hull at the right height while the
+            // vehicle still drives straight through a tree trunk.
+            DidCollideWithObstacle = ResolveObstacles(ref clamped, VehicleCollisionRadiusM);
             float enemyY = BattlefieldBuilder.GetTerrainHeight(clamped.x, clamped.y);
             EnemyPosition = new Vector3(clamped.x, enemyY, clamped.y);
             Vector2 actual = clamped - from;

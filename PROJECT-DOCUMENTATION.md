@@ -15,7 +15,7 @@ file structure, every system, the **WebGL browser build pipeline**, the
 The simulation is **mid-migration from C# to Rust**.
 
 - The **playable game does not use the Rust core.** It runs the C# `BattleSim`.
-  The Rust module loads and is exercised by 216 tests, but `BeginLoad()` at
+  The Rust module loads and is exercised by 223 tests, but `BeginLoad()` at
   `WarArenaBootstrap.cs:183` is the only production line that touches it.
 - The simulation is **duplicated in both languages.** As of this pass they agree
   on driving, steering, turret traverse, gun elevation and shell hit detection;
@@ -23,7 +23,7 @@ The simulation is **mid-migration from C# to Rust**.
 - **One CRITICAL defect remains open:** every aircraft settles into a steady
   3–6 m/s descent and the AI flies into the ground after ~8 minutes.
 
-**Current state: Rust 216/216 · Unity EditMode 93/93 · PlayMode 36/36 · all
+**Current state: Rust 223/223 · Unity EditMode 98/98 · PlayMode 36/36 · all
 green.** Eight CRITICAL defects were found and fixed in the last pass, each with a
 regression test verified to fail against the old code.
 
@@ -58,8 +58,8 @@ terrain, and the playable scene contains exactly one GameObject.
 | Largest asset | `panzer_iv.glb` — 32.9 MB |
 | Vehicles in catalogue | 19 |
 | Aircraft in catalogue | 6 |
-| **Rust tests** | **216 pass** (160 unit + 15 + 32 integration + 9 FFI) |
-| **Unity EditMode** | **91 / 91 pass** |
+| **Rust tests** | **223 pass** (167 unit + 15 + 32 integration + 9 FFI) |
+| **Unity EditMode** | **98 / 98 pass** |
 | **Unity PlayMode** | **36 / 36 pass** |
 | `cargo fmt --check` | **fails, 108 hunks** — no `rustfmt.toml` |
 | `cargo clippy` | 0 errors, 2 intentional warnings |
@@ -1013,9 +1013,9 @@ clone must run the scripts.
 
 | Suite | Result |
 | --- | --- |
-| `cargo test --workspace` | **216 / 216 pass** |
+| `cargo test --workspace` | **223 / 223 pass** |
 | `cargo clippy --workspace --all-targets` | 0 errors, 2 pre-existing intentional warnings |
-| Unity EditMode | **91 / 91 pass** |
+| Unity EditMode | **98 / 98 pass** |
 | Unity PlayMode | **36 / 36 pass** |
 | Headless `Tools/SimVerify` | **cannot run — no .NET SDK** |
 
@@ -1657,7 +1657,7 @@ prompt.** First open after a `Library` wipe reimports for about a minute.
 ```powershell
 # Rust — fast, no Unity needed
 cd crates
-cargo test --workspace              # expect 216 passed
+cargo test --workspace              # expect 223 passed
 cargo clippy --workspace --all-targets
 cargo fmt --all                      # expect 108 hunks to change
 
