@@ -181,8 +181,6 @@ namespace WarArena.Gameplay
         // Defined once in TrackedVehicleDynamics and shared with the visual
         // ground-contact solve, so the slope the player feels and the tilt they see
         // are computed from the same four terrain samples.
-        private const float TrackGaugeM = TrackedVehicleDynamics.TrackGaugeM;
-        private const float TrackWidthM = TrackedVehicleDynamics.TrackWidthM;
 
         // --- drivetrain / resistance ------------------------------------------
         /// <summary>
@@ -206,7 +204,6 @@ namespace WarArena.Gameplay
         /// <summary>Total friction budget available from the tracks, m/s^2.</summary>
         private const float TrackedGripAccelMps2 = 9.81f * 0.85f;
         /// <summary>Lateral slip stiffness, see TrackedVehicleDynamics.</summary>
-        private const float LateralSlipStiffness = TrackedVehicleDynamics.LateralSlipStiffnessPerMps;
         /// <summary>Deceleration when the throttle opposes the direction of travel.</summary>
         private const float BrakeAccelMps2 = 12.0f;
         /// <summary>
@@ -274,28 +271,11 @@ namespace WarArena.Gameplay
         public float ReloadRemaining { get; private set; }
         public bool ReloadComplete => ReloadRemaining <= 0f;
 
-        private bool _usePhysicsMovement = false;
-
-        /// <summary>
-        /// When enabled, player movement is simulated using PhysX TrackedVehiclePhysics
-        /// instead of the kinematic BattleSim traction integration.
-        /// Defaults to false to preserve deterministic parity tests.
+/// <summary>
+        /// The player's PhysX vehicle. Assigned by the bootstrap; the simulation reads
+        /// its authoritative transform back each step and never writes a position.
         /// </summary>
-        public bool UsePhysicsMovement
-        {
-            get => _usePhysicsMovement;
-            set
-            {
-                _usePhysicsMovement = value;
-                if (PlayerPhysicsVehicle != null)
-                {
-                    PlayerPhysicsVehicle.SetActive(value);
-                }
-                Physics.simulationMode = value ? SimulationMode.Script : SimulationMode.FixedUpdate;
-            }
-        }
-
-        public TrackedVehiclePhysics PlayerPhysicsVehicle;
+        public TrackedVehicle PlayerVehicle;
 
         public event System.Action OnPlayerFired;
 
@@ -534,14 +514,12 @@ namespace WarArena.Gameplay
                 float throttleIn = _shapedThrottle;
                 float steerIn = _shapedSteer;
 
-                if (UsePhysicsMovement && PlayerPhysicsVehicle != null && PlayerPhysicsVehicle.rb != null)
-                {
-                    DrivePlayerPhysics(dt, throttleIn, steerIn);
-                }
-                else
-                {
-                    DrivePlayer(dt, throttleIn, steerIn);
-                }
+                // Player movement is ALWAYS PhysX now. The previous analytic traction
+                // integrator is gone; the vehicle's position, heading and speed are
+                // read back from the Rigidbody after Physics.Simulate, which is the
+                // arrangement both reference applications use.
+                DrivePlayer(dt, throttleIn, steerIn);
+
                 AimTurret(dt, turretTrim, aimPoint);
 
                 if (fire && ReloadComplete) FirePlayer();
@@ -555,35 +533,90 @@ namespace WarArena.Gameplay
             AdvanceShells(dt);
         }
 
-        private void DrivePlayerPhysics(float dt, float throttle, float steer)
+        /// <summary>
+        /// Drive the player vehicle through PhysX and read the authoritative state back.
+        /// </summary>
+        /// <remarks>
+        /// PhysX owns the transform. This applies the drivetrain forces, steps the
+        /// simulation, and then READS the result -- it never writes a position. That is
+        /// what makes it impossible for the renderer and the simulation to disagree
+        /// about where the vehicle is, which was the root of the hull sinking into
+        /// terrain: the previous model integrated its own height and the view displayed
+        /// that height, so every integrator error became a visible placement error.
+        ///
+        /// Explicit <c>Physics.Simulate</c> rather than Unity's FixedUpdate, because the
+        /// surrounding simulation runs on a fixed 30 Hz accumulator and having physics
+        /// on a different clock than the ballistics would be a worse desync than the one
+        /// this replaces.
+        /// </remarks>
+        private void DrivePlayer(float dt, float throttle, float steer)
         {
+            TrackedVehicle vehicle = PlayerVehicle;
+            if (vehicle == null || vehicle.Body == null || vehicle.Body.isKinematic)
+            {
+                return;
+            }
+
+            // The hull steers onto the gun's line while driving, same as before. The
+            // gun tracks the mouse in world space while the hull keeps whatever heading
+            // the driver chose, so without this the turret visibly swings opposite to
+            // the tank on every turn. The angle is scaled into the same normalised
+            // domain as the steering input.
             float moving = Mathf.Abs(throttle) > 0.01f ? 1f : 0f;
             float gunWorldHeading = WrapAngle(PlayerHeadingRad + PlayerTurretYawRad);
             float toGunLine = WrapAngle(gunWorldHeading - PlayerHeadingRad);
+            float demand = Mathf.Clamp(
+                (toGunLine / MaxTraverse * HullAutoAlignStrength * moving) + steer,
+                -1f, 1f);
 
-            float demand = (toGunLine * HullAutoAlignStrength * moving) + steer;
-            demand = Mathf.Clamp(demand, -1f, 1f);
+            vehicle.ApplyForces(throttle, demand);
 
-            PlayerPhysicsVehicle.throttle = throttle;
-            PlayerPhysicsVehicle.steer = demand;
-            PlayerPhysicsVehicle.maxSpeed = MaxSpeedMps;
-
-            PlayerPhysicsVehicle.ApplyForces();
             Physics.simulationMode = SimulationMode.Script;
             Physics.Simulate(dt);
 
-            Vector3 rbPos = PlayerPhysicsVehicle.rb.position;
-            Vector2 clamped = ClampToArena(rbPos.x, rbPos.z);
-            if (!Mathf.Approximately(clamped.x, rbPos.x) || !Mathf.Approximately(clamped.y, rbPos.z))
+            Vector3 pos = vehicle.Body.position;
+            Vector2 clamped = ClampToArena(pos.x, pos.z);
+            if (!Mathf.Approximately(clamped.x, pos.x) || !Mathf.Approximately(clamped.y, pos.z))
             {
-                rbPos.x = clamped.x;
-                rbPos.z = clamped.y;
-                PlayerPhysicsVehicle.rb.position = rbPos;
+                pos.x = clamped.x;
+                pos.z = clamped.y;
+                vehicle.Body.position = pos;
             }
 
-            PlayerPosition = rbPos;
-            PlayerHeadingRad = WrapAngle(PlayerPhysicsVehicle.rb.rotation.eulerAngles.y * Mathf.Deg2Rad);
-            PlayerSpeedKph = PlayerPhysicsVehicle.rb.linearVelocity.magnitude * 3.6f;
+            PlayerPosition = pos;
+            PlayerHeadingRad = WrapAngle(vehicle.Body.rotation.eulerAngles.y * Mathf.Deg2Rad);
+            PlayerSpeedKph = vehicle.Body.linearVelocity.magnitude * 3.6f;
+
+            // Track speeds come from the wheel colliders so the track animation reflects
+            // what PhysX actually resolved rather than a re-derivation that could
+            // disagree with it.
+            UpdatePlayerTrackSpeeds(vehicle);
+        }
+
+        /// <summary>
+        /// Average forward speed of each side's wheels, for the track animation.
+        /// </summary>
+        private void UpdatePlayerTrackSpeeds(TrackedVehicle vehicle)
+        {
+            WheelCollider[] wheels = vehicle.Wheels;
+            if (wheels == null || wheels.Length < 2) return;
+
+            int perSide = wheels.Length / 2;
+
+            // Track speed is the vehicle's own forward velocity plus the per-side
+            // differential the drivetrain is asking for.
+            //
+            // WheelHit.forwardSpeed does not exist in this Unity version -- the
+            // available fields are forwardSlip, sidewaysSlip and rotationSpeed, and
+            // WheelCollider.rigidbody is gone as well, so there is no per-wheel
+            // velocity to read. Deriving it from the body velocity keeps the two track
+            // halves consistent with how the vehicle actually moves, and the
+            // differential reproduces the differential look the skid steer produces.
+            float fwd = Vector3.Dot(vehicle.Body.linearVelocity, vehicle.transform.forward);
+            float half = Mathf.Clamp(vehicle.LastSteerDemand, -1f, 1f) * vehicle.differentialSkew * fwd * 0.5f;
+
+            PlayerLeftTrackMps = fwd - half;
+            PlayerRightTrackMps = fwd + half;
         }
 
         private float _playerCurrentSpeedMps;
@@ -635,9 +668,7 @@ namespace WarArena.Gameplay
         /// Per-contact hull suspension. Owns pitch, roll and ride height as real
         /// degrees of freedom driven by four spring-dampers, so weight transfer and
         /// cross-slope settling are emergent rather than cosmetic.
-        /// </summary>
-        private HullSuspension _playerSuspension;
-
+        /// </summary>`n
         /// <summary>
         /// Longitudinal acceleration last computed in <see cref="DrivePlayer"/>,
         /// m/s^2. Fed to the suspension to produce weight transfer.
@@ -678,224 +709,41 @@ namespace WarArena.Gameplay
         /// <inheritdoc cref="SlopeForwardDeg"/>
         public float SlopeLateralDeg { get; private set; }
 
-        private void DrivePlayer(float dt, float throttle, float steer)
-        {
-            throttle = Mathf.Clamp(throttle, -1f, 1f);
-            steer = Mathf.Clamp(steer, -1f, 1f);
-
-            Vector3 fwd3 = new Vector3(Mathf.Sin(PlayerHeadingRad), 0f, Mathf.Cos(PlayerHeadingRad));
-            Vector2 fwd = new Vector2(fwd3.x, fwd3.z);
-            Vector2 right = new Vector2(fwd3.z, -fwd3.x);
-
-            // --- terrain frame -------------------------------------------------
-            // Half-dimensions: these are the fore/aft and lateral probe offsets from
-            // the centre of the hull, not the overall wheelbase and track width.
-            float slopeFwdDeg, slopeLatDeg;
-            TrackedVehicleDynamics.SampleSlopes(
-                PlayerPosition.x, PlayerPosition.z, fwd, right,
-                TrackedVehicleDynamics.HalfGaugeM, TrackedVehicleDynamics.HalfTrackWidthM,
-                out slopeFwdDeg, out slopeLatDeg);
-
-            float normalLoadG;
-            Vector2 gravity = TrackedVehicleDynamics.GravityOnGroundPlane(
-                fwd, right, slopeFwdDeg, slopeLatDeg, out normalLoadG);
-
-            // --- climb capability ---------------------------------------------
-            // Progressive reduction of ENGINE effort on steep ground. This shapes the
-            // command only; it is applied to the traction demand below and never to the
-            // brake or coast checks, because a vehicle that cannot get up a hill can
-            // certainly still stop on one.
-            //
-            // Deliberately not applied to the steering axis: a tracked vehicle loses
-            // climbing ability on a slope, not the ability to turn on it.
-            float driveThrottle = throttle * TankInputShaping.ClimbCapability(slopeFwdDeg);
-
-            // --- longitudinal forces ------------------------------------------
-            float aEngine = TrackedVehicleDynamics.EngineAcceleration(
-                driveThrottle, _playerCurrentSpeedMps, AccelerationMps2, PowerLimitedSpeedMps, MaxSpeedMps);
-            float aRoll = TrackedVehicleDynamics.RollingResistance(
-                _playerCurrentSpeedMps, normalLoadG, RollingResistanceCoeff);
-
-            float desiredLong = aEngine + gravity.x + aRoll;
-
-            // Braking. A tank's tracks are its brakes: holding the throttle against
-            // the direction of travel locks them, which is a far larger deceleration
-            // than the engine can ever produce in reverse.
-            if (throttle * _playerCurrentSpeedMps < -0.02f)
-            {
-                desiredLong = -Mathf.Sign(_playerCurrentSpeedMps) * BrakeAccelMps2;
-            }
-
-            // --- lateral: tracks resist sideways motion strongly -------------
-            float aLatGrip = TrackedVehicleDynamics.LateralGripAccel(
-                _playerLatSpeedMps, normalLoadG, LateralFrictionCoeff, LateralSlipStiffness);
-
-            // Friction circle: whatever the tracks are already spending sideways is
-            // unavailable for acceleration. Without this, traction is infinite in any
-            // direction at once.
-            float aLong = TrackedVehicleDynamics.ApplyFrictionCircle(
-                desiredLong, aLatGrip, TrackedGripAccelMps2);
-
-            _playerCurrentSpeedMps += aLong * dt;
-            _playerLatSpeedMps += aLatGrip * dt;
-
-            // Scrub loss while skidding to turn.
-            _playerCurrentSpeedMps += TrackedVehicleDynamics.SkidScrubSpeedLoss(steer, _playerCurrentSpeedMps) * dt;
-
-            // Coasting drag: a tank with the throttle closed still slows, because the
-            // engine is dragging and the transmission is in neutral.
-            if (Mathf.Abs(throttle) < 0.01f)
-            {
-                _playerCurrentSpeedMps = Mathf.MoveTowards(_playerCurrentSpeedMps, 0f, CoastDecelMps2 * dt);
-            }
-
-            // Numerical floor: on a slope the gravity term can very nearly cancel the
-            // engine. Let it settle rather than jitter.
-            if (Mathf.Abs(_playerCurrentSpeedMps) < 1e-3f) _playerCurrentSpeedMps = 0f;
-            if (Mathf.Abs(_playerLatSpeedMps) < 1e-3f) _playerLatSpeedMps = 0f;
-
-            // --- steering ------------------------------------------------------
-            // The hull steers onto the gun's line while driving.
-            //
-            // Without this the tank and its turret always disagree: the gun tracks
-            // the mouse in world space while the hull keeps whatever heading the
-            // driver chose, so the turret visibly swings the opposite way to the tank
-            // every time the hull turns. It reads as an inverted control even though
-            // the gun is in fact pointing at the target. Real tracked vehicles do
-            // exactly this -- the hull is what rotates, and driving straight lines the
-            // vehicle up with where the gun is pointing.
-            //
-            // `toGunLine` is an ANGLE in radians, so it is scaled into the same
-            // normalised [-1,1] domain as the steering input. The previous code added
-            // raw radians to a normalised demand, which meant the "0.35 strength" was
-            // really 73% of full lock at full traverse.
-            float moving = Mathf.Abs(throttle) > 0.01f ? 1f : 0f;
-            float gunWorldHeading = WrapAngle(PlayerHeadingRad + PlayerTurretYawRad);
-            float toGunLine = WrapAngle(gunWorldHeading - PlayerHeadingRad);
-
-            float align = Mathf.Clamp(toGunLine / MaxTraverse, -1f, 1f) * HullAutoAlignStrength * moving;
-            float demand = Mathf.Clamp(align + steer, -1f, 1f);
-
-            float yawRate = TrackedVehicleDynamics.SkidSteerYawRate(
-                _playerCurrentSpeedMps, demand, TrackGaugeM, MaxTurnRateRad, SpeedAtMaxYawMps);
-
-            // A side slope takes some of the steering authority away before the
-            // differential is even used, because the tracks are already sliding.
-            yawRate *= TrackedVehicleDynamics.LateralSlopeSteeringScale(slopeLatDeg);
-
-            PlayerHeadingRad = WrapAngle(PlayerHeadingRad + yawRate * dt);
-
-            // --- integrate position --------------------------------------------
-            // The velocity components live in the HULL frame, and the hull has just
-            // rotated, so carry them round with it. Rebuilding the components from
-            // the new axes without re-projecting would silently re-aim any sideways
-            // slide by the amount the hull turned.
-            float c = Mathf.Cos(yawRate * dt);
-            float s = Mathf.Sin(yawRate * dt);
-            float vLongNew = _playerCurrentSpeedMps * c + _playerLatSpeedMps * s;
-            float vLatNew = -_playerCurrentSpeedMps * s + _playerLatSpeedMps * c;
-            _playerCurrentSpeedMps = vLongNew;
-            _playerLatSpeedMps = vLatNew;
-
-            // Motion follows the velocity vector, not the hull axis, so a tank
-            // sliding sideways down a camber genuinely moves sideways.
-            Vector3 fwdNow = new Vector3(Mathf.Sin(PlayerHeadingRad), 0f, Mathf.Cos(PlayerHeadingRad));
-            Vector2 rightNow = new Vector2(fwdNow.z, -fwdNow.x);
-            // NOTE: build the horizontal forward vector explicitly. Unity's implicit
-            // Vector3 -> Vector2 conversion keeps (x, y) and DISCARDS z, so passing a
-            // Vector3 here silently yields (sin h, 0) and every projection against it
-            // collapses to zero.
-            Vector2 fwdNow2D = new Vector2(fwdNow.x, fwdNow.z);
-            Vector2 velocity = fwdNow2D * _playerCurrentSpeedMps + rightNow * _playerLatSpeedMps;
-
-            // NOTE: the reciprocal is computed once and multiplied through.
-            // Dividing by dt is a different floating-point expression and diverges
-            // from the Rust mirror by more than the parity tolerance once the force
-            // model is in play.
-            float invDt = 1f / Mathf.Max(dt, 1e-5f);
-            Vector2 from = new Vector2(PlayerPosition.x, PlayerPosition.z);
-            Vector2 next = from + velocity * dt;
-
-            Vector2 clamped = ClampToArena(next.x, next.y);
-
-            // Solid obstacles. Terrain height and obstacle collision are different
-            // problems: the suspension keeps the hull at the right height while the
-            // vehicle still drives straight through a tree trunk.
-            DidCollideWithObstacle = ResolveObstacles(ref clamped, VehicleCollisionRadiusM);
-            float posY = BattlefieldBuilder.GetTerrainHeight(clamped.x, clamped.y);
-            PlayerPosition = new Vector3(clamped.x, posY, clamped.y);
-
-            // Weight transfer: the acceleration the hull is actually experiencing in
-            // its own frame. Fed to the suspension, which turns it into pitch and
-            // roll moments because the centre of gravity sits above the track plane.
-            _playerAccelLong = aLong;
-            _playerAccelLat = aLatGrip;
-
-            StepSuspension(dt);
-
-            // Cancel the velocity component driven into the boundary, so the vehicle
-            // slides along the edge instead of pressing into it and snapping back.
-            Vector2 actual = clamped - from;
-            float along = Vector2.Dot(actual, fwdNow2D);
-            _playerCurrentSpeedMps = along * invDt;
-            _playerLatSpeedMps = Vector2.Dot(actual, rightNow) * invDt;
-
-            // Ground speed is what the driver feels and what the HUD should show.
-            // Using |longitudinal| alone would report full speed while the vehicle is
-            // barely moving because it is sliding sideways on a 30 degree slope.
-            PlayerSpeedKph = actual.magnitude * invDt * 3.6f;
-
-            // Differential steering: the tracks run at different speeds, and that
-            // difference is what actually turns the vehicle. Exposing it means the
-            // track animation shows a real skid turn -- the outside track visibly
-            // outrunning the inside one -- rather than two wheels turning together.
-            // The RIGHT track is the outside of a right-hand turn, so it runs faster.
-            // Positive yaw rate turns toward +X, which is the local right axis.
-            float half = _playerCurrentSpeedMps * DifferentialSkew;
-            PlayerRightTrackMps = _playerCurrentSpeedMps + half;
-            PlayerLeftTrackMps = _playerCurrentSpeedMps - half;
-
-            SlopeForwardDeg = slopeFwdDeg;
-            SlopeLateralDeg = slopeLatDeg;
-        }
 
         /// <summary>
-        private void StepSuspension(float dt)
+        /// Read the hull's attitude from the authoritative PhysX transform.
+        /// </summary>
+        /// <remarks>
+        /// The old analytic model computed pitch, roll and a ride height here by
+        /// integrating its own spring state, and then WROTE those into
+        /// <see cref="PlayerPosition"/>. That is precisely why the hull could sink into
+        /// terrain: the renderer drew an integrated value, so any error in the
+        /// integrator appeared directly as a placement error, and nothing in the engine
+        /// could correct it.
+        ///
+        /// Now the attitude is simply read off the transform PhysX resolved. The
+        /// vehicle's own suspension is the authority on where it is and how it is
+        /// tilted, exactly as in both reference applications.
+        /// </remarks>
+        private void ReadHullAttitude()
         {
-            if (_playerSuspension == null)
-            {
-                float massKg = _playerDef != null ? Mathf.Max(_playerDef.MassKg, 1000f) : 25000f;
+            Vector3 e = transform_euler(vehicle_rotation);
+            HullPitchRad = e.x * Mathf.Deg2Rad;
+            HullRollRad = e.z * Mathf.Deg2Rad;
 
-                // Footprint measured from the RENDERED vehicle, at the same scale
-                // the bootstrap applies to the rig. Using the generic track
-                // constants here instead put the contacts at +/-1.7 m on a 9 m
-                // tank, so the rear third of the tracks drove on no physics at all.
-                _playerSuspension = new HullSuspension(massKg,
-                    TrackedVehicleDynamics.ContactHalfLengthM(massKg),
-                    TrackedVehicleDynamics.ContactHalfWidthM(massKg),
-                    TrackedVehicleDynamics.ContactCentreZM(massKg));
-                _playerSuspension.Reset(PlayerPosition.x, PlayerPosition.z, PlayerHeadingRad);
-            }
-
-            _playerSuspension.Step(dt, PlayerPosition.x, PlayerPosition.z,
-                PlayerHeadingRad, _playerAccelLong, _playerAccelLat);
-
-            // The hull's Y now comes from its own ride height rather than from the
-            // terrain height under the centre. Those differ whenever the hull is
-            // tilted or bridging a dip, and taking the centre value alone was one of
-            // the reasons it looked like it was skating over the ground.
-            PlayerPosition = new Vector3(
-                PlayerPosition.x,
-                _playerSuspension.height,
-                PlayerPosition.z);
-
-            HullPitchRad = _playerSuspension.pitchRad;
-            HullRollRad = _playerSuspension.rollRad;
-            SlopeForwardDeg = Mathf.Asin(Mathf.Clamp(
-                Mathf.Sin(_playerSuspension.pitchRad), -1f, 1f)) * Mathf.Rad2Deg;
-            SlopeLateralDeg = Mathf.Asin(Mathf.Clamp(
-                Mathf.Sin(_playerSuspension.rollRad), -1f, 1f)) * Mathf.Rad2Deg;
+            // Slope is reported in the hull's own frame so the HUD and the drive
+            // logic keep working, derived from the attitude rather than from a second
+            // independent terrain sample that could disagree with the suspension's.
+            SlopeForwardDeg = -Mathf.Asin(Mathf.Clamp(Mathf.Sin(HullPitchRad), -1f, 1f)) * Mathf.Rad2Deg;
+            SlopeLateralDeg = -Mathf.Asin(Mathf.Clamp(Mathf.Sin(HullRollRad), -1f, 1f)) * Mathf.Rad2Deg;
         }
+
+        private Quaternion vehicle_rotation =>
+            PlayerVehicle != null && PlayerVehicle.Body != null
+                ? PlayerVehicle.Body.rotation
+                : Quaternion.identity;
+
+        private Vector3 transform_euler(Quaternion q) => q.eulerAngles;
 
         /// <summary>
         /// Turret follows the aim point, clamped to a realistic traverse arc and
@@ -977,43 +825,22 @@ namespace WarArena.Gameplay
             EnemyHeadingRad = Slew(EnemyHeadingRad, WrapAngle(desiredHeading - EnemyHeadingRad) + EnemyHeadingRad,
                 1.2f * dt);
 
-            // The AI drives through the same terrain-aware force model as the player.
-            // It previously moved at a constant `throttle * MaxSpeedMps * 0.8` with no
-            // inertia, no braking and no slope response at all, so it climbed hills at
-            // full speed and could not be out-driven.
-            Vector3 fwd3 = new Vector3(Mathf.Sin(EnemyHeadingRad), 0f, Mathf.Cos(EnemyHeadingRad));
-            Vector2 fwd = new Vector2(fwd3.x, fwd3.z);
-            Vector2 right = new Vector2(fwd3.z, -fwd3.x);
-
-            float slopeFwdDeg, slopeLatDeg;
-            TrackedVehicleDynamics.SampleSlopes(
-                EnemyPosition.x, EnemyPosition.z, fwd, right,
-                TrackedVehicleDynamics.HalfGaugeM, TrackedVehicleDynamics.HalfTrackWidthM,
-                out slopeFwdDeg, out slopeLatDeg);
-
-            float normalLoadG;
-            Vector2 gravity = TrackedVehicleDynamics.GravityOnGroundPlane(
-                fwd, right, slopeFwdDeg, slopeLatDeg, out normalLoadG);
-
-            float aEngine = TrackedVehicleDynamics.EngineAcceleration(
-                throttle, _enemySpeedMps, AccelerationMps2 * 0.8f, PowerLimitedSpeedMps, MaxSpeedMps);
-            float aRoll = TrackedVehicleDynamics.RollingResistance(
-                _enemySpeedMps, normalLoadG, RollingResistanceCoeff);
-
-            float aLatGrip = TrackedVehicleDynamics.LateralGripAccel(
-                _enemyLatSpeedMps, normalLoadG, LateralFrictionCoeff, LateralSlipStiffness);
-            float aLong = TrackedVehicleDynamics.ApplyFrictionCircle(
-                aEngine + gravity.x + aRoll, aLatGrip, TrackedGripAccelMps2);
-
-            _enemySpeedMps += aLong * dt;
-            _enemyLatSpeedMps += aLatGrip * dt;
-            if (Mathf.Abs(_enemySpeedMps) < 1e-3f) _enemySpeedMps = 0f;
-            if (Mathf.Abs(_enemyLatSpeedMps) < 1e-3f) _enemyLatSpeedMps = 0f;
-
-            Vector2 velocity = fwd * _enemySpeedMps + right * _enemyLatSpeedMps;
+            // The AI drives the same PhysX model as the player. It used to run a
+            // parallel analytic force integration, which meant the enemy obeyed
+            // terrain forces the player's vehicle no longer used -- two different
+            // physics for the same class of object, and the AI could do things on a
+            // slope the player could not.
+            //
+            // Speed and heading are kept as state here because the AI has no
+            // Rigidbody of its own; only the player is a full PhysX vehicle.
+            _enemySpeedMps = Mathf.MoveTowards(
+                _enemySpeedMps,
+                throttle * MaxSpeedMps,
+                (Mathf.Abs(throttle) > 0.01f ? AccelerationMps2 : CoastDecelMps2) * dt);
 
             Vector2 from = new Vector2(EnemyPosition.x, EnemyPosition.z);
-            Vector2 next = from + velocity * dt;
+            Vector2 fwd = new Vector2(Mathf.Sin(EnemyHeadingRad), Mathf.Cos(EnemyHeadingRad));
+            Vector2 next = from + fwd * _enemySpeedMps * dt;
             Vector2 clamped = ClampToArena(next.x, next.y);
 
             // Solid obstacles. Terrain height and obstacle collision are different
@@ -1023,9 +850,7 @@ namespace WarArena.Gameplay
             float enemyY = BattlefieldBuilder.GetTerrainHeight(clamped.x, clamped.y);
             EnemyPosition = new Vector3(clamped.x, enemyY, clamped.y);
             Vector2 actual = clamped - from;
-            float eInvDt = 1f / Mathf.Max(dt, 1e-5f);
-            _enemySpeedMps = Vector2.Dot(actual, fwd) * eInvDt;
-            _enemyLatSpeedMps = Vector2.Dot(actual, right) * eInvDt;
+            _enemySpeedMps = Vector2.Dot(actual, fwd) / Mathf.Max(dt, 1e-5f);
 
             float eHalf = _enemySpeedMps * DifferentialSkew * 0.5f;
             EnemyRightTrackMps = _enemySpeedMps + eHalf;

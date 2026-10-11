@@ -288,8 +288,7 @@ pub struct BattleSim {
     slope_forward_deg: f32,
     slope_lateral_deg: f32,
     /// Four independent spring-dampers driving heave, pitch and roll.
-    player_suspension: crate::hull_suspension::HullSuspension,
-    /// Acceleration the hull is experiencing in its own frame, m/s^2. Fed to the
+        /// Acceleration the hull is experiencing in its own frame, m/s^2. Fed to the
     /// suspension, which turns it into pitch and roll moments because the centre of
     /// gravity sits above the track plane.
     player_accel_long: f32,
@@ -344,14 +343,7 @@ impl BattleSim {
         // bootstrap applies to the rig. Using the generic track constants here instead
         // put the contacts at +/-1.7 m on a 9 m tank, so the rear third of the tracks
         // drove on no physics at all.
-        let mut player_suspension = crate::hull_suspension::HullSuspension::new(
-            player_mass,
-            vehicle_dynamics::contact_half_length_m(player_mass),
-            vehicle_dynamics::contact_half_width_m(player_mass),
-            vehicle_dynamics::contact_centre_z_m(player_mass),
-        );
-        player_suspension.reset(player_position.x, player_position.z, 0.0);
-
+        
         BattleSim {
             player_def: player,
             enemy_def: enemy,
@@ -399,7 +391,6 @@ impl BattleSim {
             hull_roll_deg: 0.0,
             slope_forward_deg: 0.0,
             slope_lateral_deg: 0.0,
-            player_suspension,
             player_accel_long: 0.0,
             obstacles: crate::battlefield::build(),
             did_collide_with_obstacle: false,
@@ -874,8 +865,6 @@ impl BattleSim {
         self.player_accel_long = a_long;
         self.player_accel_lat = a_lat_grip;
 
-        self.step_suspension(dt);
-
         // Cancel velocity driven into the boundary so the vehicle slides along the
         // edge instead of pressing into it and snapping.
         let inv_dt = 1.0 / f32::max(dt, 1e-5);
@@ -906,29 +895,6 @@ impl BattleSim {
     /// camber, it cannot squat under power or dive under braking, and it heaves over
     /// every undulation. Worse, it disagrees with the renderer's own corner solve,
     /// so the hull visibly rolled away from the ground it was standing on.
-    fn step_suspension(&mut self, dt: f32) {
-        let (px, pz) = (self.player_position.x, self.player_position.z);
-
-        self.player_suspension.step(
-            dt,
-            px,
-            pz,
-            self.player_heading_rad,
-            self.player_accel_long,
-            self.player_accel_lat,
-        );
-
-        // The hull's Y now comes from its own ride height rather than from the terrain
-        // height under the centre. Those differ whenever the hull is tilted or
-        // bridging a dip, and taking the centre value alone was one of the reasons it
-        // looked like it was skating over the ground.
-        self.player_position.y = self.player_suspension.height;
-
-        self.hull_pitch_deg = self.player_suspension.pitch_rad * 180.0 / mathf::PI;
-        self.hull_roll_deg = self.player_suspension.roll_rad * 180.0 / mathf::PI;
-        self.slope_forward_deg = mathf::asin(mathf::clamp(mathf::sin(self.player_suspension.pitch_rad), -1.0, 1.0)) * 180.0 / mathf::PI;
-        self.slope_lateral_deg = mathf::asin(mathf::clamp(mathf::sin(self.player_suspension.roll_rad), -1.0, 1.0)) * 180.0 / mathf::PI;
-    }
     /// Turret follows the aim point, clamped to a realistic traverse arc and slewed
     /// at a finite rate.
     fn aim_turret(&mut self, dt: f32, trim: f32, aim_point: Vec3) {

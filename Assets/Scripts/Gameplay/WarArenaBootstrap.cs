@@ -208,9 +208,29 @@ namespace WarArena.Gameplay
             _enemyView = BuildTank(root.transform, "Enemy", enemyDef, new Color(0.40f, 0.32f, 0.22f));
 
             _battle = new BattleSim(DefaultPlayerVehicle, DefaultEnemyVehicle);
-            var tvp = _playerView.gameObject.AddComponent<TrackedVehiclePhysics>();
-            _battle.PlayerPhysicsVehicle = tvp;
-            _battle.UsePhysicsMovement = false;
+
+            // Player vehicle: PhysX Rigidbody + WheelColliders, the architecture both
+            // reference applications use. PhysX owns the transform; the visual body is
+            // derived from it by VehicleBodyOffset, so the renderer can never disagree
+            // with the simulation about where the vehicle is.
+            var playerGo = _playerView.gameObject;
+            if (!playerGo.TryGetComponent<Rigidbody>(out var playerRb))
+            {
+                playerRb = playerGo.AddComponent<Rigidbody>();
+            }
+            playerRb.isKinematic = false;
+            playerRb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+            var tracked = playerGo.AddComponent<TrackedVehicle>();
+            float playerMass = playerDef.MassKg;
+            tracked.massKg = playerMass;
+            tracked.maxSpeed = 11.11f;
+            tracked.BuildWheels(4);
+            _battle.PlayerVehicle = tracked;
+
+            var offset = playerGo.AddComponent<VehicleBodyOffset>();
+            offset.Bind(playerGo.transform);
+
             _battle.OnPlayerFired += HandlePlayerFired;
             _input = InputReaderFactory();
 

@@ -13,7 +13,6 @@
 //! | [`ballistics`] | `Assets/Scripts/Ballistics/` | 1 |
 //! | [`vehicles`] | `Assets/Scripts/Vehicles/` | 1 |
 //! | [`vehicle_dynamics`] | `Assets/Scripts/Gameplay/TrackedVehicleDynamics.cs` | 3 |
-//! | [`hull_suspension`] | `Assets/Scripts/Gameplay/HullSuspension.cs` | 3 |
 //! | [`air`] | `Assets/Scripts/Air/` | 1 (catalogue), 2 (flight model) |
 //! | `gameplay` | `Assets/Scripts/Gameplay/{BattleSim,AirCombatSim}.cs` | 3, 2 |
 
@@ -21,7 +20,6 @@ pub mod air;
 pub mod battlefield;
 pub mod ballistics;
 pub mod gameplay;
-pub mod hull_suspension;
 pub mod math;
 pub mod spike;
 pub mod vehicle_dynamics;

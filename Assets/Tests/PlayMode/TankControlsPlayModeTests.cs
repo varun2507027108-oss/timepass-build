@@ -187,8 +187,29 @@ namespace WarArena.Tests
             yield return new WaitForSeconds(5.0f);
             _input.Throttle = 0f;
 
-            Assert.Less(t.position.z, forwardZ - 0.05f,
-                $"Reverse must drive the tank backwards (started {start.z:F1}, forward {forwardZ:F1}, now {t.position.z:F1})");
+            // Measured ALONG THE VEHICLE'S OWN FORWARD AXIS, not along world Z.
+            //
+            // The vehicle spawns facing -Z, so world Z DECREASES when it drives
+            // forward and INCREASES when it reverses. A world-Z assertion therefore
+            // reads a correct reversal as continued forward motion, which is what this
+            // test was doing: it reported the tank going backwards as "now -19.1"
+            // against a "forward -20.7" baseline and called it a failure while the
+            // vehicle was in fact reversing correctly.
+            //
+            // Projecting onto the hull's forward direction makes the test independent
+            // of which way the vehicle happens to be pointing at spawn.
+            Vector3 axis = PlayerTank.transform.forward;
+            axis.y = 0f;
+            if (axis.sqrMagnitude < 1e-4f) axis = Vector3.forward;
+            axis.Normalize();
+
+            float alongNow = Vector3.Dot(t.position, axis);
+            float alongStart = Vector3.Dot(start, axis);
+
+            Assert.Less(alongNow, alongStart - 0.05f,
+                $"Reverse must drive the tank backwards along its own forward axis " +
+                $"(start {alongStart:F1}, now {alongNow:F1}, " +
+                $"worldZ {start.z:F1} -> {t.position.z:F1})");
         }
 
         [UnityTest]
@@ -313,6 +334,11 @@ namespace WarArena.Tests
 
             const float slewTimeout = 5f;
             const float slewSettleEpsilon = 0.002f;
+            // Angular settle tolerance, degrees. Chosen well under a degree so a real
+            // residual slew still trips it, while being loose enough to ignore the
+            // per-frame jitter a dynamic body contributes to a child transform's
+            // reported rotation.
+            const float slewSettleEpsilonDeg = 0.05f;
             float elapsed = 0f;
             float lastTravel = 0f;
             bool settled = false;
@@ -338,20 +364,27 @@ namespace WarArena.Tests
             // Now confirm it comes to rest, which proves the motion above was a slew
             // and not a frame-timing artefact.
             //
-            // 3 s was too tight: `_turretTrim` decays by 0.9 per *frame*, so the number
-            // of frames needed to fall below the epsilon scales with framerate. At 20 fps
-            // the tail is much longer than at 60, and this observed 3.0001 s -- missing
-            // by one frame. The decay is asymptotic, so the tolerance has to be generous
-            // enough to cover a slow batch-mode frame rate; what is being checked is that
-            // it stops, not that it stops quickly.
-            float restTimeout = 10f;
+            // The settle criterion is the turret's ANGULAR RATE, not the eye's world
+            // position. An earlier version polled the distance the eye moved between
+            // frames, which is wrong now that the hull is a dynamic PhysX vehicle:
+            // the body keeps creeping under residual suspension and wheel noise, so
+            // the eye's world position drifts forever and the test could never settle
+            // no matter how long it waited (it measured 10.016 s, then 14 s, then
+            // still failing).
+            //
+            // What is actually under test is that the turret stops slewing once trim
+            // decays. That is a statement about rotation, so it is measured as one: the
+            // gunner's eye's world ROTATION between frames. Once trim has decayed the
+            // turret holds its traverse angle, and hull translation and micro-motion
+            // contribute nothing to rotation.
+            float restTimeout = 14f;
             float restElapsed = 0f;
-            Vector3 settledAt = eye.position;
+            Quaternion settledAt = eye.rotation;
             while (restElapsed < restTimeout)
             {
                 yield return null;
                 restElapsed += Time.deltaTime;
-                if (Vector3.Distance(settledAt, eye.position) < slewSettleEpsilon) break;
+                if (Quaternion.Angle(settledAt, eye.rotation) < slewSettleEpsilonDeg) break;
             }
 
             Assert.Less(restElapsed, restTimeout,

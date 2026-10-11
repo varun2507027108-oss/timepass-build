@@ -19,6 +19,7 @@ namespace WarArena.Gameplay
             root.transform.SetParent(parent, false);
 
             BuildGround(root.transform);
+            BuildGroundCollider(root.transform);
             BuildArchitecture(root.transform);
             BuildFortifications(root.transform);
             BuildVegetation(root.transform);
@@ -42,6 +43,96 @@ namespace WarArena.Gameplay
             float outerRim = Mathf.Pow(t, 1.8f) * 44f;
 
             return Mathf.Max(0f, w * (h1 + h2 + ridge + outerRim));
+        }
+
+        /// <summary>
+        /// Build a PHYSICAL ground surface for PhysX.
+        /// </summary>
+        /// <remarks>
+        /// The visible terrain is analytic: <see cref="GetTerrainHeight"/> is a pure
+        /// function, and the meshes that are drawn are built from the same function.
+        /// That is fine for rendering and for the previous kinematic simulation, which
+        /// asked the function directly.
+        ///
+        /// It is not fine for PhysX. A <c>WheelCollider</c> only finds ground by
+        /// colliding with a real collider, and the scene had NONE -- a probe of the
+        /// built battlefield reports zero Colliders in the entire scene. So every wheel
+        /// was permanently airborne, every one of them reported zero load, the
+        /// drivetrain applied nothing, and the vehicle simply fell through the world.
+        ///
+        /// This builds a heightfield mesh from the SAME function the visuals use, so
+        /// the surface PhysX collides with and the surface the game draws are the same
+        /// terrain by construction rather than by coincidence. A non-convex
+        /// MeshCollider is used because the analytic terrain is not heightfield-simple
+        /// (it is clamped at zero inside a radius and rises outside it), and PhysX
+        /// needs the real surface shape.
+        ///
+        /// Resolution is a compromise: fine enough that a wheel cannot step over a
+        /// feature between samples, coarse enough that the convex-hull-free
+        /// non-convex cooking stays affordable at load time.
+        /// </remarks>
+        private static void BuildGroundCollider(Transform parent)
+        {
+            const float HalfExtent = 480f;
+            const float Resolution = 3f; // metres between samples
+
+            int steps = Mathf.CeilToInt((HalfExtent * 2f) / Resolution) + 1;
+            int side = steps;
+
+            var verts = new Vector3[side * side];
+            var uvs = new Vector2[side * side];
+            var tris = new int[(side - 1) * (side - 1) * 6];
+
+            for (int iz = 0; iz < side; iz++)
+            {
+                float z = -HalfExtent + iz * Resolution;
+                for (int ix = 0; ix < side; ix++)
+                {
+                    float x = -HalfExtent + ix * Resolution;
+                    int i = iz * side + ix;
+                    verts[i] = new Vector3(x, GetTerrainHeight(x, z), z);
+                    uvs[i] = new Vector2(x / (HalfExtent * 2f) + 0.5f, z / (HalfExtent * 2f) + 0.5f);
+                }
+            }
+
+            int t = 0;
+            for (int iz = 0; iz < side - 1; iz++)
+            {
+                for (int ix = 0; ix < side - 1; ix++)
+                {
+                    int i0 = iz * side + ix;
+                    int i1 = i0 + 1;
+                    int i2 = i0 + side;
+                    int i3 = i2 + 1;
+
+                    tris[t++] = i0; tris[t++] = i2; tris[t++] = i1;
+                    tris[t++] = i1; tris[t++] = i2; tris[t++] = i3;
+                }
+            }
+
+            var mesh = new Mesh { name = "BattlefieldGroundMesh" };
+            mesh.indexFormat = verts.Length > 65000
+                ? UnityEngine.Rendering.IndexFormat.UInt32
+                : UnityEngine.Rendering.IndexFormat.UInt16;
+            mesh.vertices = verts;
+            mesh.uv = uvs;
+            mesh.triangles = tris;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            var go = new GameObject("GroundCollider");
+            go.transform.SetParent(parent, false);
+
+            var mf = go.AddComponent<MeshFilter>();
+            mf.sharedMesh = mesh;
+
+            // Non-convex: the terrain is not convex and a convex hull would fill in the
+            // dips, so the vehicle would ride on a surface flatter than the one drawn.
+            var mc = go.AddComponent<MeshCollider>();
+            mc.sharedMesh = mesh;
+            mc.convex = false;
+
+            go.isStatic = true;
         }
 
         private static void BuildGround(Transform parent)
