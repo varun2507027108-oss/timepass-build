@@ -66,6 +66,7 @@ namespace WarArena.Gameplay
         private Material _reticleMaterial;
         private GameObject _reticle;
         private GameObject _gunsight;
+        private bool _cameraInitialized;
         private GameObject _muzzleFlash;
         private float _muzzleFlashTimer;
 
@@ -685,7 +686,24 @@ namespace WarArena.Gameplay
             // Frame-rate independent smoothing. Lerping by a fixed fraction per frame
             // would move faster at high frame rates, which is its own kind of jitter.
             float k = 1f - Mathf.Exp(-6f * dt);
-            _cameraTransform.position = Vector3.Lerp(_cameraTransform.position, target, k);
+
+            // SNAP on the first frame instead of easing into place.
+            //
+            // The camera is created with its default transform -- the world origin -- and
+            // the chase target is 17 m behind and 8 m above the tank. Easing from the
+            // origin toward that point moves only ~9.5% of the remaining distance per
+            // frame at 60 fps, so the opening of every session is a slow orbital sweep
+            // across the battlefield. It reads as the tank lurching, tilting and
+            // repositioning when nothing of the sort is happening: the tank is holding
+            // perfectly still and the camera is simply arriving.
+            if (!_cameraInitialized)
+            {
+                _cameraInitialized = true;
+            }
+            else
+            {
+                _cameraTransform.position = Vector3.Lerp(_cameraTransform.position, target, k);
+            }
 
             // Look at the interpolated position too, so the tank holds still in frame
             // rather than sliding around inside it.

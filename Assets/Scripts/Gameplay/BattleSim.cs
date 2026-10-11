@@ -471,16 +471,17 @@ namespace WarArena.Gameplay
         /// result was two disagreeing smoothing paths: the hull leaned into and out of
         /// terrain a beat behind or ahead of where the body was actually travelling.
         ///
-        /// <see cref="Mathf.LerpAngle"/> rather than <c>Lerp</c>, so the interpolation is
-        /// correct across the wrap even though the attitude is clamped well inside +/-45
-        /// degrees.
+        /// Plain <c>Lerp</c>, not <c>LerpAngle</c>: the latter is DEGREES-based (it wraps
+        /// with Mathf.Repeat(delta, 360)) and these values are radians. It happens to give the
+        /// same answer while the delta stays far below 360, which it always will inside the
+        /// +/-40 degree clamp, but it is the wrong function for the units.
         /// </remarks>
         public float PlayerRenderHullPitchRad =>
-            Mathf.LerpAngle(HullPitchPrevRad, HullPitchRad, InterpolationAlpha);
+            Mathf.Lerp(HullPitchPrevRad, HullPitchRad, InterpolationAlpha);
 
         /// <inheritdoc cref="PlayerRenderHullPitchRad"/>
         public float PlayerRenderHullRollRad =>
-            Mathf.LerpAngle(HullRollPrevRad, HullRollRad, InterpolationAlpha);
+            Mathf.Lerp(HullRollPrevRad, HullRollRad, InterpolationAlpha);
 
         private float _accumulator;
 
