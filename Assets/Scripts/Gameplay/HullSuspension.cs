@@ -323,12 +323,22 @@ maxDamping = 2f * Mathf.Sqrt(springRate * massPerCorner);
         /// </summary>
         public void Reset(float x, float z, float headingRad)
         {
+            // Average over the CONTACT COUNT, not a hard-coded 0.25f.
+            //
+            // The 0.25f literal is the reciprocal of the original four-contact layout.
+            // The contact set was widened to eight (two per side at z = {-h, -h/3,
+            // +h/3, +h}) without this line changing, so the sum of eight samples is
+            // being multiplied by 1/4 rather than 1/8. On flat ground every sample is
+            // equal so the error is invisible; on a slope the eight heights average to
+            // the centre height, and doubling it drops the hull toward the terrain far
+            // from its contact patch -- which the corner springs then have to push the
+            // vehicle out of on respawn.
             float sum = 0f;
             for (int i = 0; i < Contacts; i++)
             {
                 sum += GroundAt(i, x, z, headingRad);
             }
-            height = sum * 0.25f;
+            height = sum / Contacts;
             pitchRad = 0f;
             rollRad = 0f;
             pitchVelocity = 0f;
@@ -583,7 +593,23 @@ totalForce += force;
 
         private static float MaxTiltRad()
         {
-            return 40f * Mathf.Deg2Rad;
+            // 50 degrees, matching MAX_TILT_RAD in the Rust implementation.
+            //
+            // These two numbers were 40 here and 50 there. The C#-vs-Rust parity tests
+            // did not catch it because none of them drove the hull past 40 degrees:
+            // the ordinary suspension cases (braking, cornering, an outer-rim launch)
+            // all peak far below it, so both implementations returned the same value
+            // and the traces agreed. Only a pathological terrain sample reaches the
+            // clamp, and at that point the two languages diverged -- the C# build
+            // pinned the hull at 40 degrees while the Rust build let it reach 50.
+            //
+            // Raising this side to 50 is the correct direction rather than lowering
+            // the other to 40: the clamp exists only to stop a single bad sample
+            // rolling the vehicle onto its roof, and 40 degrees is tight enough to be
+            // reached by ordinary terrain, which would make it a gameplay limit
+            // rather than a safety net. The bump stops below are what actually
+            // enforce non-penetration; this is a backstop.
+            return 50f * Mathf.Deg2Rad;
         }
 
         private static float ClampAngle(float angle, ref float velocity, float limit)

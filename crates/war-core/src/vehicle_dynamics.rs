@@ -32,6 +32,13 @@
 use crate::gameplay::get_terrain_height;
 use crate::math::mathf;
 
+/// Driver-input shaping: the rate limiters between the raw input axis and the
+/// accelerations above. Lives here because it is the other half of the same
+/// driver-to-traction pipeline, and it has to be mirrored in lockstep.
+pub mod input_shaping;
+
+pub use input_shaping as shaping;
+
 /// Standard gravity, m/s^2.
 pub const GRAVITY: f32 = 9.81;
 

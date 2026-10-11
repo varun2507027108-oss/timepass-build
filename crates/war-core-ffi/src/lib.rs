@@ -584,9 +584,37 @@ pub unsafe extern "C" fn wa_battle_trace(
     (ticks_to_run * stride) as u32
 }
 
+/// Hull attitude clamp, in degrees.
+///
+/// The C# side clamps pitch and roll at a limit of its own, and the two were
+/// briefly different (40 degrees here, 50 there). No parity test caught it
+/// because no reachable driving scenario reaches the clamp at all -- it exists
+/// only as a backstop against a pathological terrain sample -- so both
+/// implementations returned identical values everywhere the traces actually
+/// looked.
+///
+/// Exposing the constant lets the host assert the two agree directly, which is
+/// the only way this class of divergence is visible at all.
+///
+/// # Safety
+/// Trivial: no pointers, no state, always safe to call.
+#[no_mangle]
+pub extern "C" fn wa_battle_max_tilt_deg() -> f32 {
+    war_core::hull_suspension::max_tilt_deg()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tilt_clamp_is_the_documented_value() {
+        assert!(
+            (wa_battle_max_tilt_deg() - 50.0).abs() < 1e-4,
+            "tilt clamp drifted to {}",
+            wa_battle_max_tilt_deg()
+        );
+    }
 
     #[test]
     fn abi_version_and_slot_count_are_exposed() {

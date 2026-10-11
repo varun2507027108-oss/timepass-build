@@ -6,6 +6,7 @@
 use crate::ballistics::{ArmourPlate, ImpactResult, Penetration, Shell, ShellType};
 use crate::math::{mathf, Vec3};
 use crate::vehicle_dynamics;
+use crate::vehicle_dynamics::input_shaping;
 use crate::vehicles::{VehicleCatalog, VehicleDefinition};
 
 /// Simulation rate. 30 Hz is plenty for a 40 km/h vehicle.
@@ -258,6 +259,16 @@ pub struct BattleSim {
     /// Sideways velocity in the hull's frame, m/s. Non-zero only when the tracks
     /// are sliding - over a side slope, or while skidding out of a turn.
     player_lat_speed_mps: f32,
+    /// Filtered throttle actually handed to the traction model, -1..1. The raw
+    /// input axis is rate-limited before it reaches `drive_player`. Held as state so
+    /// it persists across ticks: `advance` is called once per render frame but steps
+    /// up to `MAX_STEPS_PER_FRAME` times, so shaping inside `drive_player` would
+    /// advance the ramp at the render rate rather than the tick rate and the two would
+    /// disagree whenever the frame rate dipped. Mirrors `_shapedThrottle` in C#.
+    shaped_throttle: f32,
+    /// Filtered steering actually handed to the differential, -1..1. Mirrors
+    /// `_shapedSteer` in C#.
+    shaped_steer: f32,
     /// Ground speed of each track, m/s, positive forwards. Drives the track
     /// animation so the wheels read out the simulation rather than replaying input.
     player_left_track_mps: f32,
@@ -378,6 +389,8 @@ impl BattleSim {
             tick: 0,
             player_current_speed_mps: 0.0,
             player_lat_speed_mps: 0.0,
+            shaped_throttle: 0.0,
+            shaped_steer: 0.0,
             player_left_track_mps: 0.0,
             player_right_track_mps: 0.0,
             enemy_left_track_mps: 0.0,
@@ -651,11 +664,45 @@ impl BattleSim {
                 if self.enemy_health <= 0 {
                     self.enemy_health = 100;
                 }
+
+                // Zero the filtered driver axes on respawn. While the player is out,
+                // the shaping block below is skipped entirely, so whatever throttle was
+                // last commanded is still held in `shaped_throttle` when control
+                // returns. With the throttle key no longer pressed the ramp decays it
+                // to zero over a third of a second, so the vehicle would lurch forward
+                // on respawn for no reason the player could see or stop.
+                self.shaped_throttle = 0.0;
+                self.shaped_steer = 0.0;
             }
         }
 
         if self.player_health > 0 {
-            self.drive_player(dt, throttle, steer);
+            // Shape the driver axes before anything consumes them, so the filtered
+            // command is what the movement model sees.
+            self.shaped_throttle = input_shaping::ramp(
+                self.shaped_throttle,
+                throttle,
+                dt,
+                input_shaping::DEFAULT_THROTTLE_ATTACK_PER_SEC,
+                input_shaping::DEFAULT_THROTTLE_RELEASE_PER_SEC,
+            );
+
+            // The steer time constant widens when the driver is reversing across
+            // neutral, so the hull carries its old rotation less willingly into the
+            // new direction.
+            let steer_tau = input_shaping::steer_blend(
+                self.shaped_steer,
+                steer,
+                input_shaping::DEFAULT_STEER_LERP_SECONDS,
+                input_shaping::DEFAULT_DIRECTION_CHANGE_SECONDS,
+            );
+            self.shaped_steer =
+                input_shaping::lerp_axis(self.shaped_steer, steer, dt, steer_tau);
+
+            let throttle_in = self.shaped_throttle;
+            let steer_in = self.shaped_steer;
+
+            self.drive_player(dt, throttle_in, steer_in);
             self.aim_turret(dt, turret_trim, aim_point);
 
             if fire && self.reload_complete() {
@@ -698,9 +745,19 @@ impl BattleSim {
             vehicle_dynamics::gravity_on_ground_plane(slope_fwd_deg, slope_lat_deg, &mut normal_load_g);
         let _ = g_across;
 
+        // --- climb capability ---------------------------------------------
+        // Progressive reduction of engine effort on steep ground. This shapes the
+        // command only; it is applied to the traction demand below and never to the
+        // brake or coast checks, because a vehicle that cannot get up a hill can
+        // certainly still stop on one.
+        //
+        // Deliberately not applied to the steering axis: a tracked vehicle loses
+        // climbing ability on a slope, not the ability to turn on it.
+        let drive_throttle = throttle * input_shaping::climb_capability(slope_fwd_deg);
+
         // --- longitudinal forces ------------------------------------------
         let a_engine = vehicle_dynamics::engine_acceleration(
-            throttle,
+            drive_throttle,
             self.player_current_speed_mps,
             ACCELERATION_MPS2,
             POWER_LIMITED_SPEED_MPS,

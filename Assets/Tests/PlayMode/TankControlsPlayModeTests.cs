@@ -170,12 +170,21 @@ namespace WarArena.Tests
             // Reversing has to come to a stop FIRST. Reversing is braking: the tracks
             // lock, and the vehicle decelerates at the friction-circle limit of
             // about 8.3 m/s^2 rather than the 45 m/s^2 the old model used. From the
-            // ~5 m/s this vehicle reaches in 0.6 s that takes roughly 0.6 s to halt,
-            // and then it has to accelerate backwards on top. The previous 0.6 s
-            // window only just covered stopping, so it could never observe the
-            // reversal it was checking for.
+            // ~5 m/s this vehicle reaches in 0.6 s that takes roughly 0.6 s to halt.
+            //
+            // Then the input shaping layer adds its own delay on top of the stop: the
+            // commanded throttle has to ramp from +1 back down through zero to -1 at
+            // the release rate, which is another ~1 s before any reverse thrust is
+            // even being asked for, and then further time for the ramp to reach full
+            // reverse. The previous 2.0 s window covered stopping plus barely any of
+            // that, so the tank was still decelerating when the assertion ran -- its
+            // position was moving back towards where it started purely because it had
+            // not finished braking, which is not the same as having reversed.
+            //
+            // 5.0 s is the point at which the vehicle has genuinely driven backwards,
+            // not merely finished slowing down.
             _input.Throttle = -1f;
-            yield return new WaitForSeconds(2.0f);
+            yield return new WaitForSeconds(5.0f);
             _input.Throttle = 0f;
 
             Assert.Less(t.position.z, forwardZ - 0.05f,
@@ -682,6 +691,63 @@ namespace WarArena.Tests
 
             Transform t = PlayerTank.transform;
             Assert.IsFalse(float.IsNaN(t.position.x), "No NaN after a full input soak");
+        }
+
+        /// <summary>
+        /// The vehicle must not jump to full thrust the instant the key is pressed.
+        /// </summary>
+        /// <remarks>
+        /// This pins <see cref="TankInputShaping"/> at the integration level. The
+        /// unit tests prove the ramp function is correct in isolation, and the parity
+        /// tests prove C# and Rust agree on it, but neither proves the layer is still
+        /// WIRED IN -- and that is the part most likely to rot, because removing the
+        /// call site in BattleSim.Step would leave every existing test green while
+        /// silently deleting the entire feature.
+        ///
+        /// So this drives the real rig through the real input reader and checks the
+        /// observable consequence: a full press must produce measurable but partial
+        /// motion, not instant full acceleration.
+        /// </remarks>
+        [UnityTest]
+        public IEnumerator ThrottleDoesNotJumpStraightToFullThrust()
+        {
+            yield return null;
+            Transform t = PlayerTank.transform;
+            float startZ = t.position.z;
+
+            _input.Throttle = 1f;
+
+            // One tenth of a second. The ramp is 3.0 units/s, so the commanded
+            // throttle is only at 0.3 -- this must NOT yet be full thrust.
+            yield return new WaitForSeconds(0.1f);
+
+            float afterOneTick = Mathf.Abs(t.position.z - startZ);
+            Assert.Greater(afterOneTick, 0.0001f,
+                "a throttle press should produce some motion within 0.1 s");
+            Assert.Less(afterOneTick, 0.5f,
+                $"a full press must ramp in, not snap (moved {afterOneTick:F3} m in 0.1 s)");
+
+            _input.Throttle = 0f;
+            yield return new WaitForSeconds(0.2f);
+        }
+
+        /// <summary>
+        /// Releasing must slow the ramp down, not up.
+        /// </summary>
+        /// <remarks>
+        /// The attack and release rates are deliberately different -- 3.0 and 2.0
+        /// units/s -- and that asymmetry is the whole reason a released throttle feels
+        /// like a vehicle coasting rather than a switch opening. Asserting it at the
+        /// integration level stops a future "simplification" that unifies the two
+        /// constants from being made without anyone noticing the handling change.
+        /// </remarks>
+        [Test]
+        public void ReleaseRateIsSlowerThanAttackRate()
+        {
+            Assert.Less(TankInputShaping.DefaultThrottleReleasePerSec,
+                TankInputShaping.DefaultThrottleAttackPerSec,
+                "releasing must decay more slowly than the throttle builds, or the " +
+                "vehicle feels like it has a switch rather than a driveline");
         }
     }
 }

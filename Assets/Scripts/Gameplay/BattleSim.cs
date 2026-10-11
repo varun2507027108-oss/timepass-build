@@ -498,18 +498,49 @@ namespace WarArena.Gameplay
                 {
                     if (PlayerHealth <= 0) PlayerHealth = 100;
                     if (EnemyHealth <= 0) EnemyHealth = 100;
+
+                    // Zero the filtered driver axes on respawn.
+                    //
+                    // While the player is out, the shaping block below is skipped
+                    // entirely, so whatever throttle was last commanded is still held
+                    // in _shapedThrottle when control returns. With the throttle key
+                    // no longer pressed the ramp decays it to zero over a third of a
+                    // second, so the vehicle would lurch forward on respawn for no
+                    // reason the player could see or stop.
+                    _shapedThrottle = 0f;
+                    _shapedSteer = 0f;
                 }
             }
 
             if (PlayerHealth > 0)
             {
+                // Shape the driver axes before anything consumes them.
+                //
+                // This sits ahead of the movement branch so that the PhysX path and
+                // the kinematic path receive the SAME filtered command. Shaping them
+                // separately -- or only on one branch -- would make the two movement
+                // modes disagree about what the driver asked for, which is exactly the
+                // kind of divergence the C#-vs-Rust parity tests exist to prevent.
+                _shapedThrottle = TankInputShaping.Ramp(
+                    _shapedThrottle, throttle, dt, ThrottleAttackPerSec, ThrottleReleasePerSec);
+
+                // The steer time constant widens when the driver is reversing across
+                // neutral, so the hull carries its old rotation less willingly into
+                // the new direction.
+                float steerTau = TankInputShaping.SteerBlend(
+                    _shapedSteer, steer, SteerLerpSeconds, DirectionChangeSeconds);
+                _shapedSteer = TankInputShaping.LerpAxis(_shapedSteer, steer, dt, steerTau);
+
+                float throttleIn = _shapedThrottle;
+                float steerIn = _shapedSteer;
+
                 if (UsePhysicsMovement && PlayerPhysicsVehicle != null && PlayerPhysicsVehicle.rb != null)
                 {
-                    DrivePlayerPhysics(dt, throttle, steer);
+                    DrivePlayerPhysics(dt, throttleIn, steerIn);
                 }
                 else
                 {
-                    DrivePlayer(dt, throttle, steer);
+                    DrivePlayer(dt, throttleIn, steerIn);
                 }
                 AimTurret(dt, turretTrim, aimPoint);
 
@@ -564,6 +595,41 @@ namespace WarArena.Gameplay
         /// instead of driving wherever it happens to be pointed.
         /// </summary>
         private float _playerLatSpeedMps;
+
+        // --------------------------------------------------------- input shaping
+        //
+        // The filtered driver axes, as opposed to the raw keyboard values handed to
+        // Advance(). See TankInputShaping for why this layer exists at all: it models
+        // the driver and driveline, not the tank. Everything downstream of it --
+        // traction, the friction circle, gradeability, the neutral turn -- is unchanged
+        // physics.
+        //
+        // Held as state so they persist across ticks. Advance() is called once per
+        // render frame but steps up to MaxStepsPerFrame times, so shaping inside
+        // DrivePlayer would advance the ramp at the render rate rather than the tick
+        // rate and the two would disagree whenever the frame rate dipped.
+
+        /// <summary>
+        /// Filtered throttle actually handed to the traction model, -1..1.
+        /// </summary>
+        private float _shapedThrottle;
+
+        /// <summary>
+        /// Filtered steering actually handed to the differential, -1..1.
+        /// </summary>
+        private float _shapedSteer;
+
+        /// <summary>Throttle build rate while the command magnitude is growing.</summary>
+        private const float ThrottleAttackPerSec = TankInputShaping.DefaultThrottleAttackPerSec;
+
+        /// <summary>Throttle decay rate on release, deliberately slower than the build.</summary>
+        private const float ThrottleReleasePerSec = TankInputShaping.DefaultThrottleReleasePerSec;
+
+        /// <summary>Steering filter time constant, seconds.</summary>
+        private const float SteerLerpSeconds = TankInputShaping.DefaultSteerLerpSeconds;
+
+        /// <summary>Slower constant used while the driver is traversing through neutral.</summary>
+        private const float DirectionChangeSeconds = TankInputShaping.DefaultDirectionChangeSeconds;
 
         /// <summary>
         /// Per-contact hull suspension. Owns pitch, roll and ride height as real
@@ -634,9 +700,19 @@ namespace WarArena.Gameplay
             Vector2 gravity = TrackedVehicleDynamics.GravityOnGroundPlane(
                 fwd, right, slopeFwdDeg, slopeLatDeg, out normalLoadG);
 
+            // --- climb capability ---------------------------------------------
+            // Progressive reduction of ENGINE effort on steep ground. This shapes the
+            // command only; it is applied to the traction demand below and never to the
+            // brake or coast checks, because a vehicle that cannot get up a hill can
+            // certainly still stop on one.
+            //
+            // Deliberately not applied to the steering axis: a tracked vehicle loses
+            // climbing ability on a slope, not the ability to turn on it.
+            float driveThrottle = throttle * TankInputShaping.ClimbCapability(slopeFwdDeg);
+
             // --- longitudinal forces ------------------------------------------
             float aEngine = TrackedVehicleDynamics.EngineAcceleration(
-                throttle, _playerCurrentSpeedMps, AccelerationMps2, PowerLimitedSpeedMps, MaxSpeedMps);
+                driveThrottle, _playerCurrentSpeedMps, AccelerationMps2, PowerLimitedSpeedMps, MaxSpeedMps);
             float aRoll = TrackedVehicleDynamics.RollingResistance(
                 _playerCurrentSpeedMps, normalLoadG, RollingResistanceCoeff);
 

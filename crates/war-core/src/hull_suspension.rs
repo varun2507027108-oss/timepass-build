@@ -66,7 +66,21 @@ use crate::vehicle_dynamics::GRAVITY;
 pub const CONTACTS: usize = 8;
 
 /// A tank cannot fold its own hull up.
+///
+/// A backstop only: it exists so a single pathological terrain sample cannot roll
+/// the vehicle onto its roof. Ordinary terrain never approaches it, which is
+/// precisely why it has to be cross-checked against the C# value explicitly --
+/// see `HullSuspensionRegressionTests.AttitudeClampAgreesWithTheRustImplementation`
+/// in the Unity suite. The bump stops are what actually enforce non-penetration.
 const MAX_TILT_RAD: f32 = 50.0 * mathf::PI / 180.0;
+
+/// Hull attitude clamp in degrees.
+///
+/// Public so the FFI layer can expose it and the Unity side can assert the two
+/// implementations agree, rather than each holding a private copy that can drift.
+pub fn max_tilt_deg() -> f32 {
+    MAX_TILT_RAD * 180.0 / mathf::PI
+}
 
 #[derive(Debug, Clone)]
 pub struct HullSuspension {
@@ -239,7 +253,15 @@ impl HullSuspension {
         for i in 0..CONTACTS {
             sum += self.ground_at(i, x, z, heading_rad);
         }
-        self.height = sum * 0.25;
+        // Average over the contact count, not a hard-coded 0.25.
+        //
+        // 0.25 is the reciprocal of the original four-contact layout. Widening the set
+        // to eight without changing this multiplied the sum by 1/4 instead of 1/8, so on
+        // a slope the hull was placed at twice the mean sample height -- below the
+        // terrain at its contact patch -- and had to be pushed back out by the bump
+        // stops on every respawn. Flat ground hides the error because every sample is
+        // equal. Mirrors HullSuspension.Reset in the C# implementation.
+        self.height = sum / CONTACTS as f32;
         self.pitch_rad = 0.0;
         self.roll_rad = 0.0;
         self.pitch_velocity = 0.0;
