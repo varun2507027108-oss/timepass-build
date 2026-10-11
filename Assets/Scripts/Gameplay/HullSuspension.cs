@@ -53,16 +53,25 @@ namespace WarArena.Gameplay
     /// </summary>
     public sealed class HullSuspension
     {
-        private const int Contacts = 4;
+        /// <summary>
+        /// Contacts: four per track, at z = {-h, -h/3, +h/3, +h}.
+        /// </summary>
+        /// <remarks>
+        /// The layout must be SYMMETRIC about the contact-patch centre and include BOTH
+        /// extremes. An asymmetric ladder leaves a dead pair at mid-length contributing no
+        /// pitch stiffness at all, so braking and acceleration do different things and the
+        /// hull dives far harder than it squats.
+        /// </remarks>
+        private const int Contacts = 8;
 
         /// <summary>Total sprung mass, kg.</summary>
         public float mass;
 
         /// <summary>Spring rate per corner, N/m.</summary>
-        public float springRate = 5.5e5f;
+        public float springRate = 2.2e5f;
 
         /// <summary>Damping per corner, N.s/m.</summary>
-        public float springDamping = 4.0e4f;
+        public float springDamping = 3.4e4f;
 
         /// <summary>Height of the centre of gravity above the contact plane, metres.</summary>
         public float cgHeight = 1.15f;
@@ -74,7 +83,7 @@ namespace WarArena.Gameplay
         /// frame. Without this the vehicle behaves like a linear spring to infinity
         /// and a steep slope flings it into the air.
         /// </summary>
-        public float maxTravel = 0.35f;
+        public float maxTravel = 0.6f;
 
         /// <summary>
         /// Static compression per corner at rest, metres. Derived in the constructor.
@@ -89,6 +98,64 @@ namespace WarArena.Gameplay
 
         /// <summary>Largest damper force a single corner may exert, N.</summary>
         private float maxDamping;
+
+        /// <summary>Largest bump-stop force each corner may exert, N.</summary>
+        private readonly float[] maxBumpStopForce = new float[Contacts];
+
+        private void SetBumpStopCeilings()
+        {
+            for (int i = 0; i < Contacts; i++)
+            {
+                maxBumpStopForce[i] = springRate * restSag[i] * 2f;
+            }
+        }
+
+        /// <summary>
+        /// Attitude-layer stiffness, N.m/rad.
+        /// </summary>
+        /// <remarks>
+        /// Attitude and ride are SEPARATE jobs with separate springs.
+        ///
+        /// The corner springs carry the weight and absorb roughness BETWEEN samples.
+        /// Making them the only pitch stiffness tied attitude to bump-stop travel: at
+        /// 0.35 m the springs bottomed out on ordinary slopes, so the hull attitude was
+        /// really being set by the travel clamp rather than by any dynamics. Raise travel
+        /// and the clamp stops masking it -- which is why the first attempt at a
+        /// realistic travel limit produced a 37 degree braking dive.
+        ///
+        /// Sizing, for a target dive angle theta under peak acceleration:
+        ///     K = m * a_max * h_cg / theta
+        /// which at 25 t, 8.34 m/s^2, 1.15 m and 5 degrees is about 2.7e6 N.m/rad.
+        /// </remarks>
+        public float pitchStiffness = 2.7e6f;
+
+        /// <inheritdoc cref="pitchStiffness"/>
+        public float rollStiffness = 3.4e6f;
+
+        /// <summary>Attitude-layer damping, N.m.s/rad. Near critical for the layer.</summary>
+        public float pitchDamping = 7.6e5f;
+
+        /// <inheritdoc cref="pitchDamping"/>
+        public float rollDamping = 8.8e5f;
+
+        /// <summary>
+        /// Ride-height layer stiffness, N/m, pulling the hull toward the fitted
+        /// terrain plane's height.
+        /// </summary>
+        /// <remarks>
+        /// The attitude layer fixes pitch and roll, but ride height is the THIRD degree of
+        /// freedom and it was still being left entirely to the corner springs. That is
+        /// what launches the vehicle: on an 18 degree slope the ends of a 5.67 m contact
+        /// patch differ by 1.8 m of ground, which 0.6 m of travel cannot bridge, so every
+        /// corner saturates on its bump stop and fires the hull into the air.
+        /// </remarks>
+        public float heaveStiffness = 6.0e5f;
+
+        /// <inheritdoc cref="heaveStiffness"/>
+        public float heaveDamping = 1.4e5f;
+
+        /// <summary>Terrain height sampled beneath each contact this step, metres.</summary>
+        private readonly float[] groundY = new float[Contacts];
 
         /// <summary>
         /// Roll inertia about the longitudinal axis, kg.m^2.
@@ -146,12 +213,34 @@ namespace WarArena.Gameplay
             // the renderer has to compensate for a datum error that belongs here.
             staticSag = mass * TrackedVehicleDynamics.Gravity / (Contacts * Mathf.Max(springRate, 1f));
 
-            contactX[0] = -halfTrackWidth; contactZ[0] = halfGauge + contactCentreOffsetZ;
-            contactX[1] = halfTrackWidth; contactZ[1] = halfGauge + contactCentreOffsetZ;
-            contactX[2] = -halfTrackWidth; contactZ[2] = -halfGauge + contactCentreOffsetZ;
-            contactX[3] = halfTrackWidth; contactZ[3] = -halfGauge + contactCentreOffsetZ;
+            // Four contacts per track at z = {-h, -h/3, +h/3, +h}, symmetric about the
+            // patch centre with BOTH extremes present.
+            //
+            // An asymmetric ladder -- {-h, -h/2, 0, +h/2} -- has no contact at the front
+            // extreme and a dead pair at mid-length contributing no pitch stiffness at
+            // all. Braking and acceleration then behave differently, and the hull dives
+            // far harder than it squats.
+            const int PerTrack = Contacts / 2;
+            float third = halfGauge / 3f;
+            for (int i = 0; i < PerTrack; i++)
+            {
+                float z;
+                switch (i)
+                {
+                    case 0: z = -halfGauge; break;
+                    case 1: z = -third; break;
+                    case 2: z = third; break;
+                    default: z = halfGauge; break;
+                }
+                z += contactCentreOffsetZ;
+                contactX[i] = -halfTrackWidth;
+                contactZ[i] = z;
+                contactX[i + PerTrack] = halfTrackWidth;
+                contactZ[i + PerTrack] = z;
+            }
 
             ComputeStaticPreload();
+            SetBumpStopCeilings();
         }
 
         /// <summary>
@@ -177,45 +266,55 @@ namespace WarArena.Gameplay
         /// </summary>
         private void ComputeStaticPreload()
         {
-            float zFront = 0f, zRear = 0f;
-            bool haveFront = false, haveRear = false;
+            // Static load per contact, solved as a LINEAR TAPER restSag(z) = a + b*z
+            // satisfying both equilibrium conditions:
+            //
+            //     SUM(F)     = m*g   ->  SUM(restSag)     = S
+            //     SUM(F * z) = 0     ->  SUM(restSag * z) = 0
+            //
+            // with F = k * restSag. Two equations, two unknowns, so this holds for any
+            // contact count and any patch offset -- which matters now that the contacts
+            // run down the length of each track rather than sitting at two discrete ends.
+            // A symmetric patch centred under the CG gives b = 0 and a uniform load.
+            float t1 = 0f;   // SUM(z)
+            float t2 = 0f;   // SUM(z^2)
             for (int i = 0; i < Contacts; i++)
             {
-                if (contactZ[i] > 0f)
-                {
-                    if (!haveFront || contactZ[i] > zFront) zFront = contactZ[i];
-                    haveFront = true;
-                }
-                else
-                {
-                    if (!haveRear || contactZ[i] < zRear) zRear = contactZ[i];
-                    haveRear = true;
-                }
+                t1 += contactZ[i];
+                t2 += contactZ[i] * contactZ[i];
             }
 
-            // Degenerate patch, entirely fore or aft of the origin: every corner shares
-            // the same load and the uniform value is already correct.
-            if (!haveFront || !haveRear || Mathf.Abs(zFront - zRear) < 1e-3f)
+            float sumSag = mass * TrackedVehicleDynamics.Gravity / Mathf.Max(springRate, 1f);
+            staticSag = sumSag / Contacts;
+
+            float a = staticSag;
+            float b = 0f;
+            float denom = t1 * t1 - Contacts * t2;
+            if (Mathf.Abs(denom) > 1e-4f)
             {
-                for (int i = 0; i < Contacts; i++) restSag[i] = staticSag;
-                return;
+                b = sumSag * t1 / denom;
+                a = -b * t2 / t1;
             }
-
-            // Per side, the two compressions that carry the weight:
-            //     c_front + c_rear = S          (sum, from SUM(F) = m*g)
-            //     z_f*c_f  + z_r*c_r = 0        (moment about the CG, so no net pitch)
-            float sideSum = mass * TrackedVehicleDynamics.Gravity / (2f * springRate);
-            float rearSag = sideSum * zFront / (zFront - zRear);
-            float frontSag = sideSum - rearSag;
 
             for (int i = 0; i < Contacts; i++)
             {
-                restSag[i] = contactZ[i] > 0f ? frontSag : rearSag;
+                restSag[i] = Mathf.Max(a + b * contactZ[i], 0f);
             }
 
-            // The damping cap is a structural limit, so key it off the largest preload
-            // rather than the old single figure.
-            maxDamping = Mathf.Max(frontSag, rearSag) * springRate;
+            // Damper ceiling, keyed to CRITICAL damping for this corner's share of the
+            // mass: c_crit = 2 * sqrt(k * m_corner).
+            //
+            // It used to be preload * springRate, which halves whenever the spring rate
+            // halves while the damping actually required barely moves -- so the cap
+            // silently changed meaning every time the suspension was retuned. At 30 Hz
+            // the explicit damper has an effective stiffness of c/dt, so an unbounded
+            // damper is what drives the integrator unstable; bounding it by the
+            // corner's own critical damping is both stable and physically meaningful.
+            float massPerCorner = mass / Contacts;
+maxDamping = 2f * Mathf.Sqrt(springRate * massPerCorner);
+
+            // Bump stop ceilings are set by SetBumpStopCeilings, which needs restSag to
+            // be final. It runs immediately after this method in the constructor.
         }
 
         /// <summary>
@@ -296,6 +395,7 @@ namespace WarArena.Gameplay
                 float wz = z + ContactWorldZ(i, headingRad);
 
                 float groundY = BattlefieldBuilder.GetTerrainHeight(wx, wz);
+                this.groundY[i] = groundY;
 
                 // Compression is how far the hull has SUNK BELOW the contact, so it
                 // is ground minus hull. Writing it the other way round gives an
@@ -344,7 +444,7 @@ namespace WarArena.Gameplay
                 // A track cannot pull the hull down.
                 if (force < 0f) force = 0f;
                 // And the bump stop cannot push past its limit either.
-                float maxForce = springRate * maxTravel * 1.5f;
+                float maxForce = maxBumpStopForce[i];
                 if (force > maxForce) force = maxForce;
 
 totalForce += force;
@@ -357,6 +457,15 @@ totalForce += force;
                 // F_rear rises, making SUM(F*z) negative -- already restoring. Adding
                 // it directly is correct; negating it turns the springs into a second
                 // source of pitch energy and the hull rolls onto its nose.
+                // Moment arms are measured from the CONTACT PATCH CENTRE, not from the
+                // vehicle origin.
+                //
+                // The Panzer IV's track patch sits 1.36 m BEHIND the model origin, so
+                // even uniform loading gives SUM(F*z) = F * SUM(z) != 0 -- a constant
+                // nose-down moment proportional to how hard the tracks are pressed. With
+                // the attitude layer now owning macro alignment, leaving that artefact in
+                // the corner springs made the two layers fight, and the hull sat 31 degrees
+                // nose-down on an uphill while the attitude spring was pulling it level.
                 pitchMoment += force * contactZ[i];
 
                 // Roll is right-side-up positive. Right-side-up lifts the right contacts
@@ -365,7 +474,68 @@ totalForce += force;
                 rollMoment += force * contactX[i];
             }
 
+// --- ATTITUDE LAYER -------------------------------------------------
+            //
+            // Fit a plane to the sampled ground and spring the hull's attitude toward
+            // it. This is a LEAST-SQUARES fit, not a max-corner solve: crossing a dip
+            // settles the hull onto the average of its contacts rather than perching on
+            // the highest, which is the whole goal stated at the top of this file.
+            //
+            // With a symmetric contact layout the first moments vanish and the fit is
+            // exact in closed form:
+            //     pitch = atan2(SUM(z*g), SUM(z^2))
+            //     roll  = atan2(SUM(x*g), SUM(x^2))
+            //
+            // Macro conformity to the terrain is this layer's job; the corner springs
+            // only absorb roughness BETWEEN samples. That split is what stops attitude
+            // being set by a bump-stop travel clamp.
+            // The mean sample height is subtracted before fitting.
+            //
+            // atan2(SUM(z*g), SUM(z^2)) is exact only when SUM(z) = 0. A layout that is
+            // symmetric but merely OFFSET from the origin -- which the Panzer IV is, its
+            // track patch sitting 1.36 m behind the model origin -- still has SUM(z) != 0,
+            // so the SUM(z * meanHeight) term survives and corrupts the fitted slope with
+            // the absolute height of the ground. Subtracting the mean makes the first
+            // moments vanish for ANY layout, offset or not.
+            float meanGround = 0f;
+            for (int i = 0; i < Contacts; i++) meanGround += groundY[i];
+            meanGround /= Contacts;
+
+            float szg = 0f, szz = 0f, sxg = 0f, sxx = 0f;
+            for (int i = 0; i < Contacts; i++)
+            {
+                float dg = groundY[i] - meanGround;
+                szg += contactZ[i] * dg;
+                szz += contactZ[i] * contactZ[i];
+                sxg += contactX[i] * dg;
+                sxx += contactX[i] * contactX[i];
+            }
+
+            float terrainPitch = szz > 1e-4f ? Mathf.Atan2(szg, szz) : 0f;
+            float terrainRoll = sxx > 1e-4f ? Mathf.Atan2(sxg, sxx) : 0f;
+
+            // Ride height follows the PLANE, not the corners. The corner springs below
+            // then only ever see roughness BETWEEN samples, which is the job they are
+            // actually good at.
+            //
+            // meanGround is the fitted plane's height under the hull reference point, so
+            // this makes the vehicle ride up and down hills as a whole instead of each
+            // contact fighting the slope through a travel limit it cannot satisfy.
+            totalForce += -heaveStiffness * (height - meanGround) - heaveDamping * verticalVelocity;
+
+            // Attitude springs. These, not corner travel, resist weight transfer.
+            pitchMoment += -pitchStiffness * (pitchRad - terrainPitch) - pitchDamping * pitchVelocity;
+            rollMoment += -rollStiffness * (rollRad - terrainRoll) - rollDamping * rollVelocity;
+
             // Weight transfer: the lateral and longitudinal forces act at the
+            // CONTACT PATCH, which sits below the centre of gravity. A vehicle
+            // accelerating forward therefore pitches nose-up, braking pitches nose-down,
+            // and a right-hand turn rolls the hull to the left, away from the turn --
+            // exactly as the load moves onto the outer track.
+            //
+            // This DEVIATES the attitude from the fitted plane by m*a*h/K, so braking
+            // dives below the plane, power squats above it, and lateral load rolls
+            // outward. That offset is the visible weight transfer.
             // CONTACT PATCH, which sits below the centre of gravity. A vehicle
             // accelerating forward therefore pitches nose-up, braking pitches
             // nose-down, and a right-hand turn rolls the hull to the left, away from
@@ -388,8 +558,6 @@ totalForce += force;
             // captures at 30 Hz. Without this the hull rings at the integrator's own
             // frequency instead of settling.
             verticalVelocity *= 0.94f;
-            pitchVelocity *= 0.88f;
-            rollVelocity *= 0.88f;
 
             // A tank cannot fold its own hull up. These limits are generous, and stop
             // a single pathological terrain sample from rolling it onto its roof.
