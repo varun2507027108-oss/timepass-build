@@ -190,6 +190,34 @@ namespace WarArena.Gameplay
         private readonly float[] contactZ = new float[Contacts];
         private readonly float[] lastCompression = new float[Contacts];
 
+        /// <summary>
+        /// Normal force each contact carried on the last step, newtons.
+        ///
+        /// <para>
+        /// Used to weight the RIDE HEIGHT only. An airborne track is still sampled --
+        /// it is part of the footprint and its sample is needed to give the attitude
+        /// fit its geometric span -- but it is carrying nothing, so its terrain
+        /// height must not drag the hull downward. Weighting by force expresses that
+        /// continuously: a contact contributes in proportion to what it is actually
+        /// supporting, so it fades out as it lifts rather than switching off.
+        /// </para>
+        /// </summary>
+        private readonly float[] contactForce = new float[Contacts];
+
+        /// <summary>
+        /// How much of the load-weighted ride height is retained, 0..1.
+        ///
+        /// 0 is the old behaviour: ride at the plain mean of every contact, which lets
+        /// an airborne track drag the hull into a hillside. 1 is the fully weighted
+        /// mean, which over-corrects during sustained driving because the loaded
+        /// contacts are the rearward ones and the hull follows them, sinking the nose.
+        ///
+        /// Tuned by measurement against both failures: full weighting took worst-case
+        /// penetration from 1.243 m to 0.735 m but drove deepest travel to -0.91 m
+        /// against a -0.6 m bound. See <see cref="LoadSupportedBlend"/>'s use site.
+        /// </summary>
+        private const float LoadSupportedBlend = 0.25f;
+
         public HullSuspension(float massKg, float halfGauge, float halfTrackWidth,
             float contactCentreOffsetZ = 0f)
         {
@@ -458,6 +486,7 @@ maxDamping = 2f * Mathf.Sqrt(springRate * massPerCorner);
                 if (force > maxForce) force = maxForce;
 
 totalForce += force;
+                contactForce[i] = force;
 
                 // Restoring moments. The two spring terms have OPPOSITE signs, and neither is the
                 // obvious one.
@@ -507,9 +536,76 @@ totalForce += force;
             // so the SUM(z * meanHeight) term survives and corrupts the fitted slope with
             // the absolute height of the ground. Subtracting the mean makes the first
             // moments vanish for ANY layout, offset or not.
-            float meanGround = 0f;
-            for (int i = 0; i < Contacts; i++) meanGround += groundY[i];
-            meanGround /= Contacts;
+            // Ride height is the LOAD-WEIGHTED mean of the contact heights, not the plain
+            // average.
+            //
+            // The plain average is wrong the moment part of the vehicle is airborne.
+            // A track hanging over a dip samples ground well below the hull and
+            // contributes that height with the same weight as a track that is bearing
+            // the vehicle's weight, so the average -- and therefore the heave target
+            // -- is dragged down toward the drop and the loaded side settles into the
+            // hillside. That is the reported failure: a hull sunk into a slope with
+            // one track in the air.
+            //
+            // Weighting by the force each contact is actually carrying fixes it
+            // without touching the attitude fit below. That distinction is the whole
+            // point and was arrived at by measurement: an earlier attempt excluded
+            // airborne contacts from the LEAST-SQUARES FIT as well, and that made
+            // things worse (0.29 m -> 0.42 m, 0.48 m -> 0.77 m). Once only one track
+            // carries load every surviving contact shares the same x, so the
+            // mean-subtracted roll term SUM(x*dg) collapses and the fitted cross-slope
+            // goes to zero -- a 15 degree camber read as 2 degrees.
+            //
+            // Dropping samples destroys the geometric span the fit needs. Down-weighting
+            // the ride height does not, so the attitude fit below still uses every
+            // sample. This mirrors the reference game's `_terrainContactCount` feeding
+            // a scalar rather than gating the fit.
+            float loadSum = 0f;
+            float weightedGround = 0f;
+            for (int i = 0; i < Contacts; i++)
+            {
+                float w = contactForce[i];
+                loadSum += w;
+                weightedGround += w * groundY[i];
+            }
+
+            float plainGround = 0f;
+            for (int i = 0; i < Contacts; i++) plainGround += groundY[i];
+            plainGround /= Contacts;
+
+            float meanGround;
+            if (loadSum > 1f)
+            {
+                float weighted = weightedGround / loadSum;
+
+                // Blend the load-weighted mean back toward the plain mean.
+                //
+                // Pure weighting is wrong in a way the drive test caught: during
+                // sustained driving the loaded contacts are the REARWARD ones, so a
+                // fully weighted mean follows the rear of the vehicle and the nose
+                // sinks (deepest travel went to -0.91 m against a -0.6 m bound).
+                //
+                // The airborne tracks do not sit uniformly below the loaded ones --
+                // over a crest they can sit ABOVE them -- so their contribution is a
+                // bias of uncertain sign, not a constant offset that can simply be
+                // removed. A partial blend removes most of the bias in the
+                // sinking-into-a-camber case, which is the one being fixed, while
+                // leaving enough of the plain mean to keep the ride height tied to the
+                // whole footprint.
+                //
+                // LoadSupportedBlend is the fraction of the weighted mean retained.
+                meanGround = Mathf.Lerp(plainGround, weighted, LoadSupportedBlend);
+            }
+            else
+            {
+                // Fully airborne -- every contact is off the ground and carrying
+                // nothing, so there is no load distribution to weight by. Fall back to
+                // the plain mean rather than dividing by (near) zero, which would put
+                // an infinity or NaN into the ride height and the hull would never
+                // recover. Any consistent reference is better here; there is no
+                // supporting surface to be wrong about.
+                meanGround = plainGround;
+            }
 
             float szg = 0f, szz = 0f, sxg = 0f, sxx = 0f;
             for (int i = 0; i < Contacts; i++)
